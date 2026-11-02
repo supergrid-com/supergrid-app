@@ -1,24 +1,28 @@
-import { ArrowLeftIcon, ArrowRightIcon, GlobeIcon, PanelLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon, PanelLeftIcon } from "lucide-react";
 import * as React from "react";
 import { useNavigate } from "react-router";
-import { Button } from "~/components/ui/button";
 import { Kbd } from "~/components/ui/kbd";
-import { ToolbarLink } from "~/components/ui/toolbar";
-import { BarButton, BarSeparator, BarToolbar } from "~/components/workspace/bar-toolbar";
-import type { WorkspaceSummary } from "~/lib/workspaces";
+import { BarButton, BarToolbar } from "~/components/workspace/bar-toolbar";
 import { cn } from "~/lib/utils";
 
 // The title bar of the sidebar layout, after Codex: history and the sidebar toggle beside the
-// traffic lights, then a divider on the canvas's left edge, then the page's title and actions, each
-// section a toolbar (see bar-toolbar).
-// Pages put those last two in through the slots (see WorkspaceFrame). With the chat open, its own
-// section sits above it, with a divider on its left edge in the same way.
+// traffic lights, then a divider on the canvas's left edge, then the page's breadcrumb (see
+// WorkspaceFrame). With the agent open, its own section sits above it, with a divider on its left
+// edge in the same way.
+//
+// The rule for the bar above the canvas: the breadcrumb only. Nothing page- or app-specific goes
+// up here (no Open site, no page actions); a page keeps its actions in its own body. Later this
+// may hold a few admin tools that aren't about any one page or app.
 
 /** What the traffic lights add to the bar's start padding: .titlebar in app.css sets 92px over the bar's 8px. */
 const titlebarInset = (): number => (document.documentElement.dataset.platform === "darwin" ? 84 : 0);
 
-/** The room back, forward and the toggle need, so the divider never lands on them. */
-const NAV_MIN_WIDTH = 112;
+/**
+ * The room back, forward and the toggle need: three 28px buttons 2px apart (88px), then a 12px
+ * gap, the same as the one between the divider and the title. With the rail folded, the divider
+ * sits right after the toggle; with it open, it follows the canvas edge instead.
+ */
+const NAV_MIN_WIDTH = 100;
 
 type HistoryApi = EventTarget & { canGoBack: boolean; canGoForward: boolean };
 
@@ -37,16 +41,13 @@ function useHistoryButtons(): { back: boolean; forward: boolean } {
 }
 
 export function WorkspaceTitleBar({
-  ws,
   canvasStart,
   chatStart,
   animate,
   onToggleSidebar,
   chatRef,
   titleRef,
-  actionsRef,
 }: {
-  ws: WorkspaceSummary;
   /** Where the canvas starts, from the window's left edge. */
   canvasStart: number;
   /** Where the chat starts, when it is open. */
@@ -56,7 +57,6 @@ export function WorkspaceTitleBar({
   onToggleSidebar: () => void;
   chatRef: (el: HTMLElement | null) => void;
   titleRef: (el: HTMLElement | null) => void;
-  actionsRef: (el: HTMLElement | null) => void;
 }): React.ReactElement {
   const navigate = useNavigate();
   const history = useHistoryButtons();
@@ -73,7 +73,6 @@ export function WorkspaceTitleBar({
           <BarButton label="Forward" disabled={!history.forward} onClick={() => navigate(1)}>
             <ArrowRightIcon />
           </BarButton>
-          <BarSeparator />
           <BarButton
             label="Toggle sidebar"
             onClick={onToggleSidebar}
@@ -98,19 +97,6 @@ export function WorkspaceTitleBar({
         <div className="h-5 w-px shrink-0 bg-admin-line" />
         <div ref={titleRef} className="ms-3 flex min-w-0 items-center gap-2 text-foreground" />
       </div>
-      <BarToolbar aria-label="Page" className="ms-1 shrink-0 gap-1 pe-1">
-        {/* page actions land here (see WorkspaceFrame), all at the bar's height */}
-        <div ref={actionsRef} className="flex items-center gap-1 [&_[data-slot=button]]:h-7 [&_[data-slot=button]]:rounded-lg" />
-        <ToolbarLink
-          href={ws.url}
-          target="_blank"
-          rel="noreferrer"
-          render={<Button size="xs" variant="ghost" className="h-7 rounded-lg px-2 font-normal text-muted-foreground hover:text-foreground sm:h-7" />}
-        >
-          <GlobeIcon />
-          Open site
-        </ToolbarLink>
-      </BarToolbar>
     </header>
   );
 }

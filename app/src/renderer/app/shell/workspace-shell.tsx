@@ -5,18 +5,17 @@ import { Button } from "~/components/ui/button";
 import { AgentSide } from "~/components/workspace/agent-side";
 import { FrameSlots } from "~/components/workspace/frame";
 import { ResizeHandle } from "~/components/workspace/resize-handle";
-import { NAV_COLLAPSED_WIDTH, NAV_WIDTH, WorkspaceSidebar } from "~/components/workspace/sidebar";
+import { NAV_COLLAPSED_WIDTH, WorkspaceSidebar } from "~/components/workspace/sidebar";
 import { SubNav, type SubNavItem } from "~/components/workspace/sub-nav";
 import { WorkspaceTitleBar } from "~/components/workspace/title-bar";
 import { updateOrg } from "~/lib/orgs";
-import { CHAT_SIDE_DEFAULT_WIDTH, SUB_NAV_DEFAULT_WIDTH, usePlatform } from "~/lib/platform";
+import { CHAT_SIDE_DEFAULT_WIDTH, NAV_DEFAULT_WIDTH, SUB_NAV_DEFAULT_WIDTH, usePlatform } from "~/lib/platform";
 import { useSession } from "~/lib/session";
 import { cn } from "~/lib/utils";
 import { useWorkspaces, type WorkspaceSummary } from "~/lib/workspaces";
 import { SearchPalette, useSearchShortcut } from "~/shell/command-palette";
 import { ShellContext, useStoredFlag, type Shell } from "~/shell/context";
 import { OrgModal } from "~/shell/org-modal";
-import { settingsSections } from "~/shell/sections";
 
 // A workspace, after v1: the title bar runs the full width above a dark rail, a second panel for
 // sections with sub pages, the agent's panel, and the page in a card. The organization's own pages
@@ -26,14 +25,10 @@ import { settingsSections } from "~/shell/sections";
 const SUB_NAV_GAP = 8;
 const CHAT_GAP = 8;
 
-/** The second panel for the current page, or null when it has none. `rest` is the path inside the workspace. */
+/** The second panel for the current page (an app's own menu), or null when it has none. `rest` is the path inside the workspace. */
 function subNavFor(ws: WorkspaceSummary, rest: string, go: (to: string) => void): { title: string; items: SubNavItem[] } | null {
   const base = `/w/${ws.id}`;
   const parts = rest.split("/");
-  if (parts[0] === "settings") {
-    const current = parts[1] || "general";
-    return { title: "Settings", items: settingsSections.map((s) => ({ key: s.id, label: s.label, icon: <s.icon />, active: s.id === current, onClick: () => go(`${base}/settings/${s.id}`) })) };
-  }
   if (parts[0] === "apps" && parts[1]) {
     // an app's own admin menu, as its manifest declares it (the workspace's ROUTES binding)
     const app = ws.apps.find((a) => a.app === parts[1]);
@@ -63,15 +58,15 @@ export function WorkspaceShell(): React.ReactElement {
   const ws = list?.find((w) => w.id === id);
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth } = usePlatform();
+  const { railState, setRailState, navWidth, setNavWidth, chatWidth, setChatWidth, subNavWidth, setSubNavWidth } = usePlatform();
   const [agentOpen, setAgentOpen] = useStoredFlag("sg.agent.open", false);
   const [resizing, setResizing] = React.useState(false);
   const [navOpen, setNavOpen] = React.useState(false);
   const [search, setSearch] = React.useState(false);
   const [titleSlot, setTitleSlot] = React.useState<HTMLElement | null>(null);
   const [chatSlot, setChatSlot] = React.useState<HTMLElement | null>(null);
-  const [actionsSlot, setActionsSlot] = React.useState<HTMLElement | null>(null);
-  const slots = React.useMemo(() => ({ title: titleSlot, actions: actionsSlot }), [titleSlot, actionsSlot]);
+  // the title bar takes the page's breadcrumb only; page actions stay in the page (see title-bar.tsx)
+  const slots = React.useMemo(() => ({ title: titleSlot, actions: null }), [titleSlot]);
   useSearchShortcut(setSearch);
 
   const toggleNav = React.useCallback(() => setRailState(railState === "collapsed" ? "open" : "collapsed"), [railState, setRailState]);
@@ -97,7 +92,23 @@ export function WorkspaceShell(): React.ReactElement {
     if (org && ws && org.lastWorkspace !== ws.id) updateOrg(org.id, { lastWorkspace: ws.id });
   }, [org?.id, ws?.id]);
 
-  const shell = React.useMemo<Shell | null>(() => (ws ? { ws, agentOpen, toggleAgent: () => setAgentOpen(!agentOpen) } : null), [ws, agentOpen, setAgentOpen]);
+  const [threadId, setThreadId] = React.useState<string | null>(null);
+  const shell = React.useMemo<Shell | null>(
+    () =>
+      ws
+        ? {
+            ws,
+            agentOpen,
+            toggleAgent: () => setAgentOpen(!agentOpen),
+            threadId,
+            openThread: (id) => {
+              setThreadId(id);
+              setAgentOpen(true);
+            },
+          }
+        : null,
+    [ws, agentOpen, setAgentOpen, threadId],
+  );
 
   if (!org?.cloudflare) return <Navigate to="/" replace />;
   if (!shell || !ws) {
@@ -123,15 +134,18 @@ export function WorkspaceShell(): React.ReactElement {
   const inSubPanel = !!sub;
   const collapsed = inSubPanel || railState === "collapsed";
   const panelOpen = inSubPanel && railState !== "collapsed";
-  const chatStart = (collapsed ? NAV_COLLAPSED_WIDTH : NAV_WIDTH) + (panelOpen ? subNavWidth + SUB_NAV_GAP : 0);
+  const chatStart = (collapsed ? NAV_COLLAPSED_WIDTH : navWidth) + (panelOpen ? subNavWidth + SUB_NAV_GAP : 0);
   const canvasStart = chatStart + (agentOpen ? chatWidth + CHAT_GAP : 0);
 
   return (
     <ShellContext.Provider value={shell}>
-      <div className="flex h-full w-full flex-col overflow-hidden overscroll-none bg-admin text-foreground">
-        <WorkspaceTitleBar ws={ws} canvasStart={canvasStart} chatStart={agentOpen ? chatStart : undefined} animate={!resizing} onToggleSidebar={toggleNav} chatRef={setChatSlot} titleRef={setTitleSlot} actionsRef={setActionsSlot} />
+      {/* while a panel is dragged, nothing inside animates (see [data-resizing] in app.css) */}
+      <div className="flex h-full w-full flex-col overflow-hidden overscroll-none bg-admin text-foreground" data-resizing={resizing || undefined}>
+        <WorkspaceTitleBar canvasStart={canvasStart} chatStart={agentOpen ? chatStart : undefined} animate={!resizing} onToggleSidebar={toggleNav} chatRef={setChatSlot} titleRef={setTitleSlot} />
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <WorkspaceSidebar ws={ws} collapsed={collapsed} agentOpen={agentOpen} onToggleAgent={shell.toggleAgent} className="max-md:hidden" />
+          <WorkspaceSidebar ws={ws} width={navWidth} animate={!resizing} collapsed={collapsed} agentOpen={agentOpen} onToggleAgent={shell.toggleAgent} className="max-md:hidden" />
+          {/* the open rail resizes from its right edge; the handle takes no room of its own */}
+          {!collapsed && <ResizeHandle label="Resize sidebar" width={navWidth} defaultWidth={NAV_DEFAULT_WIDTH} onChange={setNavWidth} onDragging={setResizing} className="max-md:hidden" style={{ width: 0 }} />}
           {/* the sub panel slides in next to the rail and out again when its page closes */}
           <div className={cn("shrink-0 overflow-hidden max-md:hidden", !resizing && "transition-[width] duration-200 ease-out")} style={{ width: panelOpen ? subNavWidth : 0 }} aria-hidden={!panelOpen}>
             <div className="h-full pt-1 pb-2" style={{ width: subNavWidth }}>
@@ -143,7 +157,7 @@ export function WorkspaceShell(): React.ReactElement {
           {agentOpen && (
             <>
               <div className="flex h-full shrink-0 pt-1 pb-2 max-md:hidden" style={{ width: chatWidth }}>
-                <AgentSide ws={ws} headerSlot={chatSlot} onClose={() => setAgentOpen(false)} />
+                <AgentSide ws={ws} threadId={threadId} headerSlot={chatSlot} onClose={() => setAgentOpen(false)} />
               </div>
               <ResizeHandle label="Resize agent" width={chatWidth} defaultWidth={CHAT_SIDE_DEFAULT_WIDTH} onChange={setChatWidth} onDragging={setResizing} className="max-md:hidden" style={{ width: CHAT_GAP }} />
             </>

@@ -1,6 +1,6 @@
 import { CloudIcon, GlobeIcon, InfoIcon, LayoutGridIcon, PlusIcon, RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import * as React from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { CreateWorkspace } from "~/components/create-workspace";
 import { SectionPage } from "~/components/section-page";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "~/components/ui/alert";
@@ -59,7 +59,8 @@ export function OrgWorkspaces(): React.ReactElement {
   const navigate = useNavigate();
   const link = org?.cloudflare ?? null;
   const { list, error, loading, refresh } = useWorkspaces(link);
-  const [creating, setCreating] = React.useState(false);
+  const [params] = useSearchParams();
+  const [creating, setCreating] = React.useState(params.get("create") === "1");
   const open = (id: string) => navigate(`/w/${id}`);
 
   if (creating && link) {

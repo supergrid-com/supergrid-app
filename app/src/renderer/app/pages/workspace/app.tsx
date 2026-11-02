@@ -2,7 +2,7 @@ import { ExternalLinkIcon, PackageIcon } from "lucide-react";
 import type * as React from "react";
 import { useParams } from "react-router";
 import { Button } from "~/components/ui/button";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "~/components/ui/empty";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "~/components/ui/empty";
 import { WorkspaceFrame } from "~/components/workspace/frame";
 import { useOpenNav, useShell } from "~/shell/context";
 
@@ -21,14 +21,6 @@ export function AppScreen(): React.ReactElement {
       icon={<PackageIcon />}
       title={title}
       onOpenNav={onOpenNav}
-      actions={
-        app?.public ? (
-          <Button size="xs" variant="ghost" render={<a href={`${ws.url}${app.public}`} target="_blank" rel="noreferrer" />}>
-            <ExternalLinkIcon />
-            Open in site
-          </Button>
-        ) : undefined
-      }
     >
       <Empty className="py-16">
         <EmptyHeader>
@@ -44,6 +36,14 @@ export function AppScreen(): React.ReactElement {
                 : `${app.name} only adds public pages and an API to the workspace.`}
           </EmptyDescription>
         </EmptyHeader>
+        {app?.public && (
+          <EmptyContent>
+            <Button size="sm" variant="outline" render={<a href={`${ws.url}${app.public}`} target="_blank" rel="noreferrer" />}>
+              <ExternalLinkIcon />
+              Open in site
+            </Button>
+          </EmptyContent>
+        )}
       </Empty>
     </WorkspaceFrame>
   );

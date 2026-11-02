@@ -25,7 +25,7 @@ export function OrgSettings(): React.ReactElement {
   const dirty = name.trim() !== org.name;
 
   return (
-    <SectionPage title="Settings" description={`${org.name}, created ${org.createdAt}`} width={960}>
+    <SectionPage title={org.name} description={`Organization, created ${org.createdAt}`} width={960}>
       <div className="flex flex-col gap-8">
         <SettingsGroup title="General" description="How the organization appears in the app.">
           <Field>
@@ -49,6 +49,40 @@ export function OrgSettings(): React.ReactElement {
                 Discard
               </Button>
             )}
+          </div>
+        </SettingsGroup>
+
+        <Separator />
+
+        <SettingsGroup title="Organizations" description="Each one is a set of workspaces on its own Cloudflare account, kept on this Mac.">
+          <div className="flex flex-col divide-y rounded-xl border">
+            {orgs.map((o) => (
+              <div key={o.id} className="flex items-center justify-between gap-4 px-4 py-2.5">
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate text-sm font-medium">{o.name}</span>
+                  <span className="truncate text-xs text-muted-foreground">{o.cloudflare ? `Cloudflare: ${o.cloudflare.accountName}` : "Cloudflare not connected"}</span>
+                </div>
+                {o.id === org.id ? (
+                  <span className="text-xs text-muted-foreground">Current</span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setOrg(o.id);
+                      navigate("/");
+                    }}
+                  >
+                    Switch
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+          <div>
+            <Button size="sm" variant="outline" onClick={() => navigate("/welcome")}>
+              New organization
+            </Button>
           </div>
         </SettingsGroup>
 

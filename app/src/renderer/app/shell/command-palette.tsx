@@ -4,7 +4,7 @@ import { Command, CommandCollection, CommandDialog, CommandDialogPopup, CommandE
 import { useSession } from "~/lib/session";
 import { useWorkspaces, type WorkspaceSummary } from "~/lib/workspaces";
 import { useOrgModal } from "~/shell/context";
-import { orgSections, sections } from "~/shell/sections";
+import { sections, settingsGroups, type SettingsSectionId } from "~/shell/sections";
 
 type Item = { value: string; label: string };
 type Group = { value: string; items: Item[] };
@@ -27,14 +27,14 @@ export function SearchPalette({ ws, open, onOpenChange }: { ws: WorkspaceSummary
     ];
     const others = (list ?? []).filter((w) => w.id !== ws.id);
     if (others.length) out.push({ value: "Workspaces", items: others.map((w) => ({ value: `go:/w/${w.id}`, label: w.name })) });
-    out.push({ value: org?.name ?? "Organization", items: orgSections.map((s) => ({ value: `org:${s.id}`, label: s.label })) });
+    for (const g of settingsGroups) out.push({ value: `${g.label} settings`, items: g.items.map((s) => ({ value: `org:${s.id}`, label: s.label })) });
     return out;
-  }, [ws, list, org?.name]);
+  }, [ws, list]);
 
   const pick = (value: string) => {
     onOpenChange(false);
     if (value.startsWith("go:")) navigate(value.slice(3));
-    else if (value.startsWith("org:")) modal.open(value.slice(4) as (typeof orgSections)[number]["id"]);
+    else if (value.startsWith("org:")) modal.open(value.slice(4) as SettingsSectionId);
   };
 
   return (

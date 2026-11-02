@@ -4,7 +4,6 @@ import { Launch } from "~/pages/launch";
 import { AppScreen } from "~/pages/workspace/app";
 import { Home } from "~/pages/workspace/home";
 import { Analytics, Assets, Contacts, Design, Events, Hooks, Secrets, Workflows } from "~/pages/workspace/section";
-import { WorkspaceSettings } from "~/pages/workspace/settings";
 import { ErrorBoundary, RequireSetup, Root } from "~/root";
 import { WorkspaceShell } from "~/shell/workspace-shell";
 
@@ -36,8 +35,6 @@ export const routes: RouteObject[] = [
               { path: "events", Component: Events },
               { path: "secrets", Component: Secrets },
               { path: "apps/:app/*", Component: AppScreen },
-              { path: "settings", Component: WorkspaceSettings },
-              { path: "settings/:section", Component: WorkspaceSettings },
             ],
           },
         ],

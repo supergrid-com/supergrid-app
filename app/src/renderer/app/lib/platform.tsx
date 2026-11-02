@@ -16,7 +16,7 @@ export type AdminTheme = (typeof adminThemes)[number]["id"];
 // The workspace rail is either full width or icons only (⌘B).
 export type RailState = "open" | "collapsed";
 
-export const NAV_DEFAULT_WIDTH = 272;
+export const NAV_DEFAULT_WIDTH = 256;
 // the side chat panel in a workspace
 // the second panel beside the rail
 export const SUB_NAV_DEFAULT_WIDTH = 272;

@@ -1,15 +1,19 @@
 import * as React from "react";
 import { useOutletContext, useSearchParams } from "react-router";
 import type { WorkspaceSummary } from "~/lib/workspaces";
-import type { OrgSectionId } from "~/shell/sections";
+import type { SettingsSectionId } from "~/shell/sections";
 
-// What the workspace shell shares with its pages and panels: the workspace and the agent panel
-// toggle. A page's title and actions reach the title bar through FrameSlots (workspace/frame.tsx).
+// What the workspace shell shares with its pages and panels: the workspace, the agent panel
+// toggle and the thread it shows. A page's title and actions reach the title bar through FrameSlots (workspace/frame.tsx).
 
 export type Shell = {
   ws: WorkspaceSummary;
   agentOpen: boolean;
   toggleAgent: () => void;
+  /** The agent thread shown in its panel; null is a new thread. */
+  threadId: string | null;
+  /** Opens the agent panel on a thread, or on a new one with null. */
+  openThread: (id: string | null) => void;
 };
 
 export const ShellContext = React.createContext<Shell | null>(null);
@@ -20,14 +24,17 @@ export function useShell(): Shell {
   return s;
 }
 
-/** The organization modal lives in the URL (?org=<section>), so it opens over any page and back closes it. */
-export function useOrgModal(): { section: OrgSectionId | null; open: (section?: OrgSectionId) => void; close: () => void } {
+/** The settings modal lives in the URL (?org=<section>), so it opens over any page and back closes it. */
+export function useOrgModal(): { section: SettingsSectionId | null; open: (section?: SettingsSectionId, opts?: { create?: boolean }) => void; close: () => void } {
   const [params, setParams] = useSearchParams();
-  const section = (params.get("org") as OrgSectionId | null) ?? null;
+  const section = (params.get("org") as SettingsSectionId | null) ?? null;
   const open = React.useCallback(
-    (s: OrgSectionId = "workspaces") =>
+    (s: SettingsSectionId = "general", opts?: { create?: boolean }) =>
       setParams((p) => {
         p.set("org", s);
+        // `create` opens the workspaces section straight on its New workspace form
+        if (opts?.create) p.set("create", "1");
+        else p.delete("create");
         return p;
       }),
     [setParams],
@@ -36,6 +43,7 @@ export function useOrgModal(): { section: OrgSectionId | null; open: (section?: 
     () =>
       setParams((p) => {
         p.delete("org");
+        p.delete("create");
         return p;
       }),
     [setParams],

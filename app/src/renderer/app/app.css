@@ -459,3 +459,10 @@ html[data-platform="darwin"] .titlebar {
 [data-sg-theme] [data-slot="select-trigger"]::before,
 [data-sg-theme] [data-slot="select-button"]::before { border-radius: calc(var(--radius-input) - 1px); }
 [data-sg-theme] .font-accent { font-family: var(--font-accent); }
+
+/* While a panel is being dragged (the workspace shell sets data-resizing), nothing in the shell
+   animates: width, opacity or transform transitions would lag behind the pointer. */
+[data-resizing],
+[data-resizing] * {
+  transition: none !important;
+}
