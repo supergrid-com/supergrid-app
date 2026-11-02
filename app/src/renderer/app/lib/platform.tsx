@@ -7,11 +7,11 @@ import { type Mode, orgs } from "~/lib/mock";
 type Theme = "light" | "dark" | "system";
 // The admin layer behind a workspace's cards: see the themes in app.css.
 export const adminThemes = [
-  { id: "auto", name: "Match appearance", swatch: "#f5f5f3" },
-  { id: "graphite", name: "Graphite", swatch: "#171717" },
-  { id: "mist", name: "Mist", swatch: "#e9e9ec" },
-  { id: "blush", name: "Blush", swatch: "#f4e1e8" },
-  { id: "forest", name: "Forest", swatch: "#0f2a1f" },
+  { id: "auto", name: "Match appearance", swatch: "#f5f5f3", dark: null },
+  { id: "graphite", name: "Graphite", swatch: "#171717", dark: true },
+  { id: "mist", name: "Mist", swatch: "#e9e9ec", dark: false },
+  { id: "blush", name: "Blush", swatch: "#f4e1e8", dark: false },
+  { id: "forest", name: "Forest", swatch: "#0f2a1f", dark: true },
 ] as const;
 export type AdminTheme = (typeof adminThemes)[number]["id"];
 // The workspace rail is either full width or icons only (⌘B).
@@ -50,6 +50,8 @@ type PlatformState = {
   setSubNavWidth: (w: number) => void;
   adminTheme: AdminTheme;
   setAdminTheme: (t: AdminTheme) => void;
+  /** Whether the admin layer is dark, which the chat follows rather than the page theme. */
+  adminDark: boolean;
 };
 
 const PlatformContext = React.createContext<PlatformState | null>(null);
@@ -80,7 +82,7 @@ function applyTheme(theme: Theme): void {
 
 export function PlatformProvider({ children }: { children: React.ReactNode }): React.ReactElement {
   const [mode, setModeState] = React.useState<Mode>("agency");
-  const [theme, setThemeState] = React.useState<Theme>("system");
+  const [theme, setThemeState] = React.useState<Theme>(() => read<Theme>("sg.theme", "system"));
   const [orgId, setOrgIdState] = React.useState<string>(orgs[0].id);
   const [navDocked, setNavDockedState] = React.useState(false);
   const [navOpen, setNavOpen] = React.useState(false);
@@ -100,12 +102,25 @@ export function PlatformProvider({ children }: { children: React.ReactNode }): R
     if (Number.isFinite(sw)) setSubNavWidthRaw(Math.min(SUB_NAV_MAX_WIDTH, Math.max(SUB_NAV_MIN_WIDTH, sw)));
     const cw = Number(read<string>("sg.chatWidth", String(CHAT_SIDE_DEFAULT_WIDTH)));
     if (Number.isFinite(cw)) setChatWidthRaw(Math.min(CHAT_SIDE_MAX_WIDTH, Math.max(CHAT_SIDE_MIN_WIDTH, cw)));
-    setThemeState(read("sg.theme", "system"));
     setOrgIdState(read("sg.org", orgs[0].id));
     setNavDockedState(read<string>("sg.navDocked", "0") === "1");
     const w = Number(read<string>("sg.navWidth", String(NAV_DEFAULT_WIDTH)));
     if (Number.isFinite(w)) setNavWidthState(Math.min(NAV_MAX_WIDTH, Math.max(NAV_MIN_WIDTH, w)));
   }, []);
+
+  // the page theme, resolved: System follows the OS, including while the app is open
+  const [pageDark, setPageDark] = React.useState(() => document.documentElement.classList.contains("dark"));
+  React.useEffect(() => {
+    const os = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => {
+      applyTheme(theme);
+      setPageDark(document.documentElement.classList.contains("dark"));
+    };
+    update();
+    os.addEventListener("change", update);
+    return () => os.removeEventListener("change", update);
+  }, [theme]);
+  const adminDark = adminThemes.find((t) => t.id === adminTheme)?.dark ?? pageDark;
 
   const setMode = React.useCallback((m: Mode) => {
     setModeState(m);
@@ -151,8 +166,8 @@ export function PlatformProvider({ children }: { children: React.ReactNode }): R
   }, []);
 
   const value = React.useMemo(
-    () => ({ mode, setMode, theme, setTheme, orgId, setOrgId, navDocked, setNavDocked, navOpen, setNavOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, adminTheme, setAdminTheme }),
-    [mode, setMode, theme, setTheme, orgId, setOrgId, navDocked, setNavDocked, navOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, adminTheme, setAdminTheme],
+    () => ({ mode, setMode, theme, setTheme, orgId, setOrgId, navDocked, setNavDocked, navOpen, setNavOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, adminTheme, setAdminTheme, adminDark }),
+    [mode, setMode, theme, setTheme, orgId, setOrgId, navDocked, setNavDocked, navOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, adminTheme, setAdminTheme, adminDark],
   );
   return <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>;
 }

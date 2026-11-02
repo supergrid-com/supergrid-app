@@ -2,14 +2,14 @@ import { ArrowUpIcon, PanelRightIcon, PlusIcon, SparklesIcon } from "lucide-reac
 import * as React from "react";
 import { FrameSlots } from "~/components/workspace/frame";
 import { SettingsNav } from "~/components/workspace/settings-nav";
-import { AppNav, ChatNav, DataNav, MenuNav } from "~/components/workspace/sub-nav";
+import { AppNav, DataNav, MenuNav } from "~/components/workspace/sub-nav";
 import { SettingsPage } from "~/components/workspace/settings-pages";
 import { ChatSide } from "~/components/workspace/chat-side";
 import { ResizeHandle } from "~/components/workspace/resize-handle";
 import { NAV_COLLAPSED_WIDTH, NAV_WIDTH, WorkspaceSidebar } from "~/components/workspace/sidebar";
 import { WorkspaceTitleBar } from "~/components/workspace/title-bar";
 import { AnalyticsPage, ContactsPage, DesignPage, LoggingPage, MediaPage, SitemapPage } from "~/components/workspace/more-pages";
-import { AppPage, ChatPage, IntegrationsPage, DataPage, FilesPage, HomePage, SecretsPage, WorkflowsPage } from "~/components/workspace/pages";
+import { AppPage, IntegrationsPage, DataPage, FilesPage, HomePage, SecretsPage, WorkflowsPage } from "~/components/workspace/pages";
 import { Button } from "~/components/ui/button";
 import { useSideChat, useWorkspacePage } from "~/lib/workspace-page";
 import type { Workspace } from "~/lib/mock";
@@ -29,17 +29,17 @@ export function WorkspaceShell({ ws }: { ws: Workspace }): React.ReactElement {
   const { page, go } = useWorkspacePage();
   const { railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth } = usePlatform();
   const [resizing, setResizing] = React.useState(false);
-  // the side chat: beside the canvas on any page but the full chat page itself
+  // the chat: a panel beside the canvas, on any page
   const sideChat = useSideChat();
-  const side = page.kind === "chat" ? undefined : sideChat.side;
+  const side = sideChat.side;
   const [handoff, setHandoff] = React.useState<string | undefined>(undefined);
   const [navOpen, setNavOpen] = React.useState(false);
-  // every section with sub items (settings, chat, data, an app) takes the rail down to icons
+  // every section with sub items (settings, data, an app) takes the rail down to icons
   // and opens a second panel beside it, like Shopify's settings; the user's own collapse choice
   // comes back once they leave
   const { config: nav } = useNavConfig(ws);
   const menu = menuFor(nav, page);
-  const inSubPanel = !!menu || page.kind === "settings" || page.kind === "chat" || page.kind === "data" || page.kind === "app";
+  const inSubPanel = !!menu || page.kind === "settings" || page.kind === "data" || page.kind === "app";
   const collapsed = inSubPanel || railState === "collapsed";
   // the toggle (⌘B) folds whatever is open: the rail down to icons, or a section's second panel
   const panelOpen = inSubPanel && railState !== "collapsed";
@@ -76,9 +76,6 @@ export function WorkspaceShell({ ws }: { ws: Workspace }): React.ReactElement {
   const frameProps = { onOpenNav: () => setNavOpen(true) };
   let content: React.ReactNode;
   switch (page.kind) {
-    case "chat":
-      content = <ChatPage ws={ws} chatId={page.id} {...frameProps} />;
-      break;
     case "data":
       content = <DataPage ws={ws} table={page.table} {...frameProps} />;
       break;
@@ -142,8 +139,6 @@ export function WorkspaceShell({ ws }: { ws: Workspace }): React.ReactElement {
             <MenuNav ws={ws} menu={menu} />
           ) : page.kind === "app" ? (
             <AppNav ws={ws} app={page.app} />
-          ) : page.kind === "chat" ? (
-            <ChatNav ws={ws} />
           ) : page.kind === "data" ? (
             <DataNav ws={ws} />
           ) : (
@@ -156,7 +151,7 @@ export function WorkspaceShell({ ws }: { ws: Workspace }): React.ReactElement {
       {side && (
         <>
           <div className="flex h-full shrink-0 pt-1 pb-2 max-md:hidden" style={{ width: chatWidth }}>
-            <ChatSide ws={ws} chatId={side.id} initialMessage={handoff} headerSlot={chatSlot} />
+            <ChatSide ws={ws} initialMessage={handoff} headerSlot={chatSlot} />
           </div>
           <ResizeHandle label="Resize chat" width={chatWidth} defaultWidth={CHAT_SIDE_DEFAULT_WIDTH} onChange={setChatWidth} onDragging={setResizing} className="max-md:hidden" style={{ width: CHAT_GAP }} />
         </>
@@ -172,7 +167,7 @@ export function WorkspaceShell({ ws }: { ws: Workspace }): React.ReactElement {
       <div className="relative flex h-full min-w-0 flex-1 flex-col pt-1 pe-2 pb-2 ps-1 md:ps-0">
         <FrameSlots.Provider value={slots}>{content}</FrameSlots.Provider>
 
-        {page.kind !== "chat" && !side && (
+        {!side && (
           <div className="pointer-events-none absolute start-0 end-2 bottom-5 z-20 flex justify-center px-4">
             <div className="pointer-events-auto flex h-11 w-full max-w-md items-center gap-1 rounded-full border bg-popover ps-3 pe-1.5 shadow-lg/10 focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/24">
               <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">

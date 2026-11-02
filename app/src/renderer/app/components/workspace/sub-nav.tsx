@@ -1,16 +1,16 @@
 import * as React from "react";
-import { MessageCircleIcon, PlusIcon, TableIcon } from "lucide-react";
+import { TableIcon } from "lucide-react";
 import { AppGlyph, AppIcon } from "~/components/app-icon";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { NavIcon } from "~/components/workspace/nav-icons";
 import { type WorkspacePageApi, type WorkspacePage, useWorkspacePage } from "~/lib/workspace-page";
-import { type AppId, catalog, chatsFor, me, tablesFor, type Workspace } from "~/lib/mock";
+import { type AppId, catalog, me, tablesFor, type Workspace } from "~/lib/mock";
 import { isPageFor, type NavMenuConfig, type NavTarget, targetMeta } from "~/lib/nav-config";
 import { cn } from "~/lib/utils";
 
 // The sub nav, after Shopify's settings: a second dark panel beside the collapsed rail with a
 // title up top and one row per section. Every section with sub items opens here: settings,
-// chat, data and each app. Leaving it is a click on any rail icon. Settings uses it, and so does any app
+// data and each app. Leaving it is a click on any rail icon. Settings uses it, and so does any app
 // whose catalog entry says `navStyle: "panel"`.
 
 export type SubNavItem = {
@@ -112,15 +112,6 @@ function appItems(ws: Workspace, app: AppId, page: WorkspacePage, go: WorkspaceP
   }));
 }
 
-function chatItems(ws: Workspace, page: WorkspacePage, go: WorkspacePageApi["go"]): SubNavItem[] {
-  const here = page.kind === "chat";
-  const chatId = here ? page.id : undefined;
-  return [
-    { key: "new", label: "New chat", icon: <PlusIcon />, active: here && !chatId, onClick: () => go({ kind: "chat" }) },
-    ...chatsFor(ws.id).map((c) => ({ key: c.id, label: c.title, meta: c.when, active: chatId === c.id, onClick: () => go({ kind: "chat", id: c.id }) })),
-  ];
-}
-
 function dataItems(ws: Workspace, page: WorkspacePage, go: WorkspacePageApi["go"]): SubNavItem[] {
   const tables = tablesFor(ws);
   const current = page.kind === "data" ? (page.table ?? tables[0]?.id) : null;
@@ -137,7 +128,6 @@ function dataItems(ws: Workspace, page: WorkspacePage, go: WorkspacePageApi["go"
 // What a nav target shows beneath itself inside a menu panel, if anything.
 function itemsForTarget(ws: Workspace, target: NavTarget, page: WorkspacePage, go: WorkspacePageApi["go"]): SubNavItem[] | undefined {
   if (target.startsWith("app:")) return appItems(ws, target.slice(4) as AppId, page, go);
-  if (target === "chat") return chatItems(ws, page, go);
   if (target === "data") return dataItems(ws, page, go);
   return undefined;
 }
@@ -151,11 +141,6 @@ export function AppNav({ ws, app }: { ws: Workspace; app: AppId }): React.ReactE
 }
 
 // The chats in a workspace, newest first, with a row to start one.
-export function ChatNav({ ws }: { ws: Workspace }): React.ReactElement {
-  const { go, page } = useWorkspacePage();
-  return <SubNav title="Chat" icon={<MessageCircleIcon />} items={chatItems(ws, page, go)} />;
-}
-
 // The tables in a workspace: core first, then each app's own.
 export function DataNav({ ws }: { ws: Workspace }): React.ReactElement {
   const { go, page } = useWorkspacePage();

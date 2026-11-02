@@ -10,7 +10,7 @@ import { type AppId, catalog, type Workspace } from "~/lib/mock";
 // items. Kept in memory for now, with a default built from what the workspace
 // has installed.
 
-export type NavTarget = "home" | "chat" | "data" | "analytics" | "contacts" | "workflows" | "integrations" | "media" | "sitemap" | "design" | "files" | "secrets" | "logging" | `app:${AppId}`;
+export type NavTarget = "home" | "data" | "analytics" | "contacts" | "workflows" | "integrations" | "media" | "sitemap" | "design" | "files" | "secrets" | "logging" | `app:${AppId}`;
 
 export type NavItemConfig = { kind: "item"; target: NavTarget; label?: string; icon?: NavIconName; color?: string };
 export type NavGroupConfig = { kind: "group"; id: string; title?: string; dividerAbove?: boolean; dividerBelow?: boolean; items: NavItemConfig[] };
@@ -23,7 +23,6 @@ export type TargetMeta = { target: NavTarget; label: string; icon: NavIconName; 
 // The sections before the apps and after them, in default order.
 const before: TargetMeta[] = [
   { target: "home", label: "Home", icon: "home", page: { kind: "home" } },
-  { target: "chat", label: "Chat", icon: "chat", page: { kind: "chat" } },
   { target: "analytics", label: "Analytics", icon: "chart", page: { kind: "analytics" } },
   { target: "contacts", label: "Contacts", icon: "users", page: { kind: "contacts" } },
   { target: "data", label: "Data", icon: "table", page: { kind: "data" } },
@@ -72,7 +71,6 @@ export function defaultNavConfig(ws: Workspace): NavConfig {
     version: 1,
     entries: [
       item("home"),
-      item("chat"),
       item("analytics"),
       item("contacts"),
       {

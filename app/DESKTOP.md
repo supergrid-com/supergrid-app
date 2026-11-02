@@ -111,7 +111,7 @@ ACP (Agent Client Protocol, from Zed) is JSON-RPC over stdio: the client spawns 
 
 **One agent slot, any ACP binary.** A setting lists agents: Muse Code first, Claude Code (`claude-code-acp`), anything else that speaks ACP. The app ships none of them; it finds the binary or asks for the path.
 
-**Muse Code risk, unchanged from TENANCY §8:** released 2026-08-05, terminal-only, no official ACP. There is an unofficial adapter (`muse-code-acp`). Spike it on day one before building the pane around it; the fallback is a terminal pane (node-pty + xterm.js) running the Muse Code CLI in the clone, which still demos "edit the app in SuperGrid".
+**Muse Code over ACP works.** Muse 1.4.14 has its own `muse acp`, behind `MUSE_EXPERIMENTAL_ACP=1` and missing from `--help`. It reports login, modes, models, usage and cost, and needs no third-party adapter. Muse also has a native protocol, `muse serve` (MSP), which we do not use: ACP keeps the slot open for other agents. The flag means this mode can still change, so re-check it when Muse updates.
 
 **What a session gets.**
 

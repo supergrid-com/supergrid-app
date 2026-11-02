@@ -2,6 +2,7 @@ import type * as React from "react";
 import { isRouteErrorResponse, Outlet, useRouteError } from "react-router";
 import { ToastProvider } from "~/components/ui/toast";
 import { TooltipProvider } from "~/components/ui/tooltip";
+import { AgentProvider } from "~/lib/agent/provider";
 import { DataProvider } from "~/lib/data";
 import { PlatformProvider } from "~/lib/platform";
 
@@ -10,6 +11,7 @@ export function App(): React.ReactElement {
   return (
     <PlatformProvider>
       <DataProvider>
+        <AgentProvider>
         <TooltipProvider>
           <ToastProvider position="bottom-right">
             <div className="flex min-h-0 flex-1 flex-col">
@@ -17,6 +19,7 @@ export function App(): React.ReactElement {
             </div>
           </ToastProvider>
         </TooltipProvider>
+        </AgentProvider>
       </DataProvider>
     </PlatformProvider>
   );

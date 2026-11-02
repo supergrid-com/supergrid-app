@@ -1,10 +1,11 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { join } from "node:path";
 import { channels, type AppInfo } from "../shared/bridge";
+import { registerAgent } from "./agent";
 import * as cloudflare from "./cloudflare";
 import { listWorkspaces } from "./workspaces";
 
-// The main process owns everything that needs a machine: the Cloudflare login through wrangler,
+// The main process owns everything that needs a machine: the coding agent, the Cloudflare login through wrangler,
 // the @supergrid/cloud operations against the account, and later git clones, the ACP agent and
 // local preview. The renderer asks through the bridge in ../shared/bridge.ts.
 
@@ -44,6 +45,8 @@ ipcMain.handle(channels.wsList, async () => {
   const { cf, prefix } = await cloudflare.client();
   return listWorkspaces(cf, prefix);
 });
+
+registerAgent();
 
 void app.whenReady().then(() => {
   createWindow();

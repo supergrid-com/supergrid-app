@@ -134,7 +134,7 @@ export default function Home(): React.ReactElement {
               <li key={ws.id}>
                 <Link to={`/w/${ws.id}`} className="group flex h-full flex-col gap-4 rounded-2xl border bg-background p-5 shadow-xs/5 transition-colors hover:border-ring/40 hover:bg-accent/40">
                   <div className="flex items-start gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-active font-heading text-base font-bold text-white">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-active font-heading text-base font-bold text-active-foreground">
                       {ws.name.slice(0, 1)}
                     </span>
                     <div className="min-w-0 flex-1">

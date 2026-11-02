@@ -22,6 +22,10 @@ export type WorkspaceSummary = {
   apps: { app: string; name: string; admin: boolean; api: boolean; public?: string; nav?: { label: string; path: string }[] }[];
 };
 
+export type AgentStatus = { name: string; available: boolean; authDetected: boolean; authHint: string };
+/** One JSON-RPC 2.0 message to or from the agent. The renderer owns the protocol; main only relays it. */
+export type JsonRpcMessage = { jsonrpc?: string; id?: number | string | null; method?: string; params?: unknown; result?: unknown; error?: { code: number; message: string; data?: unknown } };
+
 export type Bridge = {
   /** Version and platform of the running app. */
   info(): Promise<AppInfo>;
@@ -38,6 +42,19 @@ export type Bridge = {
     /** The workspaces in the selected account under the selected prefix. */
     list(): Promise<WorkspaceSummary[]>;
   };
+  /** The coding agent: a child process speaking ACP, relayed line by line. */
+  agent: {
+    status(): Promise<AgentStatus>;
+    start(): Promise<void>;
+    stop(): Promise<void>;
+    send(message: JsonRpcMessage): Promise<void>;
+    /** The folder a workspace's sessions run in. */
+    workspaceDir(id: string): Promise<string>;
+    /** Each returns its unsubscribe. */
+    onMessage(cb: (message: JsonRpcMessage) => void): () => void;
+    onLog(cb: (line: string) => void): () => void;
+    onExit(cb: (code: number | null) => void): () => void;
+  };
 };
 
 // Channel names, so a typo fails in one place.
@@ -48,4 +65,12 @@ export const channels = {
   cfLogin: "sg:cloudflare:login",
   cfSelect: "sg:cloudflare:select",
   wsList: "sg:workspaces:list",
+  agentStatus: "sg:agent:status",
+  agentStart: "sg:agent:start",
+  agentStop: "sg:agent:stop",
+  agentSend: "sg:agent:send",
+  agentDir: "sg:agent:workspace-dir",
+  agentMessage: "sg:agent:message",
+  agentLog: "sg:agent:log",
+  agentExit: "sg:agent:exit",
 } as const;

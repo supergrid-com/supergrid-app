@@ -1,5 +1,6 @@
 import {
   BellIcon,
+  MessageCircleIcon,
   BuildingIcon,
   CheckIcon,
   FolderIcon,
@@ -18,9 +19,9 @@ import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Kbd } from "~/components/ui/kbd";
 import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuLinkItem, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuSeparator, MenuTrigger } from "~/components/ui/menu";
 import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
-import { type WorkspacePage, useWorkspacePage } from "~/lib/workspace-page";
+import { type WorkspacePage, useSideChat, useWorkspacePage } from "~/lib/workspace-page";
 import { useWorkspaces } from "~/lib/data";
-import { chatsFor, me, type Workspace } from "~/lib/mock";
+import { me, type Workspace } from "~/lib/mock";
 import { isPageFor, targetMeta, useNavConfig, type NavGroupConfig, type NavItemConfig, type NavMenuConfig } from "~/lib/nav-config";
 import { adminThemes, usePlatform } from "~/lib/platform";
 import { cn } from "~/lib/utils";
@@ -67,7 +68,7 @@ function RailTooltip({ label, hint, children }: { label: React.ReactNode; hint?:
   );
 }
 
-function Row({ icon, label, page, active, trailing, color }: { icon: React.ReactNode; label: string; page: WorkspacePage; active: boolean; trailing?: React.ReactNode; color?: string }): React.ReactElement {
+function Row({ icon, label, page, onClick, active, trailing, color }: { icon: React.ReactNode; label: string; page: WorkspacePage; onClick?: () => void; active: boolean; trailing?: React.ReactNode; color?: string }): React.ReactElement {
   const { go } = useWorkspacePage();
   const { onClose, collapsed } = React.useContext(SidebarContext);
   return (
@@ -79,7 +80,8 @@ function Row({ icon, label, page, active, trailing, color }: { icon: React.React
           aria-label={label}
           aria-current={active ? "page" : undefined}
           onClick={() => {
-            go(page);
+            if (onClick) onClick();
+            else go(page);
             onClose();
           }}
         >
@@ -95,11 +97,12 @@ function Row({ icon, label, page, active, trailing, color }: { icon: React.React
 }
 
 // A nav item from the config: its section's defaults, with the owner's overrides on top.
-function ConfigRow({ ws, item, page, chats }: { ws: Workspace; item: NavItemConfig; page: WorkspacePage; chats: number }): React.ReactElement | null {
+function ConfigRow({ ws, item, page }: { ws: Workspace; item: NavItemConfig; page: WorkspacePage }): React.ReactElement | null {
   const meta = targetMeta(ws, item.target);
   if (!meta) return null;
-  const trailing = item.target === "chat" && page.kind !== "chat" && chats > 0 ? chats : undefined;
-  return <Row icon={<NavIcon name={item.icon ?? meta.icon} />} label={item.label ?? meta.label} page={meta.page} active={isPageFor(item.target, page)} trailing={trailing} color={item.color} />;
+  const icon = <NavIcon name={item.icon ?? meta.icon} />;
+  const label = item.label ?? meta.label;
+  return <Row icon={icon} label={label} page={meta.page} active={isPageFor(item.target, page)} color={item.color} />;
 }
 
 // A menu: one row that opens its own panel; it reads as active while any of its items is on
@@ -112,7 +115,7 @@ function ConfigMenu({ ws, menu, page }: { ws: Workspace; menu: NavMenuConfig; pa
 
 // A group: optional hairline above and below, an optional title that folds away when the
 // rail is collapsed, and its items.
-function ConfigGroup({ ws, group, page, chats }: { ws: Workspace; group: NavGroupConfig; page: WorkspacePage; chats: number }): React.ReactElement {
+function ConfigGroup({ ws, group, page }: { ws: Workspace; group: NavGroupConfig; page: WorkspacePage }): React.ReactElement {
   const { collapsed } = React.useContext(SidebarContext);
   const line = <li aria-hidden className="mx-2 my-2 h-px bg-admin-line" />;
   return (
@@ -124,7 +127,7 @@ function ConfigGroup({ ws, group, page, chats }: { ws: Workspace; group: NavGrou
         </li>
       )}
       {group.items.map((it) => (
-        <ConfigRow key={it.target} ws={ws} item={it} page={page} chats={chats} />
+        <ConfigRow key={it.target} ws={ws} item={it} page={page} />
       ))}
       {group.dividerBelow && line}
     </>
@@ -132,7 +135,7 @@ function ConfigGroup({ ws, group, page, chats }: { ws: Workspace; group: NavGrou
 }
 
 // The workspace's badge: its first letter on the active color.
-const markClass = "flex size-8 shrink-0 items-center justify-center rounded-lg bg-active text-sm font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]";
+const markClass = "flex size-8 shrink-0 items-center justify-center rounded-lg bg-active text-sm font-bold text-active-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]";
 
 function WorkspaceMark({ ws, className }: { ws: Workspace; className?: string }): React.ReactElement {
   return (
@@ -172,7 +175,7 @@ function WorkspaceMenu({ ws }: { ws: Workspace }): React.ReactElement {
           <MenuGroupLabel>Workspaces</MenuGroupLabel>
           {workspaces.map((w) => (
             <MenuLinkItem key={w.id} render={<Link to={`/w/${w.id}`} />}>
-              <span className="flex size-5 items-center justify-center rounded-md bg-active text-[10px] font-bold text-white">
+              <span className="flex size-5 items-center justify-center rounded-md bg-active text-[10px] font-bold text-active-foreground">
                 {w.name.slice(0, 1).toUpperCase()}
               </span>
               <span className="flex-1 truncate">{w.name}</span>
@@ -243,7 +246,7 @@ export function WorkspaceSidebar({
 }): React.ReactElement {
   const { page } = useWorkspacePage();
   const { config: nav } = useNavConfig(ws);
-  const chats = chatsFor(ws.id);
+  const sideChat = useSideChat();
 
   return (
     <SidebarContext.Provider value={{ onClose, collapsed }}>
@@ -282,15 +285,15 @@ export function WorkspaceSidebar({
           </RailTooltip>
         </div>
 
-        <nav className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-4 pt-1 [scrollbar-width:thin]">
+        <nav className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-4 pt-1 [scrollbar-color:var(--admin-active)_transparent] [scrollbar-width:thin]">
           <ul className="flex flex-col gap-0.5">
             {nav.entries.map((e) =>
               e.kind === "group" ? (
-                <ConfigGroup key={e.id} ws={ws} group={e} page={page} chats={chats.length} />
+                <ConfigGroup key={e.id} ws={ws} group={e} page={page} />
               ) : e.kind === "menu" ? (
                 <ConfigMenu key={e.id} ws={ws} menu={e} page={page} />
               ) : (
-                <ConfigRow key={e.target} ws={ws} item={e} page={page} chats={chats.length} />
+                <ConfigRow key={e.target} ws={ws} item={e} page={page} />
               ),
             )}
           </ul>
@@ -298,6 +301,8 @@ export function WorkspaceSidebar({
 
         <div className="shrink-0 px-3 pb-4 pt-2">
           <ul className="flex flex-col gap-0.5">
+            {/* the chat is a panel, not a page: this row opens and closes it, and its icon says when it is open */}
+            <Row icon={<MessageCircleIcon />} label="Chat" page={page} active={false} color={sideChat.side ? "var(--active)" : undefined} onClick={() => (sideChat.side ? sideChat.close() : sideChat.open())} />
             <Row icon={<SettingsIcon />} label="Settings" page={{ kind: "settings", section: "general" }} active={page.kind === "settings"} />
             <li>
               <RailTooltip label="Notifications">

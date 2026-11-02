@@ -2,7 +2,11 @@
 @import "cal-sans";
 @import "@fontsource-variable/geist-mono";
 
-@custom-variant dark (&:is(.dark *));
+@source "../../../node_modules/streamdown/dist/*.js";
+@source "../../../node_modules/@streamdown/code/dist/*.js";
+
+/* .light lets a surface inside a dark page declare itself light again: the chat follows the admin theme. */
+@custom-variant dark (&:is(.dark *):not(.light *));
 
 @theme inline {
   --animate-skeleton: skeleton 2s -1s infinite linear;
@@ -25,6 +29,7 @@
   /* the admin layer: the dark surface behind a workspace's cards (rail, sub nav, backdrop) */
   --color-admin: var(--admin-bg);
   --color-admin-panel: var(--admin-panel);
+  --color-admin-raised: var(--admin-raised);
   --color-admin-fg: var(--admin-fg);
   --color-admin-muted: var(--admin-muted);
   --color-admin-dim: var(--admin-dim);
@@ -62,6 +67,7 @@
   --color-app-bg: var(--app-bg);
   /* the app's active color: active nav items, workspace badges, drag handles */
   --color-active: var(--active);
+  --color-active-foreground: var(--active-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-warning-foreground: var(--warning-foreground);
@@ -156,7 +162,9 @@
 }
 
 :root {
+  /* the active color; each admin theme below can set its own */
   --active: #e8604a;
+  --active-foreground: #ffffff;
   --destructive-foreground: var(--color-red-700);
   --info: var(--color-blue-500);
   --info-foreground: var(--color-blue-700);
@@ -256,6 +264,8 @@ html[data-admin-theme="graphite"] {
   --admin-bg: #171717;
   /* the second panel beside the rail: a step darker than the layer it sits on */
   --admin-panel: color-mix(in srgb, var(--admin-bg) 90%, black);
+  /* a surface lifted off the panel, such as the chat composer */
+  --admin-raised: color-mix(in srgb, var(--admin-bg) 86%, white);
   --admin-fg: #d4d4d4;
   --admin-muted: #a3a3a3;
   --admin-dim: #737373;
@@ -273,6 +283,7 @@ html[data-admin-theme="graphite"] {
 html[data-admin-theme="auto"] {
   --admin-bg: var(--app-bg);
   --admin-panel: #efefec;
+  --admin-raised: #ffffff;
   --admin-fg: #3f3f46;
   --admin-muted: #71717a;
   --admin-dim: #a1a1aa;
@@ -286,6 +297,7 @@ html[data-admin-theme="auto"] {
 .dark[data-admin-theme="auto"] {
   --admin-bg: #1c1c1c;
   --admin-panel: #141414;
+  --admin-raised: #2b2b2b;
   --admin-fg: #d4d4d4;
   --admin-muted: #a3a3a3;
   --admin-dim: #737373;
@@ -297,6 +309,9 @@ html[data-admin-theme="auto"] {
 }
 html[data-admin-theme="mist"] {
   --admin-bg: #e9e9ec;
+  --admin-panel: #e1e1e5;
+  --admin-raised: #f7f7f9;
+  --active: #6366f1;
   --admin-fg: #3f3f46;
   --admin-muted: #71717a;
   --admin-dim: #a1a1aa;
@@ -309,6 +324,9 @@ html[data-admin-theme="mist"] {
 }
 html[data-admin-theme="blush"] {
   --admin-bg: #f4e1e8;
+  --admin-panel: #eed7e0;
+  --admin-raised: #fcf3f6;
+  --active: #db2777;
   --admin-fg: #5c3447;
   --admin-muted: #8d5f73;
   --admin-dim: #b58c9c;
@@ -321,6 +339,8 @@ html[data-admin-theme="blush"] {
 }
 html[data-admin-theme="forest"] {
   --admin-bg: #0f2a1f;
+  --active: #34d399;
+  --active-foreground: #06291c;
   --admin-fg: #b9d4c6;
   --admin-muted: #88ab98;
   --admin-dim: #5f8371;
@@ -332,6 +352,20 @@ html[data-admin-theme="forest"] {
   --admin-accent: var(--active);
 }
 
+/* Text a light passes through, for work in progress (ai-elements/shimmer). */
+.shimmer {
+  background: linear-gradient(90deg, var(--muted-foreground) 35%, var(--foreground) 50%, var(--muted-foreground) 65%) 100% 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  to {
+    background-position: 0 0;
+  }
+}
+
 /* Page controls placed directly on the admin layer, which keeps its own colors in any theme. */
 .on-admin {
   --foreground: var(--admin-strong);
@@ -339,6 +373,25 @@ html[data-admin-theme="forest"] {
   --accent: var(--admin-hover);
   --background: var(--admin-bg);
   --border: var(--admin-line);
+  --popover: var(--admin-bg);
+  --popover-foreground: var(--admin-strong);
+  --muted: var(--admin-hover);
+  --input: var(--admin-line);
+  --primary: var(--admin-strong);
+  --primary-foreground: var(--admin-bg);
+  --secondary: var(--admin-hover);
+  --secondary-foreground: var(--admin-strong);
+  --accent-foreground: var(--admin-strong);
+  --card: var(--admin-bg);
+  --card-foreground: var(--admin-strong);
+  --sidebar: var(--admin-hover);
+  --ring: var(--admin-ring);
+}
+
+.on-admin,
+.on-admin * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-active) transparent;
 }
 
 @layer base {

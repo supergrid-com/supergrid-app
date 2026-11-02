@@ -29,14 +29,13 @@ import { Link } from "react-router";
 import { AppIcon } from "~/components/app-icon";
 import { Card, Crumbs, WorkspaceFrame, IndexHeader } from "~/components/workspace/frame";
 import { appStats } from "~/components/workspace/app-stats";
-import { ChatPanel } from "~/components/workspace/chat-panel";
 import { DataGrid } from "~/components/workspace/data-grid";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { toastManager } from "~/components/ui/toast";
-import { useWorkspacePage } from "~/lib/workspace-page";
-import { activity, appName, catalog, chats, chatsFor, connections, files, secrets, tables, tablesFor, teamName, workflows, type AppId, type Workspace } from "~/lib/mock";
+import { useSideChat, useWorkspacePage } from "~/lib/workspace-page";
+import { activity, appName, catalog, chatsFor, connections, files, secrets, tables, tablesFor, teamName, workflows, type AppId, type Workspace } from "~/lib/mock";
 import { cn } from "~/lib/utils";
 
 type PageProps = { ws: Workspace; onOpenNav: () => void };
@@ -64,6 +63,7 @@ function StatTile({ label, value, hint }: { label: string; value: React.ReactNod
 
 export function HomePage({ ws, onOpenNav }: PageProps): React.ReactElement {
   const { go } = useWorkspacePage();
+  const sideChat = useSideChat();
   const wsChats = chatsFor(ws.id);
   const updates = ws.installs.filter((i) => i.status === "update").length;
   const team = teamName(ws.teamId);
@@ -151,14 +151,14 @@ export function HomePage({ ws, onOpenNav }: PageProps): React.ReactElement {
           </ul>
         </Card>
 
-        <Card title="Recent chats" actions={<Button size="xs" variant="ghost" onClick={() => go({ kind: "chat" })}>New chat</Button>} padded={false}>
+        <Card title="Recent chats" actions={<Button size="xs" variant="ghost" onClick={() => sideChat.open()}>New chat</Button>} padded={false}>
           {wsChats.length === 0 ? (
             <div className="px-4 pb-6 pt-2 text-center text-[13px] text-muted-foreground">No chats yet. Ask the agent anything below.</div>
           ) : (
             <ul className="divide-y">
               {wsChats.map((c) => (
                 <li key={c.id}>
-                  <button type="button" onClick={() => go({ kind: "chat", id: c.id })} className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-[13px] hover:bg-accent/40">
+                  <button type="button" onClick={() => sideChat.open()} className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-[13px] hover:bg-accent/40">
                     <MessageCircleIcon className="size-4 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{c.title}</div>
@@ -193,35 +193,6 @@ export function HomePage({ ws, onOpenNav }: PageProps): React.ReactElement {
   );
 }
 
-// ---- Chat ----
-
-export function ChatPage({ ws, chatId, onOpenNav }: PageProps & { chatId?: string }): React.ReactElement {
-  const chat = chatId ? chats.find((c) => c.id === chatId) : undefined;
-  const { go } = useWorkspacePage();
-  return (
-    <WorkspaceFrame
-      icon={<MessageCircleIcon />}
-      title={chat ? chat.title : "New chat"}
-      onOpenNav={onOpenNav}
-      flush
-      actions={
-        <Tooltip>
-          <TooltipTrigger
-            render={<Button variant="ghost" size="icon-xs" aria-label="Open as side panel" className="text-muted-foreground hover:text-foreground" />}
-            onClick={() => go({ kind: "home" }, { side: chatId ? `chat:${chatId}` : "chat" })}
-          >
-            <PanelRightIcon />
-          </TooltipTrigger>
-          <TooltipPopup>Open as side panel</TooltipPopup>
-        </Tooltip>
-      }
-    >
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col px-4 pb-4 pt-2 sm:px-6">
-        <ChatPanel ws={ws} chatId={chatId} />
-      </div>
-    </WorkspaceFrame>
-  );
-}
 
 // ---- Data ----
 

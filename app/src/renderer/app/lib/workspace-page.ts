@@ -4,12 +4,11 @@ import type { AppId } from "~/lib/mock";
 
 // A workspace shows one page at a time, picked from the sidebar, like a
 // traditional admin. The page lives in the URL:
-//   /w/acme?page=app:pages:nav/header   /w/acme?page=data:contacts   /w/acme?page=chat:c_funnel
+//   /w/acme?page=app:pages:nav/header   /w/acme?page=data:contacts
 // No page means home.
 
 export type WorkspacePage =
   | { kind: "home" }
-  | { kind: "chat"; id?: string }
   | { kind: "data"; table?: string }
   | { kind: "app"; app: AppId; path?: string }
   | { kind: "workflows" }
@@ -36,8 +35,6 @@ export function pageKey(p: WorkspacePage): string {
   switch (p.kind) {
     case "home":
       return "";
-    case "chat":
-      return p.id ? `chat:${p.id}` : "chat";
     case "data":
       return p.table ? `data:${p.table}` : "data";
     case "app":
@@ -53,7 +50,6 @@ export function parsePage(s: string | null): WorkspacePage {
   if (!s) return { kind: "home" };
   const [kind, a, ...rest] = s.split(":");
   const b = rest.join(":");
-  if (kind === "chat") return { kind, id: a || undefined };
   if (kind === "data") return { kind, table: a || undefined };
   if (kind === "app" && a) return { kind, app: a as AppId, path: b || undefined };
   if (kind === "settings") return { kind, section: (settingsSections as readonly string[]).includes(a) ? (a as SettingsSection) : undefined };
