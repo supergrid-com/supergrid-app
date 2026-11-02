@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "platform",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "core",
+        "dev"
+      ],
+      "port": 5300
+    },
+    {
+      "name": "workspace-hello",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "dev",
+        "dev"
+      ],
+      "port": 5301
+    }
+  ]
+}

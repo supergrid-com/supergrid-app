@@ -1,0 +1,6 @@
+{
+  "name": "@supergrid/admin-sdk",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": { "./app": "./src/app.ts", "./host": "./src/host.ts", "./protocol": "./src/protocol.ts" }
+}

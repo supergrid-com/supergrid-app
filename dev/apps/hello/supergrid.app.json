@@ -1,0 +1,29 @@
+{
+  "id": "hello",
+  "name": "Hello",
+  "version": "0.1.0",
+  "public": {
+    "mount": "/hello"
+  },
+  "admin": {
+    "nav": [
+      {
+        "label": "Overview",
+        "path": "/"
+      },
+      {
+        "label": "Notes",
+        "path": "/notes"
+      }
+    ]
+  },
+  "api": true,
+  "tables": [
+    "notes"
+  ],
+  "permissions": [
+    "contacts:write",
+    "events:emit"
+  ],
+  "description": "A small sample app with a public page, an admin screen and an API."
+}

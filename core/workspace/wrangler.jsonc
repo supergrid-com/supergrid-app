@@ -1,0 +1,18 @@
+{
+  // Local dev only. Real workspaces are one signed bundle deployed many times, with bindings set by the platform.
+  "name": "ws-local",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [{ "binding": "DB", "database_name": "ws-local", "database_id": "11111111-1111-1111-1111-111111111111" }],
+  "vars": {
+    "WORKSPACE_ID": "local",
+    "WORKSPACE_NAME": "Local workspace",
+    "WORKSPACE_URL": "http://localhost:5301",
+    "SG_VERSION": "dev",
+    "SG_WORKSPACE_TOKEN": "dev-token",
+    // Apps add themselves here in dev (see @supergrid/app-kit/vite); real workspaces get this from the platform.
+    "ROUTES": []
+  },
+  "observability": { "enabled": true }
+}

@@ -1,0 +1,7 @@
+BETTER_AUTH_SECRET=dev-better-auth-secret-change-me-please
+SG_SETUP_TOKEN=dev
+SG_MODE=creator
+# Copy these from dev/README.md to try the update flow locally.
+SG_RELEASE_FEED=http://localhost:5310
+SG_RELEASE_PUBKEY=
+SG_ACCOUNT_ID=

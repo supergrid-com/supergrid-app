@@ -1,0 +1,5 @@
+{
+  "extends": "../../../core/tsconfig.base.json",
+  "include": ["app", "workers", "supergrid.app.json", "../../../core/packages/*/src", ".react-router/types/**/*"],
+  "compilerOptions": { "rootDirs": [".", "./.react-router/types"] }
+}

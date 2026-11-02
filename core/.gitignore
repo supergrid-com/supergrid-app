@@ -1,0 +1,9 @@
+node_modules
+build
+dist
+.react-router
+.wrangler
+.state
+.dev.vars
+*.log
+.DS_Store

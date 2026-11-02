@@ -1,0 +1,10 @@
+node_modules
+build
+dist
+.react-router
+.wrangler
+.state
+.DS_Store
+keys
+releases
+.state-*.json

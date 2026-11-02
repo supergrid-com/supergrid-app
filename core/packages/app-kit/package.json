@@ -1,0 +1,20 @@
+{
+  "name": "@supergrid/app-kit",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./manifest": "./src/manifest.ts",
+    "./routes": "./src/routes.ts",
+    "./worker": "./src/worker.ts",
+    "./context": "./src/context.ts",
+    "./rpc": "./src/rpc.ts",
+    "./vite": "./src/vite.ts",
+    "./config": "./src/config.ts",
+    "./user": "./src/user.ts",
+    "./names": "./src/names.ts"
+  },
+  "peerDependencies": {
+    "react-router": "*",
+    "@react-router/dev": "*"
+  }
+}

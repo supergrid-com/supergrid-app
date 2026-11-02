@@ -1,0 +1,19 @@
+{
+  "name": "workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 5301 --inspector-port 9231 --persist-to ../.state",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supergrid/theme": "workspace:*",
+    "@supergrid/app-kit": "workspace:*"
+  },
+  "devDependencies": {
+    "wrangler": "^4.156.0",
+    "typescript": "^5",
+    "@cloudflare/workers-types": "^5.20261030.1"
+  }
+}

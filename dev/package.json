@@ -1,0 +1,18 @@
+{
+  "name": "supergrid-dev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter app-hello dev",
+    "dev:forms": "pnpm --filter app-forms dev",
+    "feed": "node serve-feed.mjs",
+    "smoke": "tsx smoke.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261030.1",
+    "typescript": "^5",
+    "@supergrid/cloud": "link:../core/packages/cloud",
+    "@supergrid/app-kit": "link:../core/packages/app-kit",
+    "tsx": "^4.23.15"
+  }
+}

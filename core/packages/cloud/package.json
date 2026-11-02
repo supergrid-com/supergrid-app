@@ -1,0 +1,10 @@
+{
+  "name": "@supergrid/cloud",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@supergrid/app-kit": "workspace:*",
+    "isomorphic-git": "^1.37.0"
+  }
+}

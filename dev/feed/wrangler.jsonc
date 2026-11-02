@@ -1,0 +1,6 @@
+{
+  // Publishes dev/releases as a public release feed on the test account: cd dev/feed && pnpm exec wrangler deploy
+  "name": "sgdev-feed",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "../releases" }
+}

@@ -1,0 +1,16 @@
+{
+  // Local dev only. A real platform is a signed bundle deployed by `sg install`, with bindings set there. Secrets come from .dev.vars.
+  "name": "sg-platform",
+  "main": "./workers/app.ts",
+  "compatibility_date": "2026-10-01",
+  // global_fetch_strictly_public lets the platform reach workspaces over their public URL (without it, error 1042).
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "d1_databases": [{ "binding": "PLATFORM_DB", "database_name": "sg-platform", "database_id": "22222222-2222-2222-2222-222222222222" }],
+  "vars": {
+    "SG_VERSION": "dev",
+    "SG_PREFIX": "sgdev",
+    // The workspace from `pnpm dev` in dev/, registered on first run. Real ones are created from the UI.
+    "SEED_WORKSPACE": { "id": "local", "name": "Local workspace", "url": "http://localhost:5301", "token": "dev-token" }
+  },
+  "observability": { "enabled": true }
+}
