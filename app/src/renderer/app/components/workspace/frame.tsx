@@ -1,6 +1,11 @@
-import { PanelLeftIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon, PanelLeftIcon } from "lucide-react";
 import * as React from "react";
 import { createPortal } from "react-dom";
+import { Button } from "~/components/ui/button";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "~/components/ui/pagination";
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 
 /** Where a page's title and actions land in the title bar. Absent, the frame shows them itself. */
@@ -116,6 +121,191 @@ export function IndexHeader({ tabs, active, onChange, right }: { tabs: string[];
       })}
       <div className="flex-1" />
       {right}
+    </div>
+  );
+}
+
+// An icon-only button for a title bar or a card header, with its label as the tooltip.
+export function IconButton({ label, children, onClick, className, disabled }: { label: string; children: React.ReactNode; onClick?: () => void; className?: string; disabled?: boolean }): React.ReactElement {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<Button variant="ghost" size="icon-xs" aria-label={label} disabled={disabled} onClick={onClick} className={cn("text-muted-foreground hover:text-foreground", className)} />}>{children}</TooltipTrigger>
+      <TooltipPopup>{label}</TooltipPopup>
+    </Tooltip>
+  );
+}
+
+// One number with its label, for a row of them across the top of a page.
+export function StatTile({ label, value, hint }: { label: string; value: React.ReactNode; hint?: React.ReactNode }): React.ReactElement {
+  return (
+    <div className="flex flex-col gap-0.5 px-4 py-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="font-heading text-xl font-bold leading-tight">{value}</div>
+      {hint && <div className="text-[11px] text-muted-foreground">{hint}</div>}
+    </div>
+  );
+}
+
+// ---- DataTable: the index table every list page shares ----
+
+export type DataColumn<T> = {
+  key: string;
+  label: React.ReactNode;
+  sortable?: boolean;
+  align?: "start" | "end";
+  /** A CSS width; columns without one share what is left. */
+  width?: string;
+  /** Extra classes on both the header and the cells, for `max-sm:hidden` and the like. */
+  className?: string;
+  render: (row: T) => React.ReactNode;
+};
+
+export type SortState = { key: string; dir: "asc" | "desc" };
+
+// A compact table on the ui/table parts: sticky header, a checkbox column when rows can be
+// selected, sortable headers, and a click per row. Rows are as dense as the data grid's.
+export function DataTable<T>({
+  columns,
+  rows,
+  rowKey,
+  sort,
+  onSort,
+  selected,
+  onSelect,
+  onRowClick,
+  empty,
+  expanded,
+  renderExpanded,
+  className,
+}: {
+  columns: DataColumn<T>[];
+  rows: T[];
+  rowKey: (row: T) => string;
+  sort?: SortState;
+  onSort?: (key: string) => void;
+  selected?: Set<string>;
+  onSelect?: (next: Set<string>) => void;
+  onRowClick?: (row: T) => void;
+  empty?: React.ReactNode;
+  /** The key of the row whose detail shows underneath it, drawn by `renderExpanded`. */
+  expanded?: string | null;
+  renderExpanded?: (row: T) => React.ReactNode;
+  className?: string;
+}): React.ReactElement {
+  const keys = rows.map(rowKey);
+  const allOn = !!selected && keys.length > 0 && keys.every((k) => selected.has(k));
+  const someOn = !!selected && !allOn && keys.some((k) => selected.has(k));
+  const toggleAll = () => {
+    if (!onSelect || !selected) return;
+    const next = new Set(selected);
+    if (allOn) for (const k of keys) next.delete(k);
+    else for (const k of keys) next.add(k);
+    onSelect(next);
+  };
+  const toggle = (k: string) => {
+    if (!onSelect || !selected) return;
+    const next = new Set(selected);
+    if (next.has(k)) next.delete(k);
+    else next.add(k);
+    onSelect(next);
+  };
+  const headClass = "h-8 bg-background px-2 text-xs font-medium text-muted-foreground shadow-[inset_0_-1px_0_var(--border)]";
+  return (
+    <div className={cn("min-h-0 flex-1 overflow-auto", className)}>
+      <table className="w-full border-collapse text-[13px]">
+        <TableHeader className="sticky top-0 z-10">
+          <TableRow className="border-0 hover:bg-transparent">
+            {onSelect && (
+              <TableHead className={cn(headClass, "w-8 ps-3 pe-0")}>
+                <Checkbox aria-label="Select all" checked={allOn} indeterminate={someOn} onCheckedChange={toggleAll} className="size-3.5 sm:size-3.5" />
+              </TableHead>
+            )}
+            {columns.map((c, i) => {
+              const active = sort?.key === c.key;
+              const label = (
+                <span className={cn("inline-flex items-center gap-1", c.align === "end" && "flex-row-reverse")}>
+                  {c.label}
+                  {c.sortable && (active ? sort!.dir === "asc" ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" /> : <ChevronsUpDownIcon className="size-3 opacity-0 group-hover:opacity-60" />)}
+                </span>
+              );
+              return (
+                <TableHead key={c.key} style={c.width ? { width: c.width } : undefined} className={cn(headClass, "group", c.align === "end" && "text-right", i === 0 && !onSelect && "ps-4", i === columns.length - 1 && "pe-4", c.className)}>
+                  {c.sortable && onSort ? (
+                    <button type="button" onClick={() => onSort(c.key)} className={cn("cursor-pointer hover:text-foreground", active && "text-foreground")}>
+                      {label}
+                    </button>
+                  ) : (
+                    label
+                  )}
+                </TableHead>
+              );
+            })}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.length === 0 && empty !== undefined ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={columns.length + (onSelect ? 1 : 0)} className="p-0 whitespace-normal">
+                {empty}
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map((row) => {
+              const k = rowKey(row);
+              const on = !!selected?.has(k);
+              const open = expanded != null && expanded === k && !!renderExpanded;
+              return (
+                <React.Fragment key={k}>
+                <TableRow data-state={on ? "selected" : undefined} data-expanded={open ? "" : undefined} onClick={onRowClick ? () => onRowClick(row) : undefined} tabIndex={onRowClick ? 0 : undefined} onKeyDown={onRowClick ? (e) => { if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) { e.preventDefault(); onRowClick(row); } } : undefined} className={cn("h-10", onRowClick && "cursor-pointer", open && "border-b-0")}>
+                  {onSelect && (
+                    <TableCell className="w-8 ps-3 pe-0 py-0" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox aria-label="Select row" checked={on} onCheckedChange={() => toggle(k)} className="size-3.5 sm:size-3.5" />
+                    </TableCell>
+                  )}
+                  {columns.map((c, i) => (
+                    <TableCell key={c.key} className={cn("px-2 py-1.5", c.align === "end" && "text-right", i === 0 && !onSelect && "ps-4", i === columns.length - 1 && "pe-4", c.className)}>
+                      {c.render(row)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                {open && (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={columns.length + (onSelect ? 1 : 0)} className="whitespace-normal bg-muted/30 px-4 py-3">
+                      {renderExpanded!(row)}
+                    </TableCell>
+                  </TableRow>
+                )}
+                </React.Fragment>
+              );
+            })
+          )}
+        </TableBody>
+      </table>
+    </div>
+  );
+}
+
+// The strip under a table: which rows are on screen and the page buttons, plus whatever
+// the page wants on the left.
+export function TableFooter({ total, offset, limit, onPage, children }: { total: number; offset: number; limit: number; onPage: (offset: number) => void; children?: React.ReactNode }): React.ReactElement {
+  const from = total === 0 ? 0 : offset + 1;
+  const to = Math.min(total, offset + limit);
+  return (
+    <div className="flex h-9 shrink-0 items-center gap-3 border-t px-3 text-[11px] text-muted-foreground">
+      {children}
+      <span className="flex-1 tabular-nums">
+        {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}
+      </span>
+      <Pagination className="mx-0 w-auto">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious render={<Button size="xs" variant="ghost" disabled={offset <= 0} onClick={() => onPage(Math.max(0, offset - limit))} />} />
+          </PaginationItem>
+          <PaginationItem>
+            <PaginationNext render={<Button size="xs" variant="ghost" disabled={to >= total} onClick={() => onPage(offset + limit)} />} />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 }

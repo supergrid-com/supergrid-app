@@ -1,6 +1,7 @@
 {
   "name": "@supergrid/theme",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "The SuperGrid theme: a small document a workspace stores, compiled at runtime to the CSS variables the base-ui kit reads.",
   "type": "module",
-  "exports": { ".": "./index.ts", "./tokens.json": "./tokens.json" }
+  "exports": { ".": "./index.ts", "./schema.json": "./schema.json", "./SKILL.md": "./SKILL.md" }
 }

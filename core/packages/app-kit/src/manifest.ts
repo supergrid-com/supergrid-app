@@ -7,6 +7,7 @@ export type AppManifest = {
   public?: { mount: string };
   admin?: { nav: { label: string; path: string }[] };
   api?: boolean;
+  /** Event names the app handles; the workspace POSTs each to /_app/<id>/hook (see `hooks` in createAppWorker). */
   subscribes?: string[];
   tables?: string[];
   permissions?: string[];

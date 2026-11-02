@@ -33,6 +33,10 @@ export function resourceNames(prefix = "sg") {
     workspace: (id: string) => `${prefix}-ws-${id}`,
     /** App Worker and Artifacts repo. */
     app: (id: string, app: string) => `${prefix}-app-${id}-${app}`,
+    /** A workspace's event queue, its dead-letter queue and its hook Workflow. */
+    queue: (id: string) => `${prefix}-ws-${id}-events`,
+    deadLetters: (id: string) => `${prefix}-ws-${id}-events-dlq`,
+    workflow: (id: string) => `${prefix}-ws-${id}-hooks`,
     /** Artifacts namespace. */
     namespace: prefix,
   };

@@ -1,10 +1,11 @@
-import type { WorkspaceInfo, WorkspaceRpc } from "@supergrid/app-kit/rpc";
+import { RPC_METHOD_NAMES, type WorkspaceRpc } from "@supergrid/app-kit/rpc";
 import type { Env, Workspace } from "./types";
 
 /**
  * How the platform reaches a workspace: HTTP to its public URL with its token (`/_ws/rpc`). One path everywhere, with no binding per
  * workspace, so creating a workspace never redeploys the platform. A Worker can only fetch another Worker's workers.dev URL in the
  * same account with the `global_fetch_strictly_public` flag, which is why the platform sets it.
+ * Every method on the contract is mirrored from RPC_METHOD_NAMES, so a new method needs no change here.
  */
 export type WorkspaceClient = WorkspaceRpc;
 
@@ -20,14 +21,5 @@ export function workspaceClient(w: Pick<Workspace, "id" | "url" | "token">, _env
     if (!res.ok) throw new Error(json.error ?? `workspace rpc ${method} failed: ${res.status}`);
     return json.result as T;
   };
-  return {
-    info: () => call<WorkspaceInfo>("info"),
-    getTheme: () => call("getTheme"),
-    getSetting: (k) => call("getSetting", k),
-    setSetting: (k, v) => call("setSetting", k, v),
-    listContacts: (n) => call("listContacts", n),
-    upsertContact: (a, i) => call("upsertContact", a, i),
-    emitEvent: (a, t, p) => call("emitEvent", a, t, p),
-    applyMigrations: (a, m) => call("applyMigrations", a, m),
-  };
+  return Object.fromEntries(RPC_METHOD_NAMES.map((m) => [m, (...args: unknown[]) => call(m, ...args)])) as unknown as WorkspaceClient;
 }

@@ -1,0 +1,463 @@
+@import "tailwindcss";
+@import "cal-sans";
+@import "@fontsource-variable/geist-mono";
+
+@source "../../../node_modules/streamdown/dist/*.js";
+@source "../../../node_modules/@streamdown/code/dist/*.js";
+
+/* .light lets a surface inside a dark page declare itself light again: the chat follows the admin theme. */
+@custom-variant dark (&:is(.dark *):not(.light *));
+
+@theme inline {
+  --animate-skeleton: skeleton 2s -1s infinite linear;
+  --animate-toast-success-odd: toast-success-odd 0.32s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-toast-success-even: toast-success-even 0.32s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-toast-error-odd: toast-error-odd 0.28s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-toast-error-even: toast-error-even 0.28s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-caret-blink: 1s ease-out infinite caret-blink;
+  --font-heading: var(--font-sans);
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+  --font-sans: 'Cal Sans', ui-sans-serif, system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar: var(--sidebar);
+  /* the admin layer: the dark surface behind a workspace's cards (rail, sub nav, backdrop) */
+  --color-admin: var(--admin-bg);
+  --color-admin-panel: var(--admin-panel);
+  --color-admin-raised: var(--admin-raised);
+  --color-admin-fg: var(--admin-fg);
+  --color-admin-muted: var(--admin-muted);
+  --color-admin-dim: var(--admin-dim);
+  --color-admin-strong: var(--admin-strong);
+  --color-admin-hover: var(--admin-hover);
+  --color-admin-active: var(--admin-active);
+  --color-admin-line: var(--admin-line);
+  --color-admin-ring: var(--admin-ring);
+  --color-admin-accent: var(--admin-accent);
+  --color-code-highlight: var(--code-highlight);
+  --code-foreground: var(--code-foreground);
+  --color-code: var(--code);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-ring: var(--ring);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-input: var(--input);
+  --color-foreground: var(--foreground);
+  --color-destructive: var(--destructive);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-background: var(--background);
+  /* the window behind the cards */
+  --color-app-bg: var(--app-bg);
+  /* the app's active color: active nav items, workspace badges, drag handles */
+  --color-active: var(--active);
+  --color-active-foreground: var(--active-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning: var(--warning);
+  --color-success-foreground: var(--success-foreground);
+  --color-success: var(--success);
+  --color-info-foreground: var(--info-foreground);
+  --color-info: var(--info);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  @keyframes skeleton {
+  to {
+    background-position: -200% 0;
+    }
+  }
+  @keyframes toast-success-odd {
+  0% {
+    scale: 1;
+    }
+  30% {
+    scale: 1.025;
+    }
+  60% {
+    scale: 0.99;
+    }
+  100% {
+    scale: 1;
+    }
+  }
+  @keyframes toast-error-odd {
+  0% {
+    translate: 0 0;
+    }
+  25% {
+    translate: -3px 0;
+    }
+  50% {
+    translate: 3px 0;
+    }
+  75% {
+    translate: -3px 0;
+    }
+  100% {
+    translate: 0 0;
+    }
+  }
+  @keyframes toast-success-even {
+  0% {
+    scale: 1;
+    }
+  30% {
+    scale: 1.025;
+    }
+  60% {
+    scale: 0.99;
+    }
+  100% {
+    scale: 1;
+    }
+  }
+  @keyframes toast-error-even {
+  0% {
+    translate: 0 0;
+    }
+  25% {
+    translate: -3px 0;
+    }
+  50% {
+    translate: 3px 0;
+    }
+  75% {
+    translate: -3px 0;
+    }
+  100% {
+    translate: 0 0;
+    }
+  }
+  @keyframes caret-blink {
+  0%, 70%, to {
+    opacity: 1;
+    }
+  20%, 50% {
+    opacity: 0;
+    }
+  }
+}
+
+:root {
+  /* the active color; each admin theme below can set its own */
+  --active: #e8604a;
+  --active-foreground: #ffffff;
+  --destructive-foreground: var(--color-red-700);
+  --info: var(--color-blue-500);
+  --info-foreground: var(--color-blue-700);
+  --success: var(--color-emerald-500);
+  --success-foreground: var(--color-emerald-700);
+  --warning: var(--color-amber-500);
+  --warning-foreground: var(--color-amber-700);
+  --accent: --alpha(var(--color-black) / 4%);
+  --accent-foreground: var(--color-neutral-800);
+  --background: var(--color-white);
+  --app-bg: #f5f5f3;
+  --border: --alpha(var(--color-black) / 8%);
+  --card: var(--color-white);
+  --card-foreground: var(--color-neutral-800);
+  --destructive: var(--color-red-500);
+  --foreground: var(--color-neutral-800);
+  --input: --alpha(var(--color-black) / 10%);
+  --muted: --alpha(var(--color-black) / 4%);
+  --muted-foreground: color-mix(in srgb, var(--color-neutral-500) 90%, var(--color-black));
+  --popover: var(--color-white);
+  --popover-foreground: var(--color-neutral-800);
+  --primary: var(--color-neutral-800);
+  --primary-foreground: var(--color-neutral-50);
+  --ring: var(--color-neutral-400);
+  --secondary: --alpha(var(--color-black) / 4%);
+  --secondary-foreground: var(--color-neutral-800);
+  --chart-1: var(--color-orange-600);
+  --chart-2: var(--color-teal-600);
+  --chart-3: var(--color-cyan-900);
+  --chart-4: var(--color-amber-400);
+  --chart-5: var(--color-amber-500);
+  --code: var(--color-white);
+  --code-foreground: var(--foreground);
+  --code-highlight: --alpha(var(--color-black) / 4%);
+  --radius: 0.625rem;
+  --sidebar: var(--color-neutral-50);
+  --sidebar-accent: --alpha(var(--color-black) / 4%);
+  --sidebar-accent-foreground: var(--color-neutral-800);
+  --sidebar-border: --alpha(var(--color-black) / 6%);
+  --sidebar-foreground: color-mix(in srgb, var(--color-neutral-800) 64%, var(--sidebar));
+  --sidebar-primary: var(--color-neutral-800);
+  --sidebar-primary-foreground: var(--color-neutral-50);
+  --sidebar-ring: var(--color-neutral-400);
+}
+
+.dark {
+  --destructive-foreground: var(--color-red-400);
+  --info: var(--color-blue-500);
+  --info-foreground: var(--color-blue-400);
+  --success: var(--color-emerald-500);
+  --success-foreground: var(--color-emerald-400);
+  --warning: var(--color-amber-500);
+  --warning-foreground: var(--color-amber-400);
+  --accent: --alpha(var(--color-white) / 4%);
+  --accent-foreground: var(--color-neutral-100);
+  --background: color-mix(in srgb, var(--color-neutral-950) 95%, var(--color-white));
+  --app-bg: var(--color-neutral-950);
+  --border: --alpha(var(--color-white) / 6%);
+  --card: color-mix(in srgb, var(--background) 98%, var(--color-white));
+  --card-foreground: var(--color-neutral-100);
+  --destructive: color-mix(in srgb, var(--color-red-500) 90%, var(--color-white));
+  --foreground: var(--color-neutral-100);
+  --input: --alpha(var(--color-white) / 8%);
+  --muted: --alpha(var(--color-white) / 4%);
+  --muted-foreground: color-mix(in srgb, var(--color-neutral-500) 90%, var(--color-white));
+  --popover: color-mix(in srgb, var(--background) 98%, var(--color-white));
+  --popover-foreground: var(--color-neutral-100);
+  --primary: var(--color-neutral-100);
+  --primary-foreground: var(--color-neutral-800);
+  --ring: var(--color-neutral-500);
+  --secondary: --alpha(var(--color-white) / 4%);
+  --secondary-foreground: var(--color-neutral-100);
+  --chart-1: var(--color-blue-700);
+  --chart-2: var(--color-emerald-500);
+  --chart-3: var(--color-amber-500);
+  --chart-4: var(--color-purple-500);
+  --chart-5: var(--color-rose-500);
+  --code: color-mix(in srgb, var(--background) 98%, var(--color-white));
+  --code-foreground: var(--foreground);
+  --code-highlight: --alpha(var(--color-white) / 4%);
+  --sidebar: color-mix(in srgb, var(--color-neutral-950) 97%, var(--color-white));
+  --sidebar-accent: --alpha(var(--color-white) / 4%);
+  --sidebar-accent-foreground: var(--color-neutral-100);
+  --sidebar-border: --alpha(var(--color-white) / 5%);
+  --sidebar-foreground: color-mix(in srgb, var(--color-neutral-100) 64%, var(--sidebar));
+  --sidebar-primary: var(--color-neutral-100);
+  --sidebar-primary-foreground: var(--color-neutral-800);
+  --sidebar-ring: var(--color-neutral-400);
+}
+
+/* Admin themes: what the layer behind a workspace's cards looks like. The page theme (light /
+   dark) is separate; these only color the rail, the sub nav and the backdrop. Pick one with
+   data-admin-theme on <html>; auto, which follows light and dark, is the default. Add a theme by
+   adding a block. */
+:root,
+html[data-admin-theme="graphite"] {
+  --admin-bg: #171717;
+  /* the second panel beside the rail: a step darker than the layer it sits on */
+  --admin-panel: color-mix(in srgb, var(--admin-bg) 90%, black);
+  /* a surface lifted off the panel, such as the chat composer */
+  --admin-raised: color-mix(in srgb, var(--admin-bg) 86%, white);
+  --admin-fg: #d4d4d4;
+  --admin-muted: #a3a3a3;
+  --admin-dim: #737373;
+  --admin-strong: #ffffff;
+  --admin-hover: rgb(255 255 255 / 8%);
+  --admin-active: rgb(255 255 255 / 12%);
+  --admin-line: rgb(255 255 255 / 10%);
+  --admin-ring: rgb(255 255 255 / 40%);
+  --admin-accent: var(--active);
+}
+.dark:root:not([data-admin-theme]),
+.dark[data-admin-theme="graphite"] {
+  --admin-bg: #0a0a0a;
+}
+html[data-admin-theme="auto"] {
+  --admin-bg: var(--app-bg);
+  --admin-panel: #efefec;
+  --admin-raised: #ffffff;
+  --admin-fg: #3f3f46;
+  --admin-muted: #71717a;
+  --admin-dim: #a1a1aa;
+  --admin-strong: #18181b;
+  --admin-hover: rgb(0 0 0 / 5%);
+  --admin-active: rgb(0 0 0 / 8%);
+  --admin-line: rgb(0 0 0 / 9%);
+  --admin-ring: rgb(0 0 0 / 30%);
+  --admin-accent: var(--active);
+}
+.dark[data-admin-theme="auto"] {
+  --admin-bg: #1c1c1c;
+  --admin-panel: #141414;
+  --admin-raised: #2b2b2b;
+  --admin-fg: #d4d4d4;
+  --admin-muted: #a3a3a3;
+  --admin-dim: #737373;
+  --admin-strong: #ffffff;
+  --admin-hover: rgb(255 255 255 / 8%);
+  --admin-active: rgb(255 255 255 / 12%);
+  --admin-line: rgb(255 255 255 / 10%);
+  --admin-ring: rgb(255 255 255 / 40%);
+}
+html[data-admin-theme="mist"] {
+  --admin-bg: #e9e9ec;
+  --admin-panel: #e1e1e5;
+  --admin-raised: #f7f7f9;
+  --active: #6366f1;
+  --admin-fg: #3f3f46;
+  --admin-muted: #71717a;
+  --admin-dim: #a1a1aa;
+  --admin-strong: #18181b;
+  --admin-hover: rgb(0 0 0 / 6%);
+  --admin-active: rgb(0 0 0 / 10%);
+  --admin-line: rgb(0 0 0 / 10%);
+  --admin-ring: rgb(0 0 0 / 30%);
+  --admin-accent: var(--active);
+}
+html[data-admin-theme="blush"] {
+  --admin-bg: #f4e1e8;
+  --admin-panel: #eed7e0;
+  --admin-raised: #fcf3f6;
+  --active: #db2777;
+  --admin-fg: #5c3447;
+  --admin-muted: #8d5f73;
+  --admin-dim: #b58c9c;
+  --admin-strong: #3a1a2a;
+  --admin-hover: rgb(90 30 60 / 8%);
+  --admin-active: rgb(90 30 60 / 14%);
+  --admin-line: rgb(90 30 60 / 12%);
+  --admin-ring: rgb(90 30 60 / 35%);
+  --admin-accent: var(--active);
+}
+html[data-admin-theme="forest"] {
+  --admin-bg: #0f2a1f;
+  --active: #34d399;
+  --active-foreground: #06291c;
+  --admin-fg: #b9d4c6;
+  --admin-muted: #88ab98;
+  --admin-dim: #5f8371;
+  --admin-strong: #f0fff6;
+  --admin-hover: rgb(255 255 255 / 7%);
+  --admin-active: rgb(255 255 255 / 12%);
+  --admin-line: rgb(255 255 255 / 10%);
+  --admin-ring: rgb(255 255 255 / 40%);
+  --admin-accent: var(--active);
+}
+
+/* Text a light passes through, for work in progress (ai-elements/shimmer). */
+.shimmer {
+  background: linear-gradient(90deg, var(--muted-foreground) 35%, var(--foreground) 50%, var(--muted-foreground) 65%) 100% 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* Page controls placed directly on the admin layer, which keeps its own colors in any theme. */
+.on-admin {
+  --foreground: var(--admin-strong);
+  --muted-foreground: var(--admin-muted);
+  --accent: var(--admin-hover);
+  --background: var(--admin-bg);
+  --border: var(--admin-line);
+  --popover: var(--admin-bg);
+  --popover-foreground: var(--admin-strong);
+  --muted: var(--admin-hover);
+  --input: var(--admin-line);
+  --primary: var(--admin-strong);
+  --primary-foreground: var(--admin-bg);
+  --secondary: var(--admin-hover);
+  --secondary-foreground: var(--admin-strong);
+  --accent-foreground: var(--admin-strong);
+  --card: var(--admin-bg);
+  --card-foreground: var(--admin-strong);
+  --sidebar: var(--admin-hover);
+  --ring: var(--admin-ring);
+}
+
+.on-admin,
+.on-admin * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-active) transparent;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-app-bg text-foreground;
+  }
+  code, kbd, samp, pre {
+    font-family: var(--font-mono);
+  }
+  html {
+    @apply font-sans antialiased;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  /* A workspace paints the whole document the rail's color, so nothing white shows
+     at the edges on overscroll or when the window is taller than the viewport. */
+  html[data-workspace] {
+    background: var(--admin-bg);
+    overscroll-behavior: none;
+  }
+  html[data-workspace] body {
+    background: transparent;
+  }
+}
+/* The window has no native title bar: every top bar is the drag region, with room for the
+   macOS traffic lights at its left. Controls inside it stay clickable. */
+.titlebar {
+  -webkit-app-region: drag;
+}
+.titlebar button,
+.titlebar a,
+.titlebar input,
+.titlebar [role="button"],
+.titlebar [role="tab"] {
+  -webkit-app-region: no-drag;
+}
+html[data-platform="darwin"] .titlebar {
+  padding-inline-start: 92px;
+}
+
+/* A themed region (the Design page preview): the base-ui kit inside it reads the theme's variables
+   (see core/packages/theme). These rules apply the theme's button and input knobs to the kit's
+   data-slot hooks without touching the components; they mirror core/packages/ui/src/tokens.css.
+   Unlayered on purpose, so they win over the utilities inside the components. */
+[data-sg-theme] [data-slot="button"] {
+  border-radius: var(--radius-button);
+  font-weight: var(--sg-button-weight);
+  text-transform: var(--sg-button-transform);
+  letter-spacing: var(--sg-button-tracking);
+}
+[data-sg-theme] [data-slot="button"]::before { border-radius: calc(var(--radius-button) - 1px); }
+[data-sg-theme] [data-slot="button"][class*="bg-primary"] { box-shadow: var(--sg-button-shadow); }
+[data-sg-theme] [data-slot="input-control"],
+[data-sg-theme] [data-slot="select-trigger"],
+[data-sg-theme] [data-slot="select-button"],
+[data-sg-theme] [data-slot="textarea"] {
+  border-radius: var(--radius-input);
+  background: var(--sg-input-bg);
+  border-color: var(--sg-input-border);
+}
+[data-sg-theme] [data-slot="input-control"]::before,
+[data-sg-theme] [data-slot="select-trigger"]::before,
+[data-sg-theme] [data-slot="select-button"]::before { border-radius: calc(var(--radius-input) - 1px); }
+[data-sg-theme] .font-accent { font-family: var(--font-accent); }

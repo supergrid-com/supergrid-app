@@ -10,7 +10,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { resourceNames, newWorkspaceId } from "@supergrid/app-kit/names";
-import { activeVersion, createCf, deleteD1, deleteRepo, deleteWorker, ensureD1, ensureRepo, fetchBundle, fetchRelease, installApp, provisionWorkspace, repoToken, updateApp, updatePlatform, updateWorkspace, verifySigned, type AppInstall, type InstalledApp, type Release, type Signed, type WorkspaceFacts } from "@supergrid/cloud";
+import { activeVersion, createCf, deleteD1, deleteQueue, deleteRepo, deleteToken, deleteWorker, deleteWorkflow, hooksWorkflow, listTokens, ensureD1, ensureRepo, fetchBundle, fetchRelease, installApp, provisionWorkspace, repoToken, updateApp, updatePlatform, updateWorkspace, verifySigned, type AppInstall, type InstalledApp, type Release, type Signed, type WorkspaceFacts } from "@supergrid/cloud";
 
 const PREFIX = "sgdev", ACCOUNT = "fc84d234400f2316c52025fe91ed5289";
 const FEED = process.env.FEED ?? "https://sgdev-feed.supergrid-operator.workers.dev";
@@ -66,8 +66,12 @@ async function destroy(id: string) {
   const s = JSON.parse(readFileSync(stateFile(id), "utf8")) as State;
   for (const a of s.apps) await deleteWorker(cf, a.worker);
   if (s.repo) await deleteRepo(cf, PREFIX, s.apps[0]!.worker);
+  await deleteWorkflow(cf, hooksWorkflow(s.ws));
   await deleteWorker(cf, s.ws.worker);
   await deleteD1(cf, s.ws.d1Id);
+  if (s.ws.queue) { await deleteQueue(cf, s.ws.queue); await deleteQueue(cf, `${s.ws.queue}-dlq`); }
+  // the media token minted for it, when the account let us mint one
+  await listTokens(cf).then((all) => Promise.all(all.filter((t) => t.name === `${s.ws.worker} media`).map((t) => deleteToken(cf, t.id)))).catch(() => undefined);
   if (existsSync(stateFile(id))) rmSync(stateFile(id));
   log(`deleted workspace ${id}`);
 }
@@ -104,10 +108,10 @@ async function edit(id: string, file: string, text: string) {
 async function broken(id: string) {
   const s = JSON.parse(readFileSync(stateFile(id), "utf8")) as State;
   const b = await fetchBundle(FEED, await fetchRelease(FEED, "workspace", PUB));
-  const bad = { ...b, version: "9.9.9", modules: { "index.js": `export class WorkspaceApi {} ; export default { fetch() { return new Response("boom", { status: 500 }); } };` } };
+  const bad = { ...b, version: "9.9.9", modules: { "index.js": `import { WorkflowEntrypoint } from "cloudflare:workers"; export class WorkspaceApi {} ; export class HookRun extends WorkflowEntrypoint { async run() {} } ; export default { fetch() { return new Response("boom", { status: 500 }); }, queue() {}, scheduled() {} };` } };
   const before = await activeVersion(cf, s.ws.worker);
   try { await updateWorkspace(cf, s.ws, s.apps, bad); log("FAIL: the broken release was accepted"); }
-  catch (e) { log(`refused: ${(e as Error).message.slice(0, 110)}`); }
+  catch (e) { log(`refused: ${(e as Error).message.slice(0, 300)}`); }
   log(`active version unchanged: ${(await activeVersion(cf, s.ws.worker)) === before}; health ${(await get(`${s.ws.url}/_ws/health`)).text}`);
 }
 

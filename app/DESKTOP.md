@@ -93,7 +93,7 @@ app/
 
 **Sign-in.** WorkOS AuthKit in a window, session kept by main. The control plane issues the app a session; the app asks it for staff tokens per workspace as needed. One account, many orgs, an org switcher.
 
-**Cloudflare connection.** First choice: bundle wrangler and run `wrangler login` from the app (its OAuth client, its refresh); read the token with `wrangler auth token` when the flows need one. Second choice: API token paste from a template link, stored in the keychain. A Cloudflare OAuth client of our own is the clean version and is a later ask. The Workers Builds API needs a user token and only documents GitHub, so deploys do not go through Builds (next point).
+**Cloudflare connection.** Done as: the app runs Cloudflare's OAuth itself with the `cf` client (the one with `account_api_tokens:create`), mints an account-owned API token with everything the app and its workspaces need, Images and Stream included, and keeps that in the keychain; the login is forgotten (`CONNECT.md`). Fallback: API token paste from a template link. The earlier first choice, `wrangler login` plus `wrangler auth token`, could never reach Images or Stream. A Cloudflare OAuth client of our own stays a later ask. The Workers Builds API needs a user token and only documents GitHub, so deploys do not go through Builds (next point).
 
 **Deploy.** The app builds the app locally (`pnpm build` in the clone) and deploys with `putWorker` from `@supergrid/cloud`, then pushes the commit to Artifacts so the repo is the record. No Builds connection, no dashboard step, works with the token we already have. "Deploy managed in the app through the CLI" is this; wrangler is used for login and for `wrangler dev` in previews.
 

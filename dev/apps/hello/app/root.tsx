@@ -1,4 +1,5 @@
-import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteError } from "react-router";
+import { Analytics } from "@supergrid/app-kit/react";
+import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, useLocation, useRouteError } from "react-router";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -20,7 +21,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function Root() { return <Outlet />; }
+export default function Root() {
+  // Page views for the public site only; admin screens are the staff's, not visitors'.
+  const admin = useLocation().pathname.startsWith("/admin/");
+  return admin ? <Outlet /> : <Analytics app="hello"><Outlet /></Analytics>;
+}
 
 export function ErrorBoundary() {
   const error = useRouteError();

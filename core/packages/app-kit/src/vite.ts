@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import type { AppManifest } from "./manifest";
 
-type RouteEntry = { app: string; name?: string; binding: string; public?: string; admin?: boolean; api?: boolean; nav?: { label: string; path: string }[] };
+type RouteEntry = { app: string; name?: string; binding: string; public?: string; admin?: boolean; api?: boolean; nav?: { label: string; path: string }[]; subscribes?: string[] };
 const bindingName = (id: string) => `APP_${id.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
 
 /**
@@ -15,7 +15,7 @@ const bindingName = (id: string) => `APP_${id.toUpperCase().replace(/[^A-Z0-9]/g
 export function appViteConfig(manifest: AppManifest, command: "serve" | "build", plugins: { cloudflare: (o?: any) => any; reactRouter: () => any }, opts: { workspaceConfig?: string; persistState?: string } = {}) {
   const workspaceConfig = resolve(opts.workspaceConfig ?? "../../workspace/wrangler.jsonc");
   const compose = command === "serve" && existsSync(workspaceConfig);
-  const entry: RouteEntry = { app: manifest.id, name: manifest.name, binding: bindingName(manifest.id), public: manifest.public?.mount, admin: !!manifest.admin, api: !!manifest.api, nav: manifest.admin?.nav };
+  const entry: RouteEntry = { app: manifest.id, name: manifest.name, binding: bindingName(manifest.id), public: manifest.public?.mount, admin: !!manifest.admin, api: !!manifest.api, nav: manifest.admin?.nav, subscribes: manifest.subscribes };
   const cloudflareOptions = compose
     ? {
         configPath: workspaceConfig,

@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "kind": "item",
+      "target": "home"
+    },
+    {
+      "kind": "item",
+      "target": "contacts"
+    },
+    {
+      "kind": "item",
+      "target": "analytics"
+    },
+    {
+      "kind": "group",
+      "id": "content",
+      "title": "Content",
+      "dividerAbove": true,
+      "items": [
+        {
+          "kind": "item",
+          "target": "media"
+        },
+        {
+          "kind": "item",
+          "target": "design"
+        }
+      ]
+    },
+    {
+      "kind": "group",
+      "id": "developer",
+      "title": "Developer",
+      "dividerAbove": true,
+      "items": [
+        {
+          "kind": "item",
+          "target": "workflows"
+        },
+        {
+          "kind": "item",
+          "target": "hooks"
+        },
+        {
+          "kind": "item",
+          "target": "secrets"
+        }
+      ]
+    }
+  ]
+}

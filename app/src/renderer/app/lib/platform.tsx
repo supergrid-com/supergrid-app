@@ -1,10 +1,9 @@
 import * as React from "react";
-import { type Mode, orgs } from "~/lib/mock";
 
-// UI-only state for the POC: the platform mode, the active organization, the color theme and
-// the side nav. In the real platform these come from the settings table and the session.
+// The window's own preferences, kept in localStorage: the color theme, the admin layer's theme
+// behind the workspace's cards, and the rail's and panels' sizes.
 
-type Theme = "light" | "dark" | "system";
+export type Theme = "light" | "dark" | "system";
 // The admin layer behind a workspace's cards: see the themes in app.css.
 export const adminThemes = [
   { id: "auto", name: "Match appearance", swatch: "#f5f5f3", dark: null },
@@ -30,12 +29,8 @@ export const NAV_MIN_WIDTH = 220;
 export const NAV_MAX_WIDTH = 420;
 
 type PlatformState = {
-  mode: Mode;
-  setMode: (mode: Mode) => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  orgId: string;
-  setOrgId: (id: string) => void;
   navDocked: boolean;
   setNavDocked: (v: boolean) => void;
   navOpen: boolean;
@@ -81,9 +76,7 @@ function applyTheme(theme: Theme): void {
 }
 
 export function PlatformProvider({ children }: { children: React.ReactNode }): React.ReactElement {
-  const [mode, setModeState] = React.useState<Mode>("agency");
   const [theme, setThemeState] = React.useState<Theme>(() => read<Theme>("sg.theme", "system"));
-  const [orgId, setOrgIdState] = React.useState<string>(orgs[0].id);
   const [navDocked, setNavDockedState] = React.useState(false);
   const [navOpen, setNavOpen] = React.useState(false);
   const [navWidth, setNavWidthState] = React.useState(NAV_DEFAULT_WIDTH);
@@ -93,7 +86,6 @@ export function PlatformProvider({ children }: { children: React.ReactNode }): R
   const [adminTheme, setAdminThemeRaw] = React.useState<AdminTheme>("auto");
 
   React.useEffect(() => {
-    setModeState(read("sg.mode", "agency"));
     setRailStateRaw(read<RailState>("sg.rail", "open"));
     const at = read<AdminTheme>("sg.adminTheme", "auto");
     setAdminThemeRaw(at);
@@ -102,7 +94,6 @@ export function PlatformProvider({ children }: { children: React.ReactNode }): R
     if (Number.isFinite(sw)) setSubNavWidthRaw(Math.min(SUB_NAV_MAX_WIDTH, Math.max(SUB_NAV_MIN_WIDTH, sw)));
     const cw = Number(read<string>("sg.chatWidth", String(CHAT_SIDE_DEFAULT_WIDTH)));
     if (Number.isFinite(cw)) setChatWidthRaw(Math.min(CHAT_SIDE_MAX_WIDTH, Math.max(CHAT_SIDE_MIN_WIDTH, cw)));
-    setOrgIdState(read("sg.org", orgs[0].id));
     setNavDockedState(read<string>("sg.navDocked", "0") === "1");
     const w = Number(read<string>("sg.navWidth", String(NAV_DEFAULT_WIDTH)));
     if (Number.isFinite(w)) setNavWidthState(Math.min(NAV_MAX_WIDTH, Math.max(NAV_MIN_WIDTH, w)));
@@ -122,18 +113,10 @@ export function PlatformProvider({ children }: { children: React.ReactNode }): R
   }, [theme]);
   const adminDark = adminThemes.find((t) => t.id === adminTheme)?.dark ?? pageDark;
 
-  const setMode = React.useCallback((m: Mode) => {
-    setModeState(m);
-    write("sg.mode", m);
-  }, []);
   const setTheme = React.useCallback((t: Theme) => {
     setThemeState(t);
     write("sg.theme", t);
     applyTheme(t);
-  }, []);
-  const setOrgId = React.useCallback((id: string) => {
-    setOrgIdState(id);
-    write("sg.org", id);
   }, []);
   const setNavDocked = React.useCallback((v: boolean) => {
     setNavDockedState(v);
@@ -166,8 +149,8 @@ export function PlatformProvider({ children }: { children: React.ReactNode }): R
   }, []);
 
   const value = React.useMemo(
-    () => ({ mode, setMode, theme, setTheme, orgId, setOrgId, navDocked, setNavDocked, navOpen, setNavOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, adminTheme, setAdminTheme, adminDark }),
-    [mode, setMode, theme, setTheme, orgId, setOrgId, navDocked, setNavDocked, navOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, adminTheme, setAdminTheme, adminDark],
+    () => ({ theme, setTheme, navDocked, setNavDocked, navOpen, setNavOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, adminTheme, setAdminTheme, adminDark }),
+    [theme, setTheme, navDocked, setNavDocked, navOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, adminTheme, setAdminTheme, adminDark],
   );
   return <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>;
 }

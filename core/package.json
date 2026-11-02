@@ -7,7 +7,8 @@
     "dev:workspace": "pnpm --filter workspace dev",
     "build": "pnpm --filter platform build",
     "typecheck": "pnpm -r typecheck",
-    "sg": "tsx cli/sg.ts"
+    "sg": "tsx cli/sg.ts",
+    "ui:sync": "tsx packages/ui/scripts/sync.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261030.1",

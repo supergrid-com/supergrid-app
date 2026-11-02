@@ -5,7 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Kbd } from "~/components/ui/kbd";
 import { ToolbarLink } from "~/components/ui/toolbar";
 import { BarButton, BarSeparator, BarToolbar } from "~/components/workspace/bar-toolbar";
-import type { Workspace } from "~/lib/mock";
+import type { WorkspaceSummary } from "~/lib/workspaces";
 import { cn } from "~/lib/utils";
 
 // The title bar of the sidebar layout, after Codex: history and the sidebar toggle beside the
@@ -46,7 +46,7 @@ export function WorkspaceTitleBar({
   titleRef,
   actionsRef,
 }: {
-  ws: Workspace;
+  ws: WorkspaceSummary;
   /** Where the canvas starts, from the window's left edge. */
   canvasStart: number;
   /** Where the chat starts, when it is open. */

@@ -2,8 +2,6 @@
 @import "cal-sans";
 @import "@fontsource-variable/geist-mono";
 
-@source "../../../node_modules/streamdown/dist/*.js";
-@source "../../../node_modules/@streamdown/code/dist/*.js";
 
 /* .light lets a surface inside a dark page declare itself light again: the chat follows the admin theme. */
 @custom-variant dark (&:is(.dark *):not(.light *));
@@ -436,3 +434,28 @@ html[data-admin-theme="forest"] {
 html[data-platform="darwin"] .titlebar {
   padding-inline-start: 92px;
 }
+
+/* A themed region (the Design page preview): the base-ui kit inside it reads the theme's variables
+   (see core/packages/theme). These rules apply the theme's button and input knobs to the kit's
+   data-slot hooks without touching the components; they mirror core/packages/ui/src/tokens.css.
+   Unlayered on purpose, so they win over the utilities inside the components. */
+[data-sg-theme] [data-slot="button"] {
+  border-radius: var(--radius-button);
+  font-weight: var(--sg-button-weight);
+  text-transform: var(--sg-button-transform);
+  letter-spacing: var(--sg-button-tracking);
+}
+[data-sg-theme] [data-slot="button"]::before { border-radius: calc(var(--radius-button) - 1px); }
+[data-sg-theme] [data-slot="button"][class*="bg-primary"] { box-shadow: var(--sg-button-shadow); }
+[data-sg-theme] [data-slot="input-control"],
+[data-sg-theme] [data-slot="select-trigger"],
+[data-sg-theme] [data-slot="select-button"],
+[data-sg-theme] [data-slot="textarea"] {
+  border-radius: var(--radius-input);
+  background: var(--sg-input-bg);
+  border-color: var(--sg-input-border);
+}
+[data-sg-theme] [data-slot="input-control"]::before,
+[data-sg-theme] [data-slot="select-trigger"]::before,
+[data-sg-theme] [data-slot="select-button"]::before { border-radius: calc(var(--radius-input) - 1px); }
+[data-sg-theme] .font-accent { font-family: var(--font-accent); }

@@ -20,6 +20,52 @@
         "dev"
       ],
       "port": 5301
+    },
+    {
+      "name": "desktop-renderer",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "app",
+        "exec",
+        "electron-vite",
+        "dev",
+        "--rendererOnly"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "desktop-v1-renderer",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "app-v1",
+        "exec",
+        "electron-vite",
+        "dev",
+        "--rendererOnly",
+        "--port",
+        "5183"
+      ],
+      "port": 5183
+    },
+    {
+      "name": "workspace-only",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "core/workspace",
+        "exec",
+        "wrangler",
+        "dev",
+        "--port",
+        "5399",
+        "--inspector-port",
+        "9239",
+        "--persist-to",
+        "../.state/assets-dev"
+      ],
+      "port": 5399
     }
   ]
 }

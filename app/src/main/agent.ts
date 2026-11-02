@@ -4,7 +4,8 @@ import { accessSync, constants, existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { delimiter, join } from "node:path";
 import { createInterface } from "node:readline";
-import { channels, type AgentStatus, type JsonRpcMessage } from "../shared/bridge";
+import { channels, type AgentStatus, type JsonRpcMessage, type McpServerConfig } from "../shared/bridge";
+import { connection } from "./workspace-api";
 
 // The coding agent, as a child process speaking ACP. Main is deliberately a pipe: it starts the
 // agent, writes newline-delimited JSON-RPC to its stdin and forwards every line it prints to the
@@ -99,7 +100,34 @@ function workspaceDir(id: unknown): string {
   return dir;
 }
 
+/**
+ * The MCP servers a session gets: our own stdio server (built beside this file as mcp.js) run by this
+ * Electron binary as plain Node, with the workspace's URL and token in its environment. The agent
+ * sees tools, never the token.
+ */
+async function mcpServersFor(id: unknown): Promise<McpServerConfig[]> {
+  if (typeof id !== "string" || !/^[\w-]+$/.test(id)) return [];
+  let ws: { url: string; token: string; name: string };
+  try {
+    ws = await connection(id);
+  } catch {
+    return []; // no connection to this workspace yet: the agent runs without the tools
+  }
+  return [{
+    name: "supergrid",
+    command: process.execPath,
+    args: [join(__dirname, "mcp.js")],
+    env: [
+      { name: "ELECTRON_RUN_AS_NODE", value: "1" },
+      { name: "SG_WORKSPACE_URL", value: ws.url },
+      { name: "SG_WORKSPACE_TOKEN", value: ws.token },
+      { name: "SG_WORKSPACE_NAME", value: ws.name },
+    ],
+  }];
+}
+
 export function registerAgent(): void {
+  ipcMain.handle(channels.agentMcp, (_e, id: unknown) => mcpServersFor(id));
   ipcMain.handle(channels.agentStatus, () => status());
   ipcMain.handle(channels.agentStart, (e) => startAgent(e.sender));
   ipcMain.handle(channels.agentStop, () => stopAgent());

@@ -1,0 +1,107 @@
+/* The kit's Tailwind layer. Maps the theme's CSS variables (see @supergrid/theme) onto Tailwind v4 theme
+   tokens so `bg-primary`, `rounded-lg`, `font-heading`, `p-4`… follow the workspace theme at runtime.
+   Import it after tailwindcss: see app.css in this folder. Generated in part by scripts/sync.ts. */
+
+@custom-variant dark (&:is(.dark *):not(.light *));
+
+@theme inline {
+  --animate-skeleton: skeleton 2s -1s infinite linear;
+  --animate-toast-success-odd: toast-success-odd 0.32s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-toast-success-even: toast-success-even 0.32s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-toast-error-odd: toast-error-odd 0.28s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-toast-error-even: toast-error-even 0.28s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-caret-blink: 1s ease-out infinite caret-blink;
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --font-accent: var(--font-accent);
+  --font-mono: var(--font-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-app-bg: var(--app-bg);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-active: var(--primary);
+  --color-active-foreground: var(--primary-foreground);
+  --color-code: var(--card);
+  --color-code-highlight: var(--muted);
+  --color-chart-1: var(--sg-primary-500);
+  --color-chart-2: var(--sg-secondary-500);
+  --color-chart-3: var(--sg-accent-500);
+  --color-chart-4: var(--sg-primary-800);
+  --color-chart-5: var(--sg-secondary-800);
+  --color-sidebar: var(--card);
+  --color-sidebar-foreground: var(--foreground);
+  --color-sidebar-primary: var(--primary);
+  --color-sidebar-primary-foreground: var(--primary-foreground);
+  --color-sidebar-accent: var(--muted);
+  --color-sidebar-accent-foreground: var(--foreground);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-ring: var(--ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: var(--radius-card);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  @keyframes skeleton { to { background-position: -200% 0; } }
+  @keyframes toast-success-odd { 0% { scale: 1; } 30% { scale: 1.025; } 60% { scale: 0.99; } 100% { scale: 1; } }
+  @keyframes toast-error-odd { 0% { translate: 0 0; } 25% { translate: -3px 0; } 50% { translate: 3px 0; } 75% { translate: -3px 0; } 100% { translate: 0 0; } }
+  @keyframes toast-success-even { 0% { scale: 1; } 30% { scale: 1.025; } 60% { scale: 0.99; } 100% { scale: 1; } }
+  @keyframes toast-error-even { 0% { translate: 0 0; } 25% { translate: -3px 0; } 50% { translate: 3px 0; } 75% { translate: -3px 0; } 100% { translate: 0 0; } }
+  @keyframes caret-blink { 0%, 70%, to { opacity: 1; } 20%, 50% { opacity: 0; } }
+}
+
+/* @fallback */
+
+/* The theme's knobs for buttons and inputs, applied to the kit's data-slot hooks. Unlayered on purpose:
+   they must win over the utilities inside the components without editing them. */
+[data-slot="button"] {
+  border-radius: var(--radius-button);
+  font-weight: var(--sg-button-weight);
+  text-transform: var(--sg-button-transform);
+  letter-spacing: var(--sg-button-tracking);
+}
+[data-slot="button"]::before { border-radius: calc(var(--radius-button) - 1px); }
+[data-slot="button"][class*="bg-primary"] { box-shadow: var(--sg-button-shadow); }
+[data-slot="input-control"],
+[data-slot="select-trigger"],
+[data-slot="select-button"],
+[data-slot="textarea"] {
+  border-radius: var(--radius-input);
+  background: var(--sg-input-bg);
+  border-color: var(--sg-input-border);
+}
+[data-slot="input-control"]::before,
+[data-slot="select-trigger"]::before,
+[data-slot="select-button"]::before { border-radius: calc(var(--radius-input) - 1px); }
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { @apply font-sans antialiased; color-scheme: light; }
+  html.dark { color-scheme: dark; }
+  body { @apply bg-background text-foreground; }
+  h1, h2, h3, h4 { font-family: var(--font-heading); }
+  code, kbd, samp, pre { font-family: var(--font-mono); }
+}

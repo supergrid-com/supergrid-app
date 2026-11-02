@@ -4,10 +4,11 @@ The part that runs in a user's own Cloudflare account and that we ship updates f
 
 ```
 platform/         the control panel: React Router on a Worker, Better Auth on D1
-workspace/        the headless workspace Worker: router, RPC, core schema
-packages/app-kit  what an app builds on: manifest, routes, RPC contract, resource names
+workspace/        the headless workspace Worker: router, RPC, core schema (sitemap design in workspace/SITEMAP.md, assets in workspace/ASSETS.md)
+packages/app-kit  what an app builds on: manifest, routes, RPC contract, resource names; docs/ covers events, contacts, hooks and workflows
 packages/admin-sdk  postMessage protocol between the platform and an app's admin iframe
-packages/theme    default tokens
+packages/theme    the theme document, its validation and the CSS it compiles to (runtime, not build time)
+packages/ui       the base-ui design kit: the desktop app's components, copied into apps and themed by packages/theme
 packages/cloud    everything that touches a Cloudflare account or a release feed
 cli/              sg: install a platform, cut and sign releases
 ```

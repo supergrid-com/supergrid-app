@@ -3,14 +3,37 @@ export type AppInfo = { version: string; platform: "darwin" | "win32" | "linux" 
 
 export type CfAccount = { id: string; name: string };
 
-/** Where the app stands with Cloudflare, as the Home screen shows it. */
+/** An organization, kept on this Mac: a name for a set of workspaces on one Cloudflare account. */
+export type CloudflareLink = { accountId: string; accountName: string; email: string | null; prefix: string };
+export type Org = { id: string; name: string; slug: string; createdAt: string; cloudflare: CloudflareLink | null; /** The workspace opened last, reopened on launch. */ lastWorkspace?: string };
+/** What the app keeps between runs about the user's organizations (src/main/config.ts). */
+export type LocalState = { orgs: Org[]; currentOrg: string | null };
+
+/** Where the app stands with Cloudflare, as the Home screen shows it (app/CONNECT.md). */
 export type CloudflareStatus =
-  /** No wrangler binary next to the app: nothing can run. */
-  | { state: "no-wrangler"; detail: string }
-  /** wrangler has no login on this machine, or its token no longer works. */
+  /** No token on this machine, or the one it had no longer works. */
   | { state: "logged-out"; detail?: string }
-  /** A working token. `accountId` and `prefix` say which account and which install the app manages. */
-  | { state: "connected"; email: string | null; accounts: CfAccount[]; accountId: string; prefix: string };
+  /** Logged in, but the account would not let the app mint its token: `link` opens the dashboard's token form filled in with `permissions`. */
+  | { state: "needs-token"; email: string | null; accounts: CfAccount[]; accountId: string; detail: string; link: string; permissions: string[] }
+  /** A working token. `accountId` and `prefix` say which account and which install the app manages; `token.minted` when connect made it. */
+  | { state: "connected"; email: string | null; accounts: CfAccount[]; accountId: string; prefix: string; token: { name: string; minted: boolean; /** Permissions a minted token could not carry (no OAuth scope exists for them). */ without: string[] } };
+
+/** The cf CLI on this Mac and its login, from `cf --version` and `cf auth whoami` (src/main/cf-cli.ts). */
+export type CfCliStatus =
+  /** `searched` lists the folders and the shell lookup that came up empty. */
+  | { state: "no-cli"; searched: string[] }
+  | { state: "signed-out"; path: string; version: string | null; detail?: string }
+  | {
+      state: "signed-in";
+      path: string;
+      version: string | null;
+      email: string | null;
+      accounts: CfAccount[];
+      /** The OAuth scopes of cf's login; null when it signs in with CLOUDFLARE_API_TOKEN instead. */
+      scopes: string[] | null;
+      tokenValid: boolean;
+      authSource: string | null;
+    };
 
 /** A workspace as read back from its Worker's bindings: what the account itself knows, no directory needed. */
 export type WorkspaceSummary = {
@@ -22,7 +45,14 @@ export type WorkspaceSummary = {
   apps: { app: string; name: string; admin: boolean; api: boolean; public?: string; nav?: { label: string; path: string }[] }[];
 };
 
+/** A provisioning step as it starts: `release` (verify and download), the steps of provisionWorkspace, then `done`. */
+export type WorkspaceProgress = { id: string; step: "release" | "database" | "queues" | "files" | "media" | "worker" | "wiring" | "url" | "health" | "done" };
+/** What creating a workspace made. `queues`, `files` and `media` are false or null when the account didn't allow them. */
+export type WorkspaceCreated = { id: string; name: string; worker: string; url: string; version: string; queues: boolean; files: boolean; media: "minted" | "shared" | null };
+
 export type AgentStatus = { name: string; available: boolean; authDetected: boolean; authHint: string };
+/** An MCP server for an ACP session, in ACP's stdio shape. */
+export type McpServerConfig = { name: string; command: string; args: string[]; env: { name: string; value: string }[] };
 /** One JSON-RPC 2.0 message to or from the agent. The renderer owns the protocol; main only relays it. */
 export type JsonRpcMessage = { jsonrpc?: string; id?: number | string | null; method?: string; params?: unknown; result?: unknown; error?: { code: number; message: string; data?: unknown } };
 
@@ -33,14 +63,48 @@ export type Bridge = {
   openExternal(url: string): Promise<void>;
   cloudflare: {
     status(): Promise<CloudflareStatus>;
-    /** Runs `wrangler login`, which opens the browser. Resolves with the status once it finishes. */
+    /** Opens Cloudflare in the browser, then mints the app's API token for the account. Resolves with the status once it finishes. */
     login(): Promise<CloudflareStatus>;
+    /** The fallback when minting is not allowed: a token the user made from the template link. */
+    setToken(token: string): Promise<CloudflareStatus>;
+    /** Forgets the stored token for the selected account. */
+    disconnect(): Promise<CloudflareStatus>;
     /** Picks the account and the install prefix this app manages. */
     select(opts: { accountId?: string; prefix?: string }): Promise<CloudflareStatus>;
   };
+  /** The organizations, kept in the app's config file so they survive restarts. */
+  state: {
+    read(): Promise<LocalState>;
+    write(patch: Partial<LocalState>): Promise<void>;
+  };
+  /** The cf CLI on this Mac: the app signs in through it and holds no token itself. */
+  cf: {
+    /** `refresh` looks for the cf binary again, after the user installs it. */
+    status(refresh?: boolean): Promise<CfCliStatus>;
+    /** Runs `cf auth login` (opens the browser) and resolves once it finishes. */
+    login(): Promise<CfCliStatus>;
+    logout(): Promise<CfCliStatus>;
+  };
   workspaces: {
-    /** The workspaces in the selected account under the selected prefix. */
-    list(): Promise<WorkspaceSummary[]>;
+    /** The `<prefix>-ws-*` workspaces in the account, read from their Workers. Runs on cf's login. */
+    list(accountId: string, prefix: string): Promise<WorkspaceSummary[]>;
+    /** The workspace release a new workspace gets, from the signed feed. */
+    release(): Promise<{ version: string; notes: string; publishedAt: string }>;
+    /** A workspace id not yet used in the account under this prefix. */
+    freshId(accountId: string, prefix: string): Promise<string>;
+    /** Creates a workspace in the account; progress arrives through onProgress. */
+    create(opts: { accountId: string; prefix: string; id: string; name: string }): Promise<WorkspaceCreated>;
+    /** Returns its unsubscribe. */
+    onProgress(cb: (p: WorkspaceProgress) => void): () => void;
+  };
+  /** A workspace's RPC surface (`/_ws/rpc`), called with its token from the main process. */
+  ws: {
+    rpc(wsId: string, method: string, args: unknown[]): Promise<unknown>;
+    /** Forgets the stored token so the next call mints a new one. */
+    resetToken(wsId: string): Promise<void>;
+    /** Writes the Images/Stream/Analytics token (and the account id) as the workspace Worker's secrets, for assets. */
+    /** Gives a workspace its media token: one minted for it, the app's own, or `token` when the user pastes one. */
+    setMediaToken(wsId: string, token?: string): Promise<void>;
   };
   /** The coding agent: a child process speaking ACP, relayed line by line. */
   agent: {
@@ -50,6 +114,8 @@ export type Bridge = {
     send(message: JsonRpcMessage): Promise<void>;
     /** The folder a workspace's sessions run in. */
     workspaceDir(id: string): Promise<string>;
+    /** The MCP servers a session for this workspace gets (src/main/mcp.ts with the workspace's connection). */
+    mcpServers(id: string): Promise<McpServerConfig[]>;
     /** Each returns its unsubscribe. */
     onMessage(cb: (message: JsonRpcMessage) => void): () => void;
     onLog(cb: (line: string) => void): () => void;
@@ -63,13 +129,28 @@ export const channels = {
   openExternal: "sg:open-external",
   cfStatus: "sg:cloudflare:status",
   cfLogin: "sg:cloudflare:login",
+  cfSetToken: "sg:cloudflare:set-token",
+  cfDisconnect: "sg:cloudflare:disconnect",
   cfSelect: "sg:cloudflare:select",
+  stateRead: "sg:state:read",
+  stateWrite: "sg:state:write",
+  cfCliStatus: "sg:cf:status",
+  cfCliLogin: "sg:cf:login",
+  cfCliLogout: "sg:cf:logout",
   wsList: "sg:workspaces:list",
+  wsRelease: "sg:workspaces:release",
+  wsFreshId: "sg:workspaces:fresh-id",
+  wsCreate: "sg:workspaces:create",
+  wsProgress: "sg:workspaces:progress",
+  wsRpc: "sg:ws:rpc",
+  wsResetToken: "sg:ws:reset-token",
+  wsMediaToken: "sg:ws:media-token",
   agentStatus: "sg:agent:status",
   agentStart: "sg:agent:start",
   agentStop: "sg:agent:stop",
   agentSend: "sg:agent:send",
   agentDir: "sg:agent:workspace-dir",
+  agentMcp: "sg:agent:mcp-servers",
   agentMessage: "sg:agent:message",
   agentLog: "sg:agent:log",
   agentExit: "sg:agent:exit",

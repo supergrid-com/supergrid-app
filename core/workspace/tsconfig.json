@@ -1,5 +1,5 @@
 {
   "extends": "../tsconfig.base.json",
-  "include": ["src", "../packages/app-kit/src/rpc.ts", "../packages/app-kit/src/manifest.ts", "../packages/theme/*.ts"],
+  "include": ["src", "../packages/app-kit/src/rpc.ts", "../packages/app-kit/src/manifest.ts", "../packages/theme/index.ts", "../packages/theme/src/*.ts"],
   "compilerOptions": { "lib": ["ES2023"], "types": ["@cloudflare/workers-types"] }
 }

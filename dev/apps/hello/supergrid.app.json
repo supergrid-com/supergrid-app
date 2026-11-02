@@ -25,5 +25,8 @@
     "contacts:write",
     "events:emit"
   ],
-  "description": "A small sample app with a public page, an admin screen and an API."
+  "description": "A small sample app with a public page, an admin screen and an API.",
+  "subscribes": [
+    "contact.tagged"
+  ]
 }

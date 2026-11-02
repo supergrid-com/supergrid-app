@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" suppressHydrationWarning>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https: http://localhost:*; media-src 'self' blob: https: http://localhost:*; frame-src https: http://localhost:*; connect-src 'self' https: http://localhost:*" />
+    <title>SuperGrid</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <script>
+      // Runs before paint so the stored theme applies without a flash. See app/lib/platform.tsx.
+      (function () {
+        try {
+          var t = localStorage.getItem("sg.theme") || "system";
+          var dark = t === "dark" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+          document.documentElement.setAttribute("data-admin-theme", localStorage.getItem("sg.adminTheme") || "auto");
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="relative">
+    <div id="root" class="isolate relative flex h-svh flex-col overflow-hidden"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

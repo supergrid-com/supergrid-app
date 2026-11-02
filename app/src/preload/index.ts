@@ -14,10 +14,30 @@ const bridge: Bridge = {
   cloudflare: {
     status: () => ipcRenderer.invoke(channels.cfStatus),
     login: () => ipcRenderer.invoke(channels.cfLogin),
+    setToken: (token) => ipcRenderer.invoke(channels.cfSetToken, token),
+    disconnect: () => ipcRenderer.invoke(channels.cfDisconnect),
     select: (opts) => ipcRenderer.invoke(channels.cfSelect, opts),
   },
+  state: {
+    read: () => ipcRenderer.invoke(channels.stateRead),
+    write: (patch) => ipcRenderer.invoke(channels.stateWrite, patch),
+  },
+  cf: {
+    status: (refresh) => ipcRenderer.invoke(channels.cfCliStatus, refresh === true),
+    login: () => ipcRenderer.invoke(channels.cfCliLogin),
+    logout: () => ipcRenderer.invoke(channels.cfCliLogout),
+  },
   workspaces: {
-    list: () => ipcRenderer.invoke(channels.wsList),
+    list: (accountId, prefix) => ipcRenderer.invoke(channels.wsList, accountId, prefix),
+    release: () => ipcRenderer.invoke(channels.wsRelease),
+    freshId: (accountId, prefix) => ipcRenderer.invoke(channels.wsFreshId, accountId, prefix),
+    create: (opts) => ipcRenderer.invoke(channels.wsCreate, opts),
+    onProgress: (cb) => listen(channels.wsProgress, cb),
+  },
+  ws: {
+    rpc: (wsId, method, args) => ipcRenderer.invoke(channels.wsRpc, wsId, method, args),
+    resetToken: (wsId) => ipcRenderer.invoke(channels.wsResetToken, wsId),
+    setMediaToken: (wsId, token) => ipcRenderer.invoke(channels.wsMediaToken, wsId, token),
   },
   agent: {
     status: () => ipcRenderer.invoke(channels.agentStatus),
@@ -25,6 +45,7 @@ const bridge: Bridge = {
     stop: () => ipcRenderer.invoke(channels.agentStop),
     send: (message) => ipcRenderer.invoke(channels.agentSend, message),
     workspaceDir: (id) => ipcRenderer.invoke(channels.agentDir, id),
+    mcpServers: (id) => ipcRenderer.invoke(channels.agentMcp, id),
     onMessage: (cb) => listen(channels.agentMessage, cb),
     onLog: (cb) => listen(channels.agentLog, cb),
     onExit: (cb) => listen(channels.agentExit, cb),

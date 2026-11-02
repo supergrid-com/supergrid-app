@@ -14,7 +14,7 @@ export class CfApiError extends Error {
 
 export type Cf = {
   accountId: string;
-  request<T = unknown>(method: string, path: string, body?: unknown): Promise<T>;
+  request<T = unknown>(method: string, path: string, body?: unknown, headers?: Record<string, string>): Promise<T>;
   get<T = unknown>(path: string): Promise<T>;
   post<T = unknown>(path: string, body?: unknown): Promise<T>;
   put<T = unknown>(path: string, body?: unknown): Promise<T>;
@@ -25,11 +25,12 @@ export type Cf = {
 };
 
 export function createCf(token: string, accountId: string, api = CF_API): Cf {
-  async function send<T>(method: string, path: string, auth: string, body?: unknown): Promise<T> {
+  async function send<T>(method: string, path: string, auth: string, body?: unknown, extra?: Record<string, string>): Promise<T> {
     const headers: Record<string, string> = { authorization: `Bearer ${auth}` };
     let payload: FormData | string | undefined;
     if (body instanceof FormData) payload = body;
     else if (body !== undefined) { headers["content-type"] = "application/json"; payload = JSON.stringify(body); }
+    Object.assign(headers, extra);
     const res = await fetch(`${api}${path}`, { method, headers, body: payload });
     const text = await res.text();
     if (!text) { if (res.ok) return undefined as T; throw new CfApiError(res.status, [{ code: res.status, message: "empty response" }], path); }
@@ -40,7 +41,7 @@ export function createCf(token: string, accountId: string, api = CF_API): Cf {
   }
   return {
     accountId,
-    request: (m, p, b) => send(m, p, token, b),
+    request: (m, p, b, h) => send(m, p, token, b, h),
     get: (p) => send("GET", p, token),
     post: (p, b) => send("POST", p, token, b ?? {}),
     put: (p, b) => send("PUT", p, token, b ?? {}),

@@ -1,42 +1,27 @@
-import {
-  BellIcon,
-  MessageCircleIcon,
-  BuildingIcon,
-  CheckIcon,
-  FolderIcon,
-  GlobeIcon,
-  MonitorIcon,
-  MoonIcon,
-  PanelLeftIcon,
-  SearchIcon,
-  SettingsIcon,
-  SunIcon,
-} from "lucide-react";
+import { ArrowLeftRightIcon, BuildingIcon, CheckIcon, GlobeIcon, LayoutGridIcon, MessageCircleIcon, MonitorIcon, MoonIcon, PackageIcon, PanelLeftIcon, PlusIcon, SunIcon } from "lucide-react";
 import * as React from "react";
-import { Link } from "react-router";
-import { NavIcon } from "~/components/workspace/nav-icons";
-import { Avatar, AvatarFallback } from "~/components/ui/avatar";
-import { Kbd } from "~/components/ui/kbd";
-import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuLinkItem, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuSeparator, MenuTrigger } from "~/components/ui/menu";
+import { useLocation, useNavigate } from "react-router";
+import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuSeparator, MenuTrigger } from "~/components/ui/menu";
 import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
-import { type WorkspacePage, useSideChat, useWorkspacePage } from "~/lib/workspace-page";
-import { useWorkspaces } from "~/lib/data";
-import { me, type Workspace } from "~/lib/mock";
-import { isPageFor, targetMeta, useNavConfig, type NavGroupConfig, type NavItemConfig, type NavMenuConfig } from "~/lib/nav-config";
+import { useOrgs } from "~/lib/orgs";
 import { adminThemes, usePlatform } from "~/lib/platform";
+import { useSession } from "~/lib/session";
 import { cn } from "~/lib/utils";
+import { useWorkspaces, type WorkspaceSummary } from "~/lib/workspaces";
+import { useOrgModal } from "~/shell/context";
+import { sections, type Section } from "~/shell/sections";
 
 // The workspace sidebar: a dark rail with the workspace's sections, after Shopify's admin. One
 // row per section; a section's sub items open in the second panel (sub-nav.tsx), never here.
-// The workspace sits up top with the account menu; the SuperGrid mark is in the title strip above.
+// The workspace sits up top with its menu (other workspaces, the organization, appearance).
+// Then the core sections, the workspace's installed apps (read from its Worker), the developer
+// surfaces, and the agent and Settings at the foot.
 //
 // Collapsed (⌘B) it is icons only. Both states are the same DOM: the rail animates its width,
-// every icon sits in the same column either way, and the labels clip and fade. Nothing is
-// swapped, so the move is one smooth motion in each direction.
+// every icon sits in the same column either way, and the labels clip and fade.
 
 export const NAV_WIDTH = 256;
 export const NAV_COLLAPSED_WIDTH = 60;
-
 const DURATION = "duration-200";
 
 // A row: icon in a fixed slot on the left, label after it. The button clips, so the label
@@ -55,22 +40,18 @@ function Label({ children, className }: { children: React.ReactNode; className?:
 }
 
 // Wraps a row so its label shows as a tooltip once the rail is collapsed.
-function RailTooltip({ label, hint, children }: { label: React.ReactNode; hint?: React.ReactNode; children: React.ReactElement }): React.ReactElement {
+function RailTooltip({ label, children }: { label: React.ReactNode; children: React.ReactElement }): React.ReactElement {
   const { collapsed } = React.useContext(SidebarContext);
   return (
     <Tooltip disabled={!collapsed}>
       <TooltipTrigger render={children} />
-      <TooltipPopup side="right" className="flex items-center gap-2">
-        {label}
-        {hint}
-      </TooltipPopup>
+      <TooltipPopup side="right">{label}</TooltipPopup>
     </Tooltip>
   );
 }
 
-function Row({ icon, label, page, onClick, active, trailing, color }: { icon: React.ReactNode; label: string; page: WorkspacePage; onClick?: () => void; active: boolean; trailing?: React.ReactNode; color?: string }): React.ReactElement {
-  const { go } = useWorkspacePage();
-  const { onClose, collapsed } = React.useContext(SidebarContext);
+function Row({ icon, label, onClick, active }: { icon: React.ReactNode; label: string; onClick: () => void; active: boolean }): React.ReactElement {
+  const { onClose } = React.useContext(SidebarContext);
   return (
     <li>
       <RailTooltip label={label}>
@@ -80,135 +61,125 @@ function Row({ icon, label, page, onClick, active, trailing, color }: { icon: Re
           aria-label={label}
           aria-current={active ? "page" : undefined}
           onClick={() => {
-            if (onClick) onClick();
-            else go(page);
+            onClick();
             onClose();
           }}
         >
-          <span className={iconSlotClass} style={color ? { color } : undefined}>
-            {icon}
-          </span>
+          <span className={iconSlotClass}>{icon}</span>
           <Label>{label}</Label>
-          {trailing && <Label className="flex-none text-xs text-admin-dim">{trailing}</Label>}
         </button>
       </RailTooltip>
     </li>
   );
 }
 
-// A nav item from the config: its section's defaults, with the owner's overrides on top.
-function ConfigRow({ ws, item, page }: { ws: Workspace; item: NavItemConfig; page: WorkspacePage }): React.ReactElement | null {
-  const meta = targetMeta(ws, item.target);
-  if (!meta) return null;
-  const icon = <NavIcon name={item.icon ?? meta.icon} />;
-  const label = item.label ?? meta.label;
-  return <Row icon={icon} label={label} page={meta.page} active={isPageFor(item.target, page)} color={item.color} />;
-}
-
-// A menu: one row that opens its own panel; it reads as active while any of its items is on
-// screen. Clicking it opens the first item.
-function ConfigMenu({ ws, menu, page }: { ws: Workspace; menu: NavMenuConfig; page: WorkspacePage }): React.ReactElement {
-  const first = menu.items.map((it) => targetMeta(ws, it.target)).find((m) => !!m);
-  const active = menu.items.some((it) => isPageFor(it.target, page));
-  return <Row icon={<NavIcon name={menu.icon ?? "folder"} />} label={menu.label} page={first?.page ?? { kind: "home" }} active={active} color={menu.color} />;
-}
-
-// A group: optional hairline above and below, an optional title that folds away when the
-// rail is collapsed, and its items.
-function ConfigGroup({ ws, group, page }: { ws: Workspace; group: NavGroupConfig; page: WorkspacePage }): React.ReactElement {
+// A group: a hairline above, a title that folds away when the rail is collapsed, and its rows.
+function Group({ title, children }: { title: string; children: React.ReactNode }): React.ReactElement {
   const { collapsed } = React.useContext(SidebarContext);
-  const line = <li aria-hidden className="mx-2 my-2 h-px bg-admin-line" />;
   return (
     <>
-      {group.dividerAbove && line}
-      {group.title && (
-        <li aria-hidden className={cn("overflow-hidden ps-2.5 text-[11px] font-medium uppercase tracking-wider text-admin-dim transition-all", DURATION, collapsed ? "h-0 opacity-0" : "mt-2 mb-1 h-4 opacity-100")}>
-          {group.title}
-        </li>
-      )}
-      {group.items.map((it) => (
-        <ConfigRow key={it.target} ws={ws} item={it} page={page} />
-      ))}
-      {group.dividerBelow && line}
+      <li aria-hidden className="mx-2 my-2 h-px bg-admin-line" />
+      <li aria-hidden className={cn("overflow-hidden ps-2.5 text-[11px] font-medium uppercase tracking-wider text-admin-dim transition-all", DURATION, collapsed ? "h-0 opacity-0" : "mt-2 mb-1 h-4 opacity-100")}>
+        {title}
+      </li>
+      {children}
     </>
   );
 }
 
 // The workspace's badge: its first letter on the active color.
 const markClass = "flex size-8 shrink-0 items-center justify-center rounded-lg bg-active text-sm font-bold text-active-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]";
+const smallMarkClass = "flex size-5 items-center justify-center rounded-md bg-active text-[10px] font-bold text-active-foreground";
 
-function WorkspaceMark({ ws, className }: { ws: Workspace; className?: string }): React.ReactElement {
-  return (
-    <span className={cn(markClass, className)}>
-      {ws.name.slice(0, 1).toUpperCase()}
-    </span>
-  );
-}
-
-// The header row: the workspace's badge and name open the account menu.
+// The header row: the workspace's badge and name open its menu.
 const headerTriggerClass = "-ms-1 flex h-10 min-w-0 flex-1 cursor-pointer items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg ps-1 text-left outline-none transition-colors hover:bg-admin-hover focus-visible:ring-2 focus-visible:ring-admin-ring";
 
-function WorkspaceMenu({ ws }: { ws: Workspace }): React.ReactElement {
+function WorkspaceMenu({ ws }: { ws: WorkspaceSummary }): React.ReactElement {
   const { theme, setTheme, adminTheme, setAdminTheme } = usePlatform();
-  const { workspaces } = useWorkspaces();
+  const { org, setOrg } = useSession();
+  const orgs = useOrgs();
+  const { list } = useWorkspaces(org?.cloudflare ?? null);
   const { collapsed } = React.useContext(SidebarContext);
+  const navigate = useNavigate();
+  const modal = useOrgModal();
   return (
     <Menu>
       <RailTooltip label={ws.name}>
         <MenuTrigger render={<button type="button" aria-label={ws.name} className={cn(headerTriggerClass, collapsed ? "pe-0" : "pe-2")} />}>
-          <WorkspaceMark ws={ws} />
-          <Label className="font-heading text-[15px] font-semibold tracking-wide text-admin-strong">{ws.name}</Label>
+          <span className={markClass}>{ws.name.slice(0, 1).toUpperCase()}</span>
+          <Label className="flex flex-col">
+            <span className="truncate font-heading text-[15px] font-semibold tracking-wide text-admin-strong">{ws.name}</span>
+            {org && <span className="truncate text-xs text-admin-dim">{org.name}</span>}
+          </Label>
         </MenuTrigger>
       </RailTooltip>
       <MenuPopup align="start" side={collapsed ? "right" : "bottom"} className="w-64">
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <Avatar className="[--avatar-size:--spacing(7)]">
-            <AvatarFallback className="text-[10px]">{me.initials}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <div className="truncate text-sm">{me.name}</div>
-            <div className="truncate text-xs text-muted-foreground">{me.email}</div>
-          </div>
-        </div>
-        <MenuSeparator />
         <MenuGroup>
           <MenuGroupLabel>Workspaces</MenuGroupLabel>
-          {workspaces.map((w) => (
-            <MenuLinkItem key={w.id} render={<Link to={`/w/${w.id}`} />}>
-              <span className="flex size-5 items-center justify-center rounded-md bg-active text-[10px] font-bold text-active-foreground">
-                {w.name.slice(0, 1).toUpperCase()}
-              </span>
+          {(list ?? [ws]).map((w) => (
+            <MenuItem key={w.id} onClick={() => navigate(`/w/${w.id}`)}>
+              <span className={smallMarkClass}>{w.name.slice(0, 1).toUpperCase()}</span>
               <span className="flex-1 truncate">{w.name}</span>
               {w.id === ws.id && <CheckIcon className="size-4" />}
-            </MenuLinkItem>
+            </MenuItem>
           ))}
-          <MenuLinkItem render={<Link to="/" />}>
-            <FolderIcon />
+          <MenuItem onClick={() => modal.open("workspaces")}>
+            <LayoutGridIcon />
             All workspaces
-          </MenuLinkItem>
+          </MenuItem>
         </MenuGroup>
         <MenuSeparator />
-        <MenuLinkItem render={<a href={ws.url} target="_blank" rel="noreferrer" />}>
+        <MenuGroup>
+          <MenuGroupLabel>{org?.name ?? "Organization"}</MenuGroupLabel>
+          <MenuItem onClick={() => modal.open("settings")}>
+            <BuildingIcon />
+            Organization settings
+          </MenuItem>
+          {orgs
+            .filter((o) => o.id !== org?.id)
+            .map((o) => (
+              <MenuItem
+                key={o.id}
+                onClick={() => {
+                  setOrg(o.id);
+                  navigate("/");
+                }}
+              >
+                <ArrowLeftRightIcon />
+                Switch to {o.name}
+              </MenuItem>
+            ))}
+          <MenuItem onClick={() => navigate("/welcome")}>
+            <PlusIcon />
+            New organization
+          </MenuItem>
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuItem render={<a href={ws.url} target="_blank" rel="noreferrer" />}>
           <GlobeIcon />
           Open {ws.url.replace(/^https?:\/\//, "")}
-        </MenuLinkItem>
-        <MenuLinkItem render={<Link to="/org" />}>
-          <BuildingIcon />
-          Organization
-        </MenuLinkItem>
-        <MenuLinkItem render={<Link to="/account" />}>Account</MenuLinkItem>
+        </MenuItem>
         <MenuSeparator />
         <MenuGroup>
           <MenuGroupLabel>Appearance</MenuGroupLabel>
           <MenuRadioGroup value={theme} onValueChange={(v) => setTheme(v as typeof theme)}>
             <MenuRadioItem value="light">
-              <span className="flex items-center gap-2"><SunIcon className="size-4 opacity-80" />Light</span>
+              <span className="flex items-center gap-2">
+                <SunIcon className="size-4 opacity-80" />
+                Light
+              </span>
             </MenuRadioItem>
             <MenuRadioItem value="dark">
-              <span className="flex items-center gap-2"><MoonIcon className="size-4 opacity-80" />Dark</span>
+              <span className="flex items-center gap-2">
+                <MoonIcon className="size-4 opacity-80" />
+                Dark
+              </span>
             </MenuRadioItem>
             <MenuRadioItem value="system">
-              <span className="flex items-center gap-2"><MonitorIcon className="size-4 opacity-80" />System</span>
+              <span className="flex items-center gap-2">
+                <MonitorIcon className="size-4 opacity-80" />
+                System
+              </span>
             </MenuRadioItem>
           </MenuRadioGroup>
         </MenuGroup>
@@ -226,8 +197,6 @@ function WorkspaceMenu({ ws }: { ws: Workspace }): React.ReactElement {
             ))}
           </MenuRadioGroup>
         </MenuGroup>
-        <MenuSeparator />
-        <MenuLinkItem render={<Link to="/login" />}>Sign out</MenuLinkItem>
       </MenuPopup>
     </Menu>
   );
@@ -236,33 +205,40 @@ function WorkspaceMenu({ ws }: { ws: Workspace }): React.ReactElement {
 export function WorkspaceSidebar({
   ws,
   collapsed = false,
+  agentOpen,
+  onToggleAgent,
   onClose = () => {},
   className,
 }: {
-  ws: Workspace;
+  ws: WorkspaceSummary;
   collapsed?: boolean;
+  agentOpen: boolean;
+  onToggleAgent: () => void;
   onClose?: () => void;
   className?: string;
 }): React.ReactElement {
-  const { page } = useWorkspacePage();
-  const { config: nav } = useNavConfig(ws);
-  const sideChat = useSideChat();
-
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const modal = useOrgModal();
+  const base = `/w/${ws.id}`;
+  const rest = pathname.slice(base.length).replace(/^\//, "");
+  const isActive = (path: string) => (path === "" ? rest === "" : rest === path || rest.startsWith(`${path}/`));
+  const row = (s: Section) => <Row key={s.path} icon={<s.icon />} label={s.label} active={isActive(s.path)} onClick={() => navigate(`${base}${s.path ? `/${s.path}` : ""}`)} />;
+  const group = (g: Section["group"]) => sections.filter((s) => s.group === g).map(row);
   return (
     <SidebarContext.Provider value={{ onClose, collapsed }}>
       {/* the rail's own tooltip timing: collapsed icons should name themselves quickly */}
       <TooltipProvider delay={150} closeDelay={0}>
-      <aside
-        className={cn("flex h-full flex-col overflow-hidden bg-admin text-admin-fg transition-[width] ease-out", DURATION, className)}
-        style={{ width: collapsed ? NAV_COLLAPSED_WIDTH : NAV_WIDTH }}
-        data-collapsed={collapsed || undefined}
-      >
-        {/* header: the workspace, its badge in the icon column */}
-        <div className="flex h-12 shrink-0 items-center gap-1 overflow-hidden px-3.5">
-          <div className="min-w-0 flex-1">
-            <WorkspaceMenu ws={ws} />
-          </div>
-          <div className={cn("flex shrink-0 items-center transition-opacity", DURATION, collapsed ? "pointer-events-none opacity-0" : "opacity-100")}>
+        <aside
+          className={cn("flex h-full flex-col overflow-hidden bg-admin text-admin-fg transition-[width] ease-out", DURATION, className)}
+          style={{ width: collapsed ? NAV_COLLAPSED_WIDTH : NAV_WIDTH }}
+          data-collapsed={collapsed || undefined}
+        >
+          {/* header: the workspace, its badge in the icon column */}
+          <div className="flex h-14 shrink-0 items-center gap-1 overflow-hidden px-3.5">
+            <div className="min-w-0 flex-1">
+              <WorkspaceMenu ws={ws} />
+            </div>
             <Tooltip>
               <TooltipTrigger render={<button type="button" aria-label="Hide sidebar" onClick={onClose} className="flex size-8 cursor-pointer items-center justify-center rounded-md text-admin-muted outline-none hover:bg-admin-hover hover:text-admin-strong md:hidden" />}>
                 <PanelLeftIcon className="size-4" />
@@ -270,53 +246,27 @@ export function WorkspaceSidebar({
               <TooltipPopup>Hide</TooltipPopup>
             </Tooltip>
           </div>
-        </div>
-
-        {/* search: a field that shrinks to its icon */}
-        <div className="px-3 pb-3 pt-1">
-          <RailTooltip label="Search" hint={<Kbd>⌘K</Kbd>}>
-            <button type="button" aria-label="Search" className={cn(rowClass, "text-admin-muted hover:text-admin-strong", collapsed ? "bg-transparent" : "bg-admin-hover hover:bg-admin-active")}>
-              <span className={iconSlotClass}>
-                <SearchIcon />
-              </span>
-              <Label>Search</Label>
-              <Label className="flex-none text-xs text-admin-dim">⌘K</Label>
-            </button>
-          </RailTooltip>
-        </div>
-
-        <nav className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-4 pt-1 [scrollbar-color:var(--admin-active)_transparent] [scrollbar-width:thin]">
-          <ul className="flex flex-col gap-0.5">
-            {nav.entries.map((e) =>
-              e.kind === "group" ? (
-                <ConfigGroup key={e.id} ws={ws} group={e} page={page} />
-              ) : e.kind === "menu" ? (
-                <ConfigMenu key={e.id} ws={ws} menu={e} page={page} />
-              ) : (
-                <ConfigRow key={e.target} ws={ws} item={e} page={page} />
-              ),
-            )}
-          </ul>
-        </nav>
-
-        <div className="shrink-0 px-3 pb-4 pt-2">
-          <ul className="flex flex-col gap-0.5">
-            {/* the chat is a panel, not a page: this row opens and closes it, and its icon says when it is open */}
-            <Row icon={<MessageCircleIcon />} label="Chat" page={page} active={false} color={sideChat.side ? "var(--active)" : undefined} onClick={() => (sideChat.side ? sideChat.close() : sideChat.open())} />
-            <Row icon={<SettingsIcon />} label="Settings" page={{ kind: "settings", section: "general" }} active={page.kind === "settings"} />
-            <li>
-              <RailTooltip label="Notifications">
-                <button type="button" aria-label="Notifications" className={rowClass}>
-                  <span className={iconSlotClass}>
-                    <BellIcon />
-                  </span>
-                  <Label>Notifications</Label>
-                </button>
-              </RailTooltip>
-            </li>
-          </ul>
-        </div>
-      </aside>
+          <nav className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-4 pt-2 [scrollbar-color:var(--admin-active)_transparent] [scrollbar-width:thin]">
+            <ul className="flex flex-col gap-0.5">
+              {group("main")}
+              <Group title="Content">{group("content")}</Group>
+              <Group title="Apps">
+                {ws.apps.map((a) => (
+                  <Row key={a.app} icon={<PackageIcon />} label={a.name} active={isActive(`apps/${a.app}`)} onClick={() => navigate(`${base}/apps/${a.app}`)} />
+                ))}
+                <Row icon={<PlusIcon />} label="Add an app" active={false} onClick={() => modal.open("apps")} />
+              </Group>
+              <Group title="Developer">{group("developer")}</Group>
+            </ul>
+          </nav>
+          <div className="shrink-0 px-3 pb-4 pt-2">
+            <ul className="flex flex-col gap-0.5">
+              {/* the agent is a panel, not a page: this row opens and closes it */}
+              <Row icon={<MessageCircleIcon className={agentOpen ? "text-active" : undefined} />} label="Agent" active={false} onClick={onToggleAgent} />
+              {group("footer")}
+            </ul>
+          </div>
+        </aside>
       </TooltipProvider>
     </SidebarContext.Provider>
   );

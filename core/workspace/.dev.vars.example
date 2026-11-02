@@ -1,0 +1,4 @@
+# Copy to .dev.vars (git-ignored) to use Cloudflare Images and Stream from the local workspace.
+# The token needs Images: Edit, Stream: Edit and Account Analytics: Read. Without these, pictures and files go to the local R2 bucket.
+CF_ACCOUNT_ID=
+SG_MEDIA_TOKEN=

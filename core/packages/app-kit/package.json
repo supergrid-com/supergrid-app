@@ -8,13 +8,23 @@
     "./worker": "./src/worker.ts",
     "./context": "./src/context.ts",
     "./rpc": "./src/rpc.ts",
+    "./sitemap": "./src/sitemap.ts",
     "./vite": "./src/vite.ts",
     "./config": "./src/config.ts",
     "./user": "./src/user.ts",
-    "./names": "./src/names.ts"
+    "./names": "./src/names.ts",
+    "./client": "./src/client.ts",
+    "./react": "./src/react.tsx",
+    "./events": "./src/events.ts",
+    "./media": "./src/media.ts",
+    "./media-react": "./src/media-react.tsx"
+  },
+  "dependencies": {
+    "@supergrid/theme": "workspace:*"
   },
   "peerDependencies": {
     "react-router": "*",
-    "@react-router/dev": "*"
+    "@react-router/dev": "*",
+    "react": "*"
   }
 }
