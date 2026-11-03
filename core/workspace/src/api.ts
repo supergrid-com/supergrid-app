@@ -14,6 +14,7 @@ import * as sitemap from "./sitemap";
 import type { Env } from "./types";
 import { obj, str } from "./validate";
 import * as workflows from "./workflows";
+import { routes } from "./registry";
 
 const appId = (v: unknown) => str(v, "appId", { max: 40, re: /^[a-z][a-z0-9-]*$/ });
 
@@ -28,7 +29,7 @@ export class WorkspaceApi extends WorkerEntrypoint<Env> implements WorkspaceRpc 
   async info(): Promise<WorkspaceInfo> {
     await ensureCore(this.db);
     return { id: this.env.WORKSPACE_ID, name: this.env.WORKSPACE_NAME, url: this.env.WORKSPACE_URL, version: this.env.SG_VERSION, contract: CONTRACT,
-      apps: this.env.ROUTES.map(({ binding: _b, ...r }) => r),
+      apps: routes(this.env).map(({ binding: _b, ...r }) => r),
       sitemap: await sitemap.getSitemap(this.env) };
   }
   async getTheme() {

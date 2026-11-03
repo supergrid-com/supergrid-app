@@ -76,6 +76,20 @@
         "../.state/assets-dev"
       ],
       "port": 5399
+    },
+    {
+      "name": "ws-test",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "dev/ws",
+        "exec",
+        "react-router",
+        "dev",
+        "--port",
+        "5302"
+      ],
+      "port": 5302
     }
   ]
 }

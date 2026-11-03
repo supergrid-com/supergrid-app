@@ -1,0 +1,108 @@
+{
+  "id": "notes",
+  "name": "Notes",
+  "version": "0.1.0",
+  "description": "Notes: a SuperGrid app.",
+  "icon": "icon.svg",
+  "color": "#e8604a",
+  "public": {
+    "mount": "/notes"
+  },
+  "admin": {
+    "nav": [
+      {
+        "id": "items",
+        "label": "Items",
+        "path": "/",
+        "icon": "list"
+      },
+      {
+        "id": "settings",
+        "label": "Settings",
+        "path": "/settings",
+        "icon": "settings",
+        "place": "settings"
+      }
+    ],
+    "create": [
+      {
+        "label": "New Item",
+        "path": "/?new=1"
+      }
+    ]
+  },
+  "api": true,
+  "operations": true,
+  "data": {
+    "item": {
+      "label": "Item",
+      "plural": "Items",
+      "description": "The one thing this app keeps. Rename it, add fields, or add more entities beside it.",
+      "title": "title",
+      "fields": {
+        "id": {
+          "type": "id"
+        },
+        "title": {
+          "type": "string",
+          "label": "Title",
+          "required": true,
+          "search": true
+        },
+        "body": {
+          "type": "text",
+          "label": "Body",
+          "search": true
+        },
+        "status": {
+          "type": "enum",
+          "label": "Status",
+          "values": [
+            "draft",
+            "published"
+          ],
+          "default": "'draft'"
+        },
+        "image": {
+          "type": "media",
+          "label": "Image",
+          "media": [
+            "image"
+          ]
+        },
+        "contact_id": {
+          "type": "ref",
+          "label": "Contact",
+          "to": "core.contact",
+          "onDelete": "set null"
+        },
+        "created_at": {
+          "type": "datetime"
+        },
+        "updated_at": {
+          "type": "datetime"
+        }
+      },
+      "admin": {
+        "list": "/",
+        "view": "/:id"
+      },
+      "public": {
+        "list": "/",
+        "view": "/:id"
+      }
+    }
+  },
+  "packages": {
+    "exports": [],
+    "uses": []
+  },
+  "permissions": [
+    "contacts:write",
+    "events:emit"
+  ],
+  "subscribes": [],
+  "requires": {
+    "workspace": 3
+  }
+}

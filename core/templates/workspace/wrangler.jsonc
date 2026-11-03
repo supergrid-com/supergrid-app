@@ -1,0 +1,19 @@
+{
+  // The workspace Worker: every app under apps/ built in. The desktop writes the real names and bindings when it
+  // provisions the workspace; this is the local shape. Queues, Workflows and R2 are optional (see core/workspace/src/types.ts).
+  "name": "sg-ws-local",
+  "main": "./workers/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [{ "binding": "DB", "database_name": "sg-ws-local", "database_id": "11111111-1111-1111-1111-111111111111" }],
+  "workflows": [{ "binding": "HOOK_RUN", "name": "sg-ws-local-hooks", "class_name": "HookRun" }],
+  "triggers": { "crons": ["17 3 * * *"] },
+  "vars": {
+    "WORKSPACE_ID": "local",
+    "WORKSPACE_NAME": "Local workspace",
+    "WORKSPACE_URL": "http://localhost:5301",
+    "SG_VERSION": "dev"
+    // SG_WORKSPACE_TOKEN and SG_SECRETS_KEY are Worker secrets; .dev.vars holds the local ones.
+  },
+  "observability": { "enabled": true }
+}

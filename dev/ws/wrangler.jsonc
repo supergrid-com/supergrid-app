@@ -1,0 +1,18 @@
+{
+  // The workspace Worker: every app under apps/ built in. The desktop writes the real names and bindings when it
+  // provisions the workspace; this is the local shape. Queues, Workflows and R2 are optional (see core/workspace/src/types.ts).
+  "name": "sgdev-ws-w2nqwt",
+  "main": "./workers/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [{ "binding": "DB", "database_name": "sgdev-ws-w2nqwt", "database_id": "afc612f0-9fdd-45ae-8a7e-ba401146d29c" }],
+  "workflows": [{ "binding": "HOOK_RUN", "name": "sgdev-ws-w2nqwt-hooks", "class_name": "HookRun" }],
+  "triggers": { "crons": ["17 3 * * *"] },
+  "vars": {
+    "WORKSPACE_ID": "w2nqwt",
+    "WORKSPACE_NAME": "Mono test",
+    "WORKSPACE_URL": "https://sgdev-ws-w2nqwt.supergrid-operator.workers.dev",
+    "SG_VERSION": "dev"
+  },
+  "observability": { "enabled": true }
+}

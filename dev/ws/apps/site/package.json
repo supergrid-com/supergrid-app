@@ -1,0 +1,6 @@
+{
+  "name": "app-site",
+  "private": true,
+  "type": "module",
+  "description": "An app folder inside a SuperGrid workspace repo; its dependencies are the workspace's."
+}

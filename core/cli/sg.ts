@@ -10,7 +10,8 @@ import { gzipSync } from "node:zlib";
 import { CONTRACT } from "@supergrid/app-kit/rpc";
 import { isAppId, isPrefix, resourceNames } from "@supergrid/app-kit/names";
 import { checkManifest, type AppManifest } from "@supergrid/app-kit/manifest";
-import { scaffoldApp } from "@supergrid/app-kit/scaffold";
+import { scaffoldApp, scaffoldAppFolder, scaffoldWorkspace } from "@supergrid/app-kit/scaffold";
+import { generateWorkspace } from "@supergrid/app-kit/generate";
 import { withInlineIcon } from "@supergrid/app-kit/vite";
 import { CfApiError, accountSubdomain, createCf, enableWorkersDev, ensureD1, fetchBundle, fetchRelease, getSettings, putSchedules, putWorker, sha256Hex, waitForVersion, type Binding, type Bundle, type Cf, type Release } from "@supergrid/cloud";
 
@@ -175,7 +176,33 @@ function appCommand() {
   fail("usage: sg app new <folder> --id=<id> | sg app check [folder]");
 }
 
-const commands: Record<string, () => unknown> = { keygen, release, install, app: appCommand };
+/** `sg ws new <dir> --id= --name=`, `sg ws add <dir> --id= [--name= --mount= --home=]`, `sg ws generate <dir>`: a workspace repo and its app folders (WORKSPACE-REPO.md). */
+function wsCommand() {
+  const [sub, dirArg] = args;
+  if (sub === "new") {
+    const id = need("id");
+    const { dir } = scaffoldWorkspace({ core: CORE, dest: resolve(dirArg ?? fail("sg ws new <dir> --id=<id> --name=<name>")), id, name: flags.name ?? id, worker: flags.worker });
+    generateWorkspace(dir);
+    log(`created the workspace repo at ${dir}\n  cd ${dir} && pnpm install && pnpm dev`);
+    return;
+  }
+  if (sub === "add") {
+    const ws = resolve(dirArg ?? fail("sg ws add <workspace> --id=<id>"));
+    const { dir, manifest } = scaffoldAppFolder({ core: CORE, workspace: ws, id: need("id"), name: flags.name, mount: flags["admin-only"] ? null : flags.mount, home: flags.home, description: flags.description, color: flags.color, icon: flags.icon });
+    const g = generateWorkspace(ws);
+    log(`added ${manifest.id} at ${dir}; ${g.apps.length} app(s) in the build`);
+    return;
+  }
+  if (sub === "generate") {
+    const g = generateWorkspace(resolve(dirArg ?? "."));
+    for (const a of g.apps) log(`${a.id}${a.disabled ? " (disabled)" : ""}${a.manifest.public ? ` at ${a.manifest.public.mount}` : " (admin only)"}`);
+    log(`wrote ${g.files.join(", ")}`);
+    return;
+  }
+  fail("sg ws new|add|generate");
+}
+
+const commands: Record<string, () => unknown> = { keygen, release, install, app: appCommand, ws: wsCommand };
 const run = cmd ? commands[cmd] : undefined;
 if (!run) fail("usage: sg install | sg release | sg keygen | sg app new | sg app check");
 await run();

@@ -14,7 +14,8 @@ export type Env = {
   SG_SECRETS_KEY?: string;
   /** The release this Worker runs, set when it is deployed. */
   SG_VERSION: string;
-  ROUTES: RouteEntry[];
+  /** The installed apps, a multi-Worker workspace's binding. A composed workspace (see registry.ts) has none; read `routes(env)`. */
+  ROUTES?: RouteEntry[];
   /** Absent on accounts without Queues; events then go straight to D1 (see events.ts `publish`). */
   EVENTS?: Queue<EventRow>;
   /** Absent without Workflows; hooks then run inline (see hooks.ts `dispatch`). */

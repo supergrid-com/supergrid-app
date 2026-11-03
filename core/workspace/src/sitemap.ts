@@ -5,6 +5,7 @@ import { isReserved, matchRule, MOUNT_RE, normalizePath } from "@supergrid/app-k
 import { nid, now } from "./ids";
 import type { Env } from "./types";
 import { bool, invalid, list, obj, oneOf, opt, str } from "./validate";
+import { routes } from "./registry";
 
 const KEY = "sitemap";
 const MAX_RULES = 500;
@@ -13,8 +14,8 @@ const TARGET_RE = /^\/[A-Za-z0-9\-._~%/*]*(\?[^\s#]*)?$/;
 
 /** What a workspace with no setting yet looks like: every app at the mount it was built with. */
 export function defaultSitemap(env: Env): Sitemap {
-  const mounts = Object.fromEntries(env.ROUTES.map((r) => [r.app, r.public ?? null]));
-  const home = env.ROUTES.find((r) => r.home && r.public);
+  const mounts = Object.fromEntries(routes(env).map((r) => [r.app, r.public ?? null]));
+  const home = routes(env).find((r) => r.home && r.public);
   return { version: 1, mounts, home: home ? { app: home.app, path: home.home! } : null, rules: [] };
 }
 
@@ -85,7 +86,7 @@ function rule(v: unknown, i: number, existing: Map<string, SitemapRule>): Sitema
 
 /** Checks a document against what is installed and returns it normalized. Parts left out keep their current value. */
 export function parseSitemap(env: Env, input: SitemapInput, current: Sitemap): Sitemap {
-  const installed = new Set(env.ROUTES.map((r) => r.app));
+  const installed = new Set(routes(env).map((r) => r.app));
   const mounts = { ...current.mounts };
   if (input.mounts != null) {
     for (const [app, v] of Object.entries(obj(input.mounts, "mounts"))) if (installed.has(app)) mounts[app] = mount(v, `mounts.${app}`);

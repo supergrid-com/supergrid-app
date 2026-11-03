@@ -8,6 +8,7 @@ import { STEPS } from "./steps";
 import type { Env } from "./types";
 import { bool, EVENT_NAME, invalid, matches, obj, oneOf, opt, str, tpl, whenList } from "./validate";
 import { executeHook, type HookRunParams } from "./workflows";
+import { appOf, routes } from "./registry";
 
 type Row = { id: string; name: string | null; event: string; app_id: string | null; action: Hook["action"]; config: string; when_filter: string | null; enabled: number; created_at: string; updated_at: string };
 const hookOf = (r: Row): Hook => ({ id: r.id, name: r.name, event: r.event, app_id: r.app_id, action: r.action, config: JSON.parse(r.config || "{}"), when: r.when_filter ? JSON.parse(r.when_filter) : null, enabled: !!r.enabled, created_at: r.created_at, updated_at: r.updated_at });
@@ -15,7 +16,7 @@ const hookOf = (r: Row): Hook => ({ id: r.id, name: r.name, event: r.event, app_
 /** Hooks an app declared in its manifest (`subscribes`): read-only, delivered to the app Worker. */
 function manifestHooks(env: Env, names: Set<string>): Hook[] {
   const ts = "";
-  return env.ROUTES.flatMap((r) => (r.subscribes ?? []).filter((e) => names.has(e)).map((event): Hook => ({
+  return routes(env).flatMap((r) => (r.subscribes ?? []).filter((e) => names.has(e)).map((event): Hook => ({
     id: `app:${r.app}:${event}`, name: `${r.app} handles ${event}`, event, app_id: r.app, action: "app", config: { app: r.app }, when: null, enabled: true, readonly: true, created_at: ts, updated_at: ts,
   })));
 }
@@ -101,7 +102,16 @@ export async function executeHttp(env: Env, config: Hook["config"], event: Event
 
 /** Hand the event to the app Worker that subscribed to it. */
 export async function executeApp(env: Env, app: string, event: EventRow): Promise<unknown> {
-  const route = env.ROUTES.find((r) => r.app === app);
+  // Composed into this Worker: call the handler. The WorkspaceApi needs no ExecutionContext here (see `exec()` in api.ts).
+  const composed = appOf(app);
+  if (composed) {
+    const hook = composed.hooks[event.name];
+    if (!hook) throw new Error(`app ${app} has no handler for ${event.name}`);
+    const { WorkspaceApi } = await import("./api");
+    await hook(event, { WORKSPACE: new WorkspaceApi(undefined as unknown as ExecutionContext, env), DB: env.DB });
+    return { status: 204 };
+  }
+  const route = routes(env).find((r) => r.app === app);
   const binding = route && (env[route.binding] as Fetcher | undefined);
   if (!binding) throw new Error(`no binding for app ${app}`);
   const res = await binding.fetch(new Request(`https://app/_app/${app}/hook`, {
@@ -115,7 +125,7 @@ export async function executeApp(env: Env, app: string, event: EventRow): Promis
 
 export async function listHooks(env: Env): Promise<Hook[]> {
   const rows = (await env.DB.prepare("SELECT * FROM hooks ORDER BY event, created_at").all<Row>()).results.map(hookOf);
-  const declared = manifestHooks(env, new Set(env.ROUTES.flatMap((r) => r.subscribes ?? [])));
+  const declared = manifestHooks(env, new Set(routes(env).flatMap((r) => r.subscribes ?? [])));
   return [...rows, ...declared];
 }
 

@@ -1,5 +1,6 @@
 {
   "extends": "../tsconfig.base.json",
-  "include": ["src", "../packages/app-kit/src/rpc.ts", "../packages/app-kit/src/manifest.ts", "../packages/theme/index.ts", "../packages/theme/src/*.ts"],
-  "compilerOptions": { "lib": ["ES2023"], "types": ["@cloudflare/workers-types"] }
+  "include": ["src", "../packages/app-kit/src/*.ts", "../packages/app-kit/src/*.tsx", "../packages/theme/index.ts", "../packages/theme/src/*.ts"],
+  "exclude": ["../packages/app-kit/src/vite.ts", "../packages/app-kit/src/scaffold.ts", "../packages/app-kit/src/generate.ts", "../packages/app-kit/src/compose.ts"],
+  "compilerOptions": { "lib": ["ES2023", "DOM", "DOM.Iterable"], "types": ["@cloudflare/workers-types/experimental", "vite/client"], "jsx": "react-jsx" }
 }

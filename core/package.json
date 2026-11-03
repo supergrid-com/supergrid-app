@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter platform dev",
-    "dev:workspace": "pnpm --filter workspace dev",
+    "dev:workspace": "pnpm --filter @supergrid/workspace dev",
     "build": "pnpm --filter platform build",
     "typecheck": "pnpm -r typecheck",
     "sg": "tsx cli/sg.ts",

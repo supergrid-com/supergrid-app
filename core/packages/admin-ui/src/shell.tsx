@@ -32,12 +32,15 @@ export function AdminApp({ manifest, children, className }: { manifest: AppManif
   // dialogs, sheets and popovers portal to the body, so the admin tokens live on the document root too
   React.useEffect(() => {
     document.documentElement.setAttribute("data-sg-admin", "");
-    return () => document.documentElement.removeAttribute("data-sg-admin");
+    return () => { document.documentElement.removeAttribute("data-sg-admin"); };
   }, []);
   // where the app is, as the shell wants it: relative to basePath
   const rel = location.pathname.startsWith(basePath) ? location.pathname.slice(basePath.length) || "/" : location.pathname;
   React.useEffect(() => { host?.navigate(rel + location.search); }, [host, rel, location.search]);
-  React.useEffect(() => host?.onNavigate((path) => { if (path !== rel) navigate(adminHref(manifest, path)); }), [host, rel, navigate, manifest]);
+  React.useEffect(() => {
+    const off = host?.onNavigate((path) => { if (path !== rel) navigate(adminHref(manifest, path)); });
+    return () => { off?.(); };
+  }, [host, rel, navigate, manifest]);
   const value = React.useMemo(() => ({ host, manifest, basePath }), [host, manifest, basePath]);
   return (
     <AdminContext.Provider value={value}>

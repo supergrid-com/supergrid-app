@@ -1,7 +1,12 @@
 {
-  "name": "workspace",
+  "name": "@supergrid/workspace",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./worker": "./src/compose.ts",
+    "./types": "./src/types.ts"
+  },
   "scripts": {
     "dev": "wrangler dev --port 5301 --inspector-port 9231 --persist-to ../.state",
     "deploy": "wrangler deploy",
@@ -11,9 +16,14 @@
     "@supergrid/theme": "workspace:*",
     "@supergrid/app-kit": "workspace:*"
   },
+  "peerDependencies": {
+    "react-router": "*"
+  },
   "devDependencies": {
     "wrangler": "^4.156.0",
     "typescript": "^5",
-    "@cloudflare/workers-types": "^5.20261030.1"
+    "@cloudflare/workers-types": "^5.20261030.1",
+    "react-router": "8.5.1",
+    "@react-router/dev": "8.5.1"
   }
 }
