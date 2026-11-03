@@ -3,13 +3,11 @@ import { cn } from "~/lib/utils";
 
 export function PageHeader({
   title,
-  description,
   meta,
   actions,
   className,
 }: {
   title: React.ReactNode;
-  description?: React.ReactNode;
   meta?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
@@ -17,8 +15,7 @@ export function PageHeader({
   return (
     <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between", className)}>
       <div className="flex min-w-0 flex-col gap-1.5">
-        <h1 className="font-heading text-2xl font-bold leading-tight tracking-tight">{title}</h1>
-        {description && <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>}
+        <h1 className="font-heading text-2xl font-semibold leading-tight tracking-tight">{title}</h1>
         {meta && <div className="mt-1 flex flex-wrap items-center gap-2">{meta}</div>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
@@ -59,7 +56,7 @@ export function Stat({ label, value, hint, tone }: { label: string; value: React
       <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
       <div
         className={cn(
-          "font-heading text-2xl font-bold leading-none",
+          "font-heading text-2xl font-semibold leading-none",
           tone === "warning" && "text-warning-foreground",
           tone === "success" && "text-success-foreground",
           tone === "danger" && "text-destructive-foreground",

@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from "electron";
 import { channels, type Bridge } from "../shared/bridge";
 
 function listen<T>(channel: string, cb: (value: T) => void): () => void {
@@ -39,16 +39,56 @@ const bridge: Bridge = {
     resetToken: (wsId) => ipcRenderer.invoke(channels.wsResetToken, wsId),
     setMediaToken: (wsId, token) => ipcRenderer.invoke(channels.wsMediaToken, wsId, token),
   },
+  d1: {
+    query: (target, sql, params) => ipcRenderer.invoke(channels.d1Query, target, sql, params ?? []),
+    raw: (target, sql, params) => ipcRenderer.invoke(channels.d1Raw, target, sql, params ?? []),
+    info: (target) => ipcRenderer.invoke(channels.d1Info, target),
+    bookmark: (target, timestamp) => ipcRenderer.invoke(channels.d1Bookmark, target, timestamp),
+    restore: (target, to) => ipcRenderer.invoke(channels.d1Restore, target, to),
+    export: (target) => ipcRenderer.invoke(channels.d1Export, target),
+  },
+  library: {
+    pick: (opts) => ipcRenderer.invoke(channels.libPick, opts),
+    pathOf: (file) => webUtils.getPathForFile(file),
+    cancel: (job) => ipcRenderer.invoke(channels.libCancel, job),
+    onProgress: (cb) => listen(channels.libProgress, cb),
+    images: {
+      list: (accountId) => ipcRenderer.invoke(channels.libImagesList, accountId),
+      upload: (accountId, job, file, meta) => ipcRenderer.invoke(channels.libImagesUpload, accountId, job, file, meta),
+      update: (accountId, id, meta) => ipcRenderer.invoke(channels.libImagesUpdate, accountId, id, meta),
+      remove: (accountId, ids) => ipcRenderer.invoke(channels.libImagesRemove, accountId, ids),
+    },
+    stream: {
+      list: (accountId) => ipcRenderer.invoke(channels.libStreamList, accountId),
+      get: (accountId, uid) => ipcRenderer.invoke(channels.libStreamGet, accountId, uid),
+      upload: (accountId, job, file, opts) => ipcRenderer.invoke(channels.libStreamUpload, accountId, job, file, opts),
+      update: (accountId, uid, opts) => ipcRenderer.invoke(channels.libStreamUpdate, accountId, uid, opts),
+      remove: (accountId, uids) => ipcRenderer.invoke(channels.libStreamRemove, accountId, uids),
+      analytics: (accountId, opts) => ipcRenderer.invoke(channels.libStreamAnalytics, accountId, opts),
+    },
+    files: {
+      list: (accountId, bucket, opts) => ipcRenderer.invoke(channels.libFilesList, accountId, bucket, opts ?? {}),
+      upload: (accountId, job, bucket, file, opts) => ipcRenderer.invoke(channels.libFilesUpload, accountId, job, bucket, file, opts),
+      remove: (accountId, bucket, keys) => ipcRenderer.invoke(channels.libFilesRemove, accountId, bucket, keys),
+      save: (accountId, bucket, key) => ipcRenderer.invoke(channels.libFilesSave, accountId, bucket, key),
+    },
+  },
   agent: {
     status: () => ipcRenderer.invoke(channels.agentStatus),
     start: () => ipcRenderer.invoke(channels.agentStart),
     stop: () => ipcRenderer.invoke(channels.agentStop),
     send: (message) => ipcRenderer.invoke(channels.agentSend, message),
     workspaceDir: (id) => ipcRenderer.invoke(channels.agentDir, id),
-    mcpServers: (id) => ipcRenderer.invoke(channels.agentMcp, id),
+    mcpServers: (id, client) => ipcRenderer.invoke(channels.agentMcp, id, client),
+    bindClient: (client, opts) => ipcRenderer.invoke(channels.agentBind, client, opts),
+    setContext: (wsId, context) => ipcRenderer.invoke(channels.agentContext, wsId, context),
+    answer: (answer) => ipcRenderer.invoke(channels.agentAnswer, answer),
     onMessage: (cb) => listen(channels.agentMessage, cb),
     onLog: (cb) => listen(channels.agentLog, cb),
     onExit: (cb) => listen(channels.agentExit, cb),
+    onAsk: (cb) => listen(channels.agentAsk, cb),
+    onWidget: (cb) => listen(channels.agentWidget, cb),
+    onNavigate: (cb) => listen(channels.agentNavigate, cb),
   },
 };
 

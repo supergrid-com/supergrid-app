@@ -50,6 +50,16 @@
       "port": 5183
     },
     {
+      "name": "branding",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "branding",
+        "dev"
+      ],
+      "port": 5310
+    },
+    {
       "name": "workspace-only",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [

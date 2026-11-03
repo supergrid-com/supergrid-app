@@ -4,8 +4,9 @@ import { accessSync, constants, existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { delimiter, join } from "node:path";
 import { createInterface } from "node:readline";
-import { channels, type AgentStatus, type JsonRpcMessage, type McpServerConfig } from "../shared/bridge";
-import { connection } from "./workspace-api";
+import { channels, type AgentAnswer, type AgentStatus, type AppContext, type JsonRpcMessage, type McpServerConfig } from "../shared/bridge";
+import { MCP_SERVER_NAME } from "../shared/agent";
+import * as bridge from "./agent-bridge";
 
 // The coding agent, as a child process speaking ACP. Main is deliberately a pipe: it starts the
 // agent, writes newline-delimited JSON-RPC to its stdin and forwards every line it prints to the
@@ -101,33 +102,40 @@ function workspaceDir(id: unknown): string {
 }
 
 /**
- * The MCP servers a session gets: our own stdio server (built beside this file as mcp.js) run by this
- * Electron binary as plain Node, with the workspace's URL and token in its environment. The agent
- * sees tools, never the token.
+ * The MCP servers a session gets: our own stdio proxy (built beside this file as mcp.js) run by
+ * this Electron binary as plain Node, pointed back at the app's tool bridge with the client id the
+ * renderer made for the session. The tools run in this process (src/main/agent-bridge.ts); the
+ * agent sees tools, never a token.
  */
-async function mcpServersFor(id: unknown): Promise<McpServerConfig[]> {
+function mcpServersFor(id: unknown, client: unknown, sender: WebContents): McpServerConfig[] {
   if (typeof id !== "string" || !/^[\w-]+$/.test(id)) return [];
-  let ws: { url: string; token: string; name: string };
-  try {
-    ws = await connection(id);
-  } catch {
-    return []; // no connection to this workspace yet: the agent runs without the tools
-  }
+  if (typeof client !== "string" || !/^[\w-]+$/.test(client)) throw new Error("A session needs a client id.");
+  bridge.registerClient(client, id, sender);
   return [{
-    name: "supergrid",
+    name: MCP_SERVER_NAME,
     command: process.execPath,
     args: [join(__dirname, "mcp.js")],
     env: [
       { name: "ELECTRON_RUN_AS_NODE", value: "1" },
-      { name: "SG_WORKSPACE_URL", value: ws.url },
-      { name: "SG_WORKSPACE_TOKEN", value: ws.token },
-      { name: "SG_WORKSPACE_NAME", value: ws.name },
+      { name: "SG_BRIDGE", value: bridge.startBridge() },
+      { name: "SG_CLIENT", value: client },
     ],
   }];
 }
 
 export function registerAgent(): void {
-  ipcMain.handle(channels.agentMcp, (_e, id: unknown) => mcpServersFor(id));
+  ipcMain.handle(channels.agentMcp, (e, id: unknown, client: unknown) => mcpServersFor(id, client, e.sender));
+  ipcMain.handle(channels.agentBind, (_e, client: unknown, opts: unknown) => {
+    const o = (opts ?? {}) as { sessionId?: unknown; dev?: unknown };
+    if (typeof client === "string") bridge.bindClient(client, { sessionId: typeof o.sessionId === "string" ? o.sessionId : null, dev: o.dev === true });
+  });
+  ipcMain.handle(channels.agentContext, (_e, wsId: unknown, context: unknown) => {
+    if (typeof wsId === "string" && context && typeof context === "object") bridge.setContext(wsId, context as AppContext);
+  });
+  ipcMain.handle(channels.agentAnswer, (_e, answer: unknown) => {
+    const a = answer as Partial<AgentAnswer> | undefined;
+    if (a && typeof a.id === "string") bridge.answer({ id: a.id, ok: a.ok === true, uploaded: Array.isArray(a.uploaded) ? a.uploaded : undefined, note: typeof a.note === "string" ? a.note : undefined });
+  });
   ipcMain.handle(channels.agentStatus, () => status());
   ipcMain.handle(channels.agentStart, (e) => startAgent(e.sender));
   ipcMain.handle(channels.agentStop, () => stopAgent());

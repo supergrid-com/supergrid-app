@@ -27,7 +27,7 @@ function WorkspaceCard({ ws, onOpen }: { ws: WorkspaceSummary; onOpen: () => voi
       className="flex h-full flex-col gap-4 rounded-2xl border bg-background p-5 text-left shadow-xs/5 outline-none transition-colors hover:border-ring/40 hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring"
     >
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-active font-heading text-base font-bold text-active-foreground">{ws.name.slice(0, 1)}</span>
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-active font-heading text-base font-semibold text-active-foreground">{ws.name.slice(0, 1)}</span>
         <div className="min-w-0 flex-1">
           <div className="truncate font-heading font-semibold">{ws.name}</div>
           <div className="flex items-center gap-1 truncate text-xs text-muted-foreground">
@@ -44,7 +44,7 @@ function WorkspaceCard({ ws, onOpen }: { ws: WorkspaceSummary; onOpen: () => voi
             </Badge>
           ))
         ) : (
-          <span className="text-xs text-muted-foreground">No apps yet</span>
+          <span className="text-xs text-muted-foreground">No Apps Yet</span>
         )}
       </div>
       <div className="mt-auto truncate text-xs text-muted-foreground">
@@ -65,7 +65,7 @@ export function OrgWorkspaces(): React.ReactElement {
 
   if (creating && link) {
     return (
-      <SectionPage title="New workspace" description={`In ${link.accountName}. It's created for real in your Cloudflare account.`} width={720}>
+      <SectionPage title="New Workspace" width={720}>
         <CreateWorkspace link={link} onOpen={(c) => open(c.id)} onCancel={() => setCreating(false)} />
       </SectionPage>
     );
@@ -120,7 +120,7 @@ export function OrgWorkspaces(): React.ReactElement {
           <EmptyMedia variant="icon">
             <LayoutGridIcon />
           </EmptyMedia>
-          <EmptyTitle>No workspaces yet</EmptyTitle>
+          <EmptyTitle>No Workspaces Yet</EmptyTitle>
           <EmptyDescription>
             None under {link.prefix}-ws-* in {link.accountName}.
           </EmptyDescription>
@@ -145,7 +145,6 @@ export function OrgWorkspaces(): React.ReactElement {
   return (
     <SectionPage
       title="Workspaces"
-      description={link ? `${link.accountName} · ${link.prefix}-ws-*` : undefined}
       actions={
         sg && link ? (
           <>

@@ -36,7 +36,7 @@ export function OrgModal(): React.ReactElement | null {
   const Body = section ? (bodies[section] ?? WorkspaceGeneral) : null;
   return (
     <Dialog open={!!section} onOpenChange={(o) => !o && close()}>
-      <DialogPopup className="h-[86dvh] max-w-[min(1120px,94vw)] overflow-hidden p-0" backdropProps={{ className: "backdrop-blur-none" }}>
+      <DialogPopup className="h-[86dvh] max-w-[min(1120px,94vw)] overflow-hidden p-0">
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <div className="flex min-h-0 flex-1">
           <aside className="flex w-56 shrink-0 flex-col gap-5 overflow-y-auto border-e bg-muted/40 px-2 py-4">

@@ -7,7 +7,6 @@ export function Activity(): React.ReactElement {
   return (
     <Placeholder
       title="Activity"
-      description="Every change in this organization, from the app, the sg CLI and the agent."
       icon={ClockIcon}
       what="Deploys, installs and settings changes will show up here once SuperGrid makes them."
     />

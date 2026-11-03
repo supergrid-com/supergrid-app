@@ -3,7 +3,7 @@ import { getSettings, mediaToken, setSecrets, type EnvValue } from "@supergrid/c
 import { RPC_METHOD_NAMES } from "@supergrid/app-kit/rpc";
 import type { WorkspaceSummary } from "../shared/bridge";
 import * as cloudflare from "./cloudflare";
-import { readConfig, writeConfig } from "./config";
+import { readConfig, readState, writeConfig } from "./config";
 import { listWorkspaces } from "./workspaces";
 
 // The desktop's path into a workspace: POST `/_ws/rpc` on its public URL with the workspace token.
@@ -22,23 +22,38 @@ const CACHE_TTL = 60_000;
 const KEY_MISSING = "SECRETS_KEY_MISSING";
 const methods = new Set<string>(RPC_METHOD_NAMES);
 
-let cache: { at: number; list: Promise<WorkspaceSummary[]> } | null = null;
+const caches = new Map<string, { at: number; list: Promise<WorkspaceSummary[]> }>();
 
 function isLocal(ws: Pick<WorkspaceSummary, "id" | "url">): boolean {
   return ws.id === "local" || /^http:\/\/localhost(:\d+)?(\/|$)/.test(ws.url);
 }
 
-async function workspace(wsId: string): Promise<WorkspaceSummary> {
-  if (wsId === "local") return { id: "local", name: "Local dev", url: process.env.SG_WORKSPACE_URL ?? LOCAL_URL, worker: "", version: null, apps: [] };
-  if (!cache || Date.now() - cache.at > CACHE_TTL) {
+function listed(accountId: string, prefix: string): Promise<WorkspaceSummary[]> {
+  const key = `${accountId}/${prefix}`;
+  let c = caches.get(key);
+  if (!c || Date.now() - c.at > CACHE_TTL) {
     const at = Date.now();
-    const list = cloudflare.client().then(({ cf, prefix }) => listWorkspaces(cf.accountId, prefix));
-    cache = { at, list };
-    list.catch(() => { if (cache?.at === at) cache = null; });
+    const list = listWorkspaces(accountId, prefix);
+    c = { at, list };
+    caches.set(key, c);
+    list.catch(() => { if (caches.get(key)?.at === at) caches.delete(key); });
   }
-  const ws = (await cache.list).find((w) => w.id === wsId);
-  if (!ws) throw new Error(`Unknown workspace ${wsId}.`);
-  return ws;
+  return c.list;
+}
+
+/**
+ * A workspace by id, found among the Workers of the account. The install prefix is the connection's,
+ * and each organization's own when it differs (an organization picks its prefix in its settings).
+ */
+export async function workspace(wsId: string): Promise<WorkspaceSummary> {
+  if (wsId === "local") return { id: "local", name: "Local dev", url: process.env.SG_WORKSPACE_URL ?? LOCAL_URL, worker: "", version: null, apps: [] };
+  const { cf, prefix } = await cloudflare.client();
+  const prefixes = [...new Set([prefix, ...readState().orgs.map((o) => o.cloudflare?.prefix ?? "").filter(Boolean)])];
+  for (const p of prefixes) {
+    const ws = (await listed(cf.accountId, p).catch(() => [] as WorkspaceSummary[])).find((w) => w.id === wsId);
+    if (ws) return ws;
+  }
+  throw new Error(`Unknown workspace ${wsId}.`);
 }
 
 async function tokenFor(ws: WorkspaceSummary, fresh = false): Promise<string> {

@@ -1,16 +1,21 @@
 import type * as React from "react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "~/components/ui/empty";
 import { WorkspaceFrame } from "~/components/workspace/frame";
+import { useParams } from "react-router";
 import { useOpenNav } from "~/shell/context";
 import { sections } from "~/shell/sections";
 
-// A workspace section that isn't built yet: its place in the rail and what it will be for.
+// A workspace section that isn't built yet: its place in the rail and what it will be for. In a
+// section with sub items, the one open in the second panel (the rest of the path after it).
 export function SectionPlaceholder({ path }: { path: string }): React.ReactElement {
+  const sub = useParams()["*"] ?? "";
   const s = sections.find((x) => x.path === path);
+  const item = s?.items?.find((it) => it.path === sub);
   const onOpenNav = useOpenNav();
-  const Icon = s?.icon;
+  const Icon = item?.icon ?? s?.icon;
+  const title = s && item ? `${s.label} · ${item.label}` : (s?.label ?? path);
   return (
-    <WorkspaceFrame icon={Icon && <Icon />} title={s?.label ?? path} onOpenNav={onOpenNav}>
+    <WorkspaceFrame icon={Icon && <Icon />} title={title} onOpenNav={onOpenNav}>
       <Empty className="py-16">
         <EmptyHeader>
           {Icon && (
@@ -18,19 +23,11 @@ export function SectionPlaceholder({ path }: { path: string }): React.ReactEleme
               <Icon />
             </EmptyMedia>
           )}
-          <EmptyTitle>Not built yet</EmptyTitle>
-          <EmptyDescription>{s?.about}</EmptyDescription>
+          <EmptyTitle>Not Built Yet</EmptyTitle>
+          <EmptyDescription>{item?.about ?? s?.about}</EmptyDescription>
         </EmptyHeader>
       </Empty>
     </WorkspaceFrame>
   );
 }
 
-export const Contacts = () => <SectionPlaceholder path="contacts" />;
-export const Analytics = () => <SectionPlaceholder path="analytics" />;
-export const Assets = () => <SectionPlaceholder path="assets" />;
-export const Design = () => <SectionPlaceholder path="design" />;
-export const Workflows = () => <SectionPlaceholder path="workflows" />;
-export const Hooks = () => <SectionPlaceholder path="hooks" />;
-export const Events = () => <SectionPlaceholder path="events" />;
-export const Secrets = () => <SectionPlaceholder path="secrets" />;

@@ -1,12 +1,37 @@
 @import "tailwindcss";
 @import "cal-sans";
 @import "@fontsource-variable/geist-mono";
+/* the chat's markdown and code blocks (components/ai-elements/message.tsx) carry Tailwind classes of their own */
+@source "../../../node_modules/streamdown/dist/*.js";
+@source "../../../node_modules/@streamdown/code/dist/*.js";
+/* the color picker (components/ui/color-picker.tsx) is Tailwind classes too, so its own stylesheet stays out */
+@source "../../../node_modules/react-beautiful-color/dist/index.mjs";
+
+@utility rounded-inherit {
+  border-radius: inherit;
+}
 
 
 /* .light lets a surface inside a dark page declare itself light again: the chat follows the admin theme. */
 @custom-variant dark (&:is(.dark *):not(.light *));
 
 @theme inline {
+  /* The scale, a step up from Tailwind's: the app is read by people, not developers, so body copy
+     and titles are a little larger. The rail and sub nav rows keep 14px (text-[14px]). */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.625rem;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 2.125rem;
+  --text-3xl: 2rem;
+  --text-3xl--line-height: 2.375rem;
   --animate-skeleton: skeleton 2s -1s infinite linear;
   --animate-toast-success-odd: toast-success-odd 0.32s cubic-bezier(0.5, 1, 0.89, 1);
   --animate-toast-success-even: toast-success-even 0.32s cubic-bezier(0.5, 1, 0.89, 1);
@@ -37,6 +62,7 @@
   --color-admin-line: var(--admin-line);
   --color-admin-ring: var(--admin-ring);
   --color-admin-accent: var(--admin-accent);
+  --color-admin-accent-foreground: var(--admin-accent-foreground);
   --color-code-highlight: var(--code-highlight);
   --code-foreground: var(--code-foreground);
   --color-code: var(--code);
@@ -218,8 +244,9 @@
   --warning-foreground: var(--color-amber-400);
   --accent: --alpha(var(--color-white) / 4%);
   --accent-foreground: var(--color-neutral-100);
-  --background: color-mix(in srgb, var(--color-neutral-950) 95%, var(--color-white));
-  --app-bg: var(--color-neutral-950);
+  /* after Claude Code's dark mode: the page a step darker than the window around it */
+  --background: #181818;
+  --app-bg: #1f1f1f;
   --border: --alpha(var(--color-white) / 6%);
   --card: color-mix(in srgb, var(--background) 98%, var(--color-white));
   --card-foreground: var(--color-neutral-100);
@@ -253,46 +280,24 @@
   --sidebar-ring: var(--color-neutral-400);
 }
 
-/* Admin themes: what the layer behind a workspace's cards looks like. The page theme (light /
-   dark) is separate; these only color the rail, the sub nav and the backdrop. Pick one with
-   data-admin-theme on <html>; auto, which follows light and dark, is the default. Add a theme by
-   adding a block. */
-:root,
-html[data-admin-theme="graphite"] {
-  --admin-bg: #171717;
-  /* the second panel beside the rail: a step darker than the layer it sits on */
-  --admin-panel: color-mix(in srgb, var(--admin-bg) 90%, black);
-  /* a surface lifted off the panel, such as the chat composer */
-  --admin-raised: color-mix(in srgb, var(--admin-bg) 86%, white);
-  --admin-fg: #d4d4d4;
-  --admin-muted: #a3a3a3;
-  --admin-dim: #737373;
-  --admin-strong: #ffffff;
-  --admin-hover: rgb(255 255 255 / 8%);
-  --admin-active: rgb(255 255 255 / 12%);
-  --admin-line: rgb(255 255 255 / 10%);
-  --admin-ring: rgb(255 255 255 / 40%);
-  --admin-accent: var(--active);
-}
-.dark:root:not([data-admin-theme]),
-.dark[data-admin-theme="graphite"] {
-  --admin-bg: #0a0a0a;
-}
-html[data-admin-theme="auto"] {
-  --admin-bg: var(--app-bg);
+/* The sidebar layer's fallback, before lib/theme.ts writes the real theme into #sg-theme. The
+   values below match the "match interface" sidebar; everything else derives from three knobs. */
+:root {
+  --admin-bg: #f5f5f3;
   --admin-panel: #efefec;
   --admin-raised: #ffffff;
   --admin-fg: #3f3f46;
   --admin-muted: #71717a;
   --admin-dim: #a1a1aa;
   --admin-strong: #18181b;
-  --admin-hover: rgb(0 0 0 / 5%);
-  --admin-active: rgb(0 0 0 / 8%);
+  --admin-hover: rgb(0 0 0 / 4%);
+  --admin-active: rgb(0 0 0 / 7%);
   --admin-line: rgb(0 0 0 / 9%);
   --admin-ring: rgb(0 0 0 / 30%);
   --admin-accent: var(--active);
+  --admin-accent-foreground: var(--active-foreground);
 }
-.dark[data-admin-theme="auto"] {
+.dark {
   --admin-bg: #1c1c1c;
   --admin-panel: #141414;
   --admin-raised: #2b2b2b;
@@ -300,54 +305,10 @@ html[data-admin-theme="auto"] {
   --admin-muted: #a3a3a3;
   --admin-dim: #737373;
   --admin-strong: #ffffff;
-  --admin-hover: rgb(255 255 255 / 8%);
-  --admin-active: rgb(255 255 255 / 12%);
+  --admin-hover: rgb(255 255 255 / 4%);
+  --admin-active: rgb(255 255 255 / 7%);
   --admin-line: rgb(255 255 255 / 10%);
   --admin-ring: rgb(255 255 255 / 40%);
-}
-html[data-admin-theme="mist"] {
-  --admin-bg: #e9e9ec;
-  --admin-panel: #e1e1e5;
-  --admin-raised: #f7f7f9;
-  --active: #6366f1;
-  --admin-fg: #3f3f46;
-  --admin-muted: #71717a;
-  --admin-dim: #a1a1aa;
-  --admin-strong: #18181b;
-  --admin-hover: rgb(0 0 0 / 6%);
-  --admin-active: rgb(0 0 0 / 10%);
-  --admin-line: rgb(0 0 0 / 10%);
-  --admin-ring: rgb(0 0 0 / 30%);
-  --admin-accent: var(--active);
-}
-html[data-admin-theme="blush"] {
-  --admin-bg: #f4e1e8;
-  --admin-panel: #eed7e0;
-  --admin-raised: #fcf3f6;
-  --active: #db2777;
-  --admin-fg: #5c3447;
-  --admin-muted: #8d5f73;
-  --admin-dim: #b58c9c;
-  --admin-strong: #3a1a2a;
-  --admin-hover: rgb(90 30 60 / 8%);
-  --admin-active: rgb(90 30 60 / 14%);
-  --admin-line: rgb(90 30 60 / 12%);
-  --admin-ring: rgb(90 30 60 / 35%);
-  --admin-accent: var(--active);
-}
-html[data-admin-theme="forest"] {
-  --admin-bg: #0f2a1f;
-  --active: #34d399;
-  --active-foreground: #06291c;
-  --admin-fg: #b9d4c6;
-  --admin-muted: #88ab98;
-  --admin-dim: #5f8371;
-  --admin-strong: #f0fff6;
-  --admin-hover: rgb(255 255 255 / 7%);
-  --admin-active: rgb(255 255 255 / 12%);
-  --admin-line: rgb(255 255 255 / 10%);
-  --admin-ring: rgb(255 255 255 / 40%);
-  --admin-accent: var(--active);
 }
 
 /* Text a light passes through, for work in progress (ai-elements/shimmer). */
@@ -386,10 +347,30 @@ html[data-admin-theme="forest"] {
   --ring: var(--admin-ring);
 }
 
-.on-admin,
-.on-admin * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--admin-active) transparent;
+/* Scrollbars everywhere: a slim pill in the text color, in a clear gutter, darker under the
+   pointer and gone when there's nothing to scroll. Chromium's own pseudo-elements (this is
+   Electron), so no `scrollbar-width` anywhere, which would switch them off. The kit's ScrollArea
+   draws its own bar to the same look. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--foreground) 32%, transparent);
+}
+::-webkit-scrollbar-thumb:active {
+  background-color: color-mix(in srgb, var(--foreground) 40%, transparent);
 }
 
 @layer base {
@@ -405,6 +386,10 @@ html[data-admin-theme="forest"] {
   html {
     @apply font-sans antialiased;
     color-scheme: light;
+    letter-spacing: 0.01em;
+  }
+  code, kbd, samp, pre {
+    letter-spacing: 0;
   }
   html.dark {
     color-scheme: dark;
@@ -460,9 +445,38 @@ html[data-platform="darwin"] .titlebar {
 [data-sg-theme] [data-slot="select-button"]::before { border-radius: calc(var(--radius-input) - 1px); }
 [data-sg-theme] .font-accent { font-family: var(--font-accent); }
 
+/* Focus, everywhere: the control's border turns the accent and a 1px ring of it sits outside, a
+   2px band in all. One rule for controls that carry their own border, one for the wrappers around
+   a text input. Unlayered, so it wins over the kit's own ring utilities. */
+:where(button, a, summary, [role="checkbox"], [role="radio"], [role="switch"], [role="slider"], [role="tab"], [tabindex]):not(:where([data-slot="input-control"], [data-slot="textarea-control"], [data-slot="input-group"], [data-slot="number-field-group"]) *):focus-visible,
+:where([data-slot="input-control"], [data-slot="textarea-control"], [data-slot="input-group"], [data-slot="number-field-group"], [data-slot="slider-thumb"]):has(:focus-visible) {
+  outline: none;
+  border-color: var(--active);
+  box-shadow: 0 0 0 1px var(--active);
+}
+/* a control inside a wrapper has no band of its own */
+:where([data-slot="input-control"], [data-slot="textarea-control"], [data-slot="input-group"], [data-slot="number-field-group"]) :where(input, textarea):focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+/* on the sidebar layer the band takes its accent */
+.on-admin :where(button, a, [tabindex]):focus-visible,
+[data-slot="rail"] :where(button, a):focus-visible {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 1px var(--admin-accent);
+}
+
 /* While a panel is being dragged (the workspace shell sets data-resizing), nothing in the shell
    animates: width, opacity or transform transitions would lag behind the pointer. */
 [data-resizing],
 [data-resizing] * {
   transition: none !important;
 }
+
+/* The report builder's query (react-querybuilder, pages/workspace/workflows/reports.tsx): the
+   layout only; the controls take the kit's classes through controlClassnames. */
+.sg-qb .ruleGroup { display: flex; flex-direction: column; gap: 0.5rem; }
+.sg-qb .ruleGroup-header, .sg-qb .rule { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; }
+.sg-qb .ruleGroup-body { display: flex; flex-direction: column; gap: 0.5rem; }
+.sg-qb .ruleGroup .ruleGroup { border-inline-start: 2px solid var(--border); padding-inline-start: 0.75rem; }
+.sg-qb .ruleGroup-header .ruleGroup-combinators:only-child { display: none; }

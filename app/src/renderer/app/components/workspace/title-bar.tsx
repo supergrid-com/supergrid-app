@@ -10,9 +10,9 @@ import { cn } from "~/lib/utils";
 // WorkspaceFrame). With the agent open, its own section sits above it, with a divider on its left
 // edge in the same way.
 //
-// The rule for the bar above the canvas: the breadcrumb only. Nothing page- or app-specific goes
-// up here (no Open site, no page actions); a page keeps its actions in its own body. Later this
-// may hold a few admin tools that aren't about any one page or app.
+// The bar above the canvas holds the page's breadcrumb and, at its end, the page's main action
+// when it has one (New Contact over a table), so the action sits outside the page's surface. The
+// rest of a page's controls stay in its body; nothing app-specific goes up here (no Open site).
 
 /** What the traffic lights add to the bar's start padding: .titlebar in app.css sets 92px over the bar's 8px. */
 const titlebarInset = (): number => (document.documentElement.dataset.platform === "darwin" ? 84 : 0);
@@ -23,6 +23,16 @@ const titlebarInset = (): number => (document.documentElement.dataset.platform =
  * sits right after the toggle; with it open, it follows the canvas edge instead.
  */
 const NAV_MIN_WIDTH = 100;
+
+// A divider marks where a panel starts but draws its line in the middle of the 8px gap before it.
+// It takes no width, so what follows keeps its place.
+function Divider(): React.ReactElement {
+  return (
+    <span aria-hidden className="relative h-5 w-0 shrink-0">
+      <span className="absolute inset-y-0 -start-[4.5px] w-px bg-admin-line" />
+    </span>
+  );
+}
 
 type HistoryApi = EventTarget & { canGoBack: boolean; canGoForward: boolean };
 
@@ -47,6 +57,7 @@ export function WorkspaceTitleBar({
   onToggleSidebar,
   chatRef,
   titleRef,
+  actionsRef,
 }: {
   /** Where the canvas starts, from the window's left edge. */
   canvasStart: number;
@@ -57,6 +68,8 @@ export function WorkspaceTitleBar({
   onToggleSidebar: () => void;
   chatRef: (el: HTMLElement | null) => void;
   titleRef: (el: HTMLElement | null) => void;
+  /** Where a page's main action lands, at the bar's end. */
+  actionsRef: (el: HTMLElement | null) => void;
 }): React.ReactElement {
   const navigate = useNavigate();
   const history = useHistoryButtons();
@@ -74,7 +87,7 @@ export function WorkspaceTitleBar({
             <ArrowRightIcon />
           </BarButton>
           <BarButton
-            label="Toggle sidebar"
+            label="Toggle Sidebar"
             onClick={onToggleSidebar}
             hint={
               <span className="flex items-center gap-0.5">
@@ -88,14 +101,17 @@ export function WorkspaceTitleBar({
         </BarToolbar>
       </div>
       {chatStart !== undefined && (
-        <div className={cn("flex shrink-0 items-center overflow-hidden", easing)} style={{ width: Math.max(canvasStart - navEnd, 0) }}>
-          <div className="h-5 w-px shrink-0 bg-admin-line" />
-          <div ref={chatRef} className="on-admin flex min-w-0 flex-1 items-center gap-2 ps-4 pe-3 text-foreground" />
-        </div>
+        <>
+          <Divider />
+          <div className={cn("flex shrink-0 items-center overflow-hidden", easing)} style={{ width: Math.max(canvasStart - navEnd, 0) }}>
+            <div ref={chatRef} className="on-admin flex min-w-0 flex-1 items-center gap-2 ps-4 pe-3 text-foreground" />
+          </div>
+        </>
       )}
       <div className="on-admin flex min-w-0 flex-1 items-center">
-        <div className="h-5 w-px shrink-0 bg-admin-line" />
+        <Divider />
         <div ref={titleRef} className="ms-3 flex min-w-0 items-center gap-2 text-foreground" />
+        <div ref={actionsRef} className="ms-auto flex shrink-0 items-center justify-end gap-2 ps-3 pe-1 text-foreground" />
       </div>
     </header>
   );

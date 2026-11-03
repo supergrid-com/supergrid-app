@@ -3,6 +3,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
+import { ScrollArea } from "~/components/ui/scroll-area";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "~/components/ui/pagination";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
@@ -64,7 +65,7 @@ export function WorkspaceFrame({
       {slots?.actions && actions && createPortal(actions, slots.actions)}
       <header className={cn("flex h-11 shrink-0 items-center gap-2 border-b px-3", slots && "md:hidden")}>
         {onOpenNav && (
-          <button type="button" aria-label="Show sidebar" onClick={onOpenNav} className="flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground md:hidden">
+          <button type="button" aria-label="Show Sidebar" onClick={onOpenNav} className="flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground md:hidden">
             <PanelLeftIcon className="size-4" />
           </button>
         )}
@@ -76,9 +77,9 @@ export function WorkspaceFrame({
       {flush ? (
         <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <ScrollArea className="min-h-0 flex-1">
           <main className={cn("mx-auto flex w-full flex-col gap-5 px-4 py-4 sm:px-6", width === "default" && "max-w-5xl", width === "wide" && "max-w-7xl", width === "narrow" && "max-w-3xl")}>{children}</main>
-        </div>
+        </ScrollArea>
       )}
     </div>
   );
@@ -140,7 +141,7 @@ export function StatTile({ label, value, hint }: { label: string; value: React.R
   return (
     <div className="flex flex-col gap-0.5 px-4 py-3">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="font-heading text-xl font-bold leading-tight">{value}</div>
+      <div className="font-heading text-xl font-semibold leading-tight">{value}</div>
       {hint && <div className="text-[11px] text-muted-foreground">{hint}</div>}
     </div>
   );

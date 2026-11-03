@@ -153,7 +153,7 @@ export function CreateWorkspace({
         {phase === "failed" && (
           <Alert variant="error">
             <TriangleAlertIcon />
-            <AlertTitle>That step failed</AlertTitle>
+            <AlertTitle>That Step Failed</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
             <AlertAction>
               <Button size="sm" variant="outline" onClick={() => void create()}>

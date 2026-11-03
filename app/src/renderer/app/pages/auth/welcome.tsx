@@ -77,7 +77,7 @@ export function Welcome(): React.ReactElement {
     >
       <div className="mx-auto flex w-full max-w-[680px] flex-col gap-6 py-4">
         <div className="flex flex-col gap-1.5">
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Set up SuperGrid</h1>
+          <h1 className="font-heading text-3xl font-semibold tracking-tight">Set up SuperGrid</h1>
           <p className="text-sm text-muted-foreground">An organization, the Cloudflare account it runs on, and its first workspace. Everything stays on this Mac.</p>
         </div>
         <Stepper active={step} />
@@ -90,7 +90,7 @@ export function Welcome(): React.ReactElement {
                 organization per client.
               </StepHeading>
               <Field>
-                <FieldLabel>Organization name</FieldLabel>
+                <FieldLabel>Organization Name</FieldLabel>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}

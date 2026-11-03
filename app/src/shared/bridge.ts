@@ -5,7 +5,7 @@ export type CfAccount = { id: string; name: string };
 
 /** An organization, kept on this Mac: a name for a set of workspaces on one Cloudflare account. */
 export type CloudflareLink = { accountId: string; accountName: string; email: string | null; prefix: string };
-export type Org = { id: string; name: string; slug: string; createdAt: string; cloudflare: CloudflareLink | null; /** The workspace opened last, reopened on launch. */ lastWorkspace?: string };
+export type Org = { id: string; name: string; slug: string; createdAt: string; cloudflare: CloudflareLink | null; /** The workspace opened last, reopened on launch. */ lastWorkspace?: string; /** Each workspace's accent color, by workspace id (renderer lib/accent.ts). */ accents?: Record<string, string> };
 /** What the app keeps between runs about the user's organizations (src/main/config.ts). */
 export type LocalState = { orgs: Org[]; currentOrg: string | null };
 
@@ -49,6 +49,61 @@ export type WorkspaceSummary = {
 export type WorkspaceProgress = { id: string; step: "release" | "database" | "queues" | "files" | "media" | "worker" | "wiring" | "url" | "health" | "done" };
 /** What creating a workspace made. `queues`, `files` and `media` are false or null when the account didn't allow them. */
 export type WorkspaceCreated = { id: string; name: string; worker: string; url: string; version: string; queues: boolean; files: boolean; media: "minted" | "shared" | null };
+
+/** Which workspace database a D1 call is for: the account and the workspace Worker whose DB binding names it. */
+export type D1Target = { accountId: string; worker: string };
+export type D1Meta = { duration: number; changes: number; last_row_id: number; rows_read: number; rows_written: number; size_after: number };
+/** One statement's rows as objects, one per row, keyed by column. */
+export type D1Result = { results: Record<string, unknown>[]; meta: D1Meta };
+/** One statement's rows as arrays, with the columns in the order the query named them. `statements` counts the statements run. */
+export type D1RawResult = { columns: string[]; rows: unknown[][]; meta: D1Meta; statements: number; /** Every statement's answer, in order. */ all: { columns: string[]; rows: unknown[][] }[] };
+export type D1Database = { id: string; name: string; tables: number; size: number; createdAt: string | null; accountId: string };
+export type D1ExportResult = { filename: string; bookmark: string };
+
+
+// ---- Library: the account's Images and Stream, and the workspace's R2 bucket, straight from the Cloudflare API on cf's login (src/main/library.ts) ----
+
+/** A picture in Cloudflare Images. `base` is its delivery URL without a variant: `https://imagedelivery.net/<hash>/<id>`. */
+export type LibraryImage = { id: string; filename: string; uploaded: string; requireSignedURLs: boolean; meta: Record<string, unknown>; base: string | null };
+/** What the account holds in Images. `enabled` is false until Images is turned on in the dashboard (uploads are refused until then). */
+export type ImagesListing = { enabled: boolean; hash: string | null; /** Whether `w=,h=,fit=` URLs work; switched on at the first upload. */ flexible: boolean; current: number; allowed: number; images: LibraryImage[] };
+
+/** A video or audio in Cloudflare Stream. URLs are null until it is ready. */
+export type LibraryVideo = {
+  uid: string;
+  name: string;
+  created: string;
+  modified: string;
+  size: number;
+  duration: number;
+  state: "pendingupload" | "downloading" | "queued" | "inprogress" | "ready" | "error" | string;
+  pctComplete: number;
+  error: string | null;
+  readyToStream: boolean;
+  thumbnail: string | null;
+  preview: string | null;
+  hls: string | null;
+  dash: string | null;
+  width: number | null;
+  height: number | null;
+  requireSignedURLs: boolean;
+  meta: Record<string, string>;
+};
+/** `enabled` is false until Stream has storage on the account; `customer` is the `customer-<code>` host the player and the URLs use. */
+export type StreamListing = { enabled: boolean; customer: string | null; videoCount: number; minutes: number; minutesLimit: number; videos: LibraryVideo[] };
+export type StreamAnalyticsRow = { key: string | null; minutes: number; views: number };
+
+/** An object in the workspace's R2 bucket, as the API lists it. */
+export type LibraryFile = { key: string; size: number; etag: string; modified: string; contentType: string | null };
+export type FilesListing = { files: LibraryFile[]; /** True when the bucket holds more than the pages read. */ more: boolean };
+
+/** A file on this Mac, from the picker or a drop. */
+export type LocalFile = { path: string; name: string; size: number; type?: string | null };
+/** An upload as it goes: `job` is the id the renderer gave it. */
+export type UploadProgress = { job: string; loaded: number; total: number; status: "uploading" | "done" | "error"; error?: string };
+
+import type { AgentAnswer, AgentAsk, AgentNavigateEvent, AgentWidgetEvent, AppContext } from "./agent";
+export type { AgentAnswer, AgentAsk, AgentNavigateEvent, AgentWidget, AgentWidgetEvent, AppContext, AskInput, UploadedItem } from "./agent";
 
 export type AgentStatus = { name: string; available: boolean; authDetected: boolean; authHint: string };
 /** An MCP server for an ACP session, in ACP's stdio shape. */
@@ -106,6 +161,52 @@ export type Bridge = {
     /** Gives a workspace its media token: one minted for it, the app's own, or `token` when the user pastes one. */
     setMediaToken(wsId: string, token?: string): Promise<void>;
   };
+  /** The workspace's D1, through Cloudflare's D1 API on cf's login (src/main/d1.ts). */
+  d1: {
+    /** Runs one statement; rows as objects. `params` bind to its ? placeholders. */
+    query(target: D1Target, sql: string, params?: unknown[]): Promise<D1Result>;
+    /** Runs a statement or a script of them; the last one's columns and rows as arrays. */
+    raw(target: D1Target, sql: string, params?: unknown[]): Promise<D1RawResult>;
+    info(target: D1Target): Promise<D1Database>;
+    /** The Time Travel bookmark for now, or for a moment (ISO-8601) in the last 30 days. */
+    bookmark(target: D1Target, timestamp?: string): Promise<string>;
+    /** Restores the database to a bookmark or a moment. Everything after it is gone. */
+    restore(target: D1Target, to: { bookmark?: string; timestamp?: string }): Promise<string>;
+    /** Makes a SQL dump and opens it in the browser to download. Waits for Cloudflare to write it. */
+    export(target: D1Target): Promise<D1ExportResult>;
+  };
+  /** The Library pages: Images and Stream in the account, files in the workspace's bucket. Uploads report through onProgress under the job id the call names. */
+  library: {
+    /** The native file picker. */
+    pick(opts: { kind: "image" | "media" | "file" | "any"; multiple?: boolean }): Promise<LocalFile[]>;
+    /** The path of a File dropped on the window. */
+    pathOf(file: File): string;
+    cancel(job: string): Promise<void>;
+    onProgress(cb: (p: UploadProgress) => void): () => void;
+    images: {
+      list(accountId: string): Promise<ImagesListing>;
+      upload(accountId: string, job: string, file: LocalFile, meta: Record<string, unknown>): Promise<LibraryImage>;
+      update(accountId: string, id: string, meta: Record<string, unknown>): Promise<LibraryImage>;
+      remove(accountId: string, ids: string[]): Promise<void>;
+    };
+    stream: {
+      list(accountId: string): Promise<StreamListing>;
+      get(accountId: string, uid: string): Promise<LibraryVideo>;
+      /** A resumable (tus) upload from disk, any size. */
+      upload(accountId: string, job: string, file: LocalFile, opts: { name: string; meta: Record<string, string> }): Promise<LibraryVideo>;
+      update(accountId: string, uid: string, opts: { name?: string; meta?: Record<string, string> }): Promise<LibraryVideo>;
+      remove(accountId: string, uids: string[]): Promise<void>;
+      /** Minutes viewed and plays from Stream's bulk analytics, over the last `days` (up to 31), for one video or all. */
+      analytics(accountId: string, opts: { days: number; uid?: string; groupBy: "uid" | "day" | "country" }): Promise<StreamAnalyticsRow[]>;
+    };
+    files: {
+      list(accountId: string, bucket: string, opts?: { prefix?: string }): Promise<FilesListing>;
+      upload(accountId: string, job: string, bucket: string, file: LocalFile, opts: { key: string; contentType?: string }): Promise<LibraryFile>;
+      remove(accountId: string, bucket: string, keys: string[]): Promise<void>;
+      /** Downloads one object to a place the user picks. False when they cancel. */
+      save(accountId: string, bucket: string, key: string): Promise<boolean>;
+    };
+  };
   /** The coding agent: a child process speaking ACP, relayed line by line. */
   agent: {
     status(): Promise<AgentStatus>;
@@ -114,12 +215,25 @@ export type Bridge = {
     send(message: JsonRpcMessage): Promise<void>;
     /** The folder a workspace's sessions run in. */
     workspaceDir(id: string): Promise<string>;
-    /** The MCP servers a session for this workspace gets (src/main/mcp.ts with the workspace's connection). */
-    mcpServers(id: string): Promise<McpServerConfig[]>;
+    /**
+     * The MCP servers a session for this workspace gets: our stdio proxy (src/main/mcp.ts) back to the
+     * app's tool bridge (src/main/agent-bridge.ts). `client` names the session to the bridge, so a tool's
+     * questions and widgets reach the right thread; make one per session.
+     */
+    mcpServers(id: string, client: string): Promise<McpServerConfig[]>;
+    /** Tells the bridge which agent session a client is, and whether its thread is in Dev mode. */
+    bindClient(client: string, opts: { sessionId: string | null; dev: boolean }): Promise<void>;
+    /** What is open in the app for this workspace, kept current for the agent's tools. */
+    setContext(wsId: string, context: AppContext): Promise<void>;
+    /** The user's answer to a tool's question. */
+    answer(answer: AgentAnswer): Promise<void>;
     /** Each returns its unsubscribe. */
     onMessage(cb: (message: JsonRpcMessage) => void): () => void;
     onLog(cb: (line: string) => void): () => void;
     onExit(cb: (code: number | null) => void): () => void;
+    onAsk(cb: (ask: AgentAsk) => void): () => void;
+    onWidget(cb: (event: AgentWidgetEvent) => void): () => void;
+    onNavigate(cb: (event: AgentNavigateEvent) => void): () => void;
   };
 };
 
@@ -145,6 +259,29 @@ export const channels = {
   wsRpc: "sg:ws:rpc",
   wsResetToken: "sg:ws:reset-token",
   wsMediaToken: "sg:ws:media-token",
+  d1Query: "sg:d1:query",
+  d1Raw: "sg:d1:raw",
+  d1Info: "sg:d1:info",
+  d1Bookmark: "sg:d1:bookmark",
+  d1Restore: "sg:d1:restore",
+  d1Export: "sg:d1:export",
+  libPick: "sg:library:pick",
+  libCancel: "sg:library:cancel",
+  libProgress: "sg:library:progress",
+  libImagesList: "sg:library:images:list",
+  libImagesUpload: "sg:library:images:upload",
+  libImagesUpdate: "sg:library:images:update",
+  libImagesRemove: "sg:library:images:remove",
+  libStreamList: "sg:library:stream:list",
+  libStreamGet: "sg:library:stream:get",
+  libStreamUpload: "sg:library:stream:upload",
+  libStreamUpdate: "sg:library:stream:update",
+  libStreamRemove: "sg:library:stream:remove",
+  libStreamAnalytics: "sg:library:stream:analytics",
+  libFilesList: "sg:library:files:list",
+  libFilesUpload: "sg:library:files:upload",
+  libFilesRemove: "sg:library:files:remove",
+  libFilesSave: "sg:library:files:save",
   agentStatus: "sg:agent:status",
   agentStart: "sg:agent:start",
   agentStop: "sg:agent:stop",
@@ -154,4 +291,10 @@ export const channels = {
   agentMessage: "sg:agent:message",
   agentLog: "sg:agent:log",
   agentExit: "sg:agent:exit",
+  agentBind: "sg:agent:bind",
+  agentContext: "sg:agent:context",
+  agentAnswer: "sg:agent:answer",
+  agentAsk: "sg:agent:ask",
+  agentWidget: "sg:agent:widget",
+  agentNavigate: "sg:agent:navigate",
 } as const;

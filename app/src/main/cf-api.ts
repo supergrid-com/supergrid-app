@@ -16,13 +16,13 @@ function configPath(authSource: string | null): string {
   return m?.[1]?.trim() || join(homedir(), "Library/Preferences/cloudflare/config/default.json");
 }
 
-/** An API client for one account, on cf's current login. Throws a readable error when cf can't be used. */
-export async function cfClient(accountId: string): Promise<Cf> {
+/** The token cf is signed in with, for the calls that need a raw request (uploads, tus, R2 bodies). Never stored. */
+export async function cfToken(accountId: string): Promise<string> {
   const s = await status();
   if (s.state === "no-cli") throw new Error("The Cloudflare CLI (cf) isn't installed on this Mac.");
   if (s.state !== "signed-in") throw new Error("cf is signed out. Sign in again on the Cloudflare page.");
   if (!s.accounts.some((a) => a.id === accountId)) throw new Error("cf's login can't reach this organization's Cloudflare account. Sign in again with a user that can, on the Cloudflare page.");
-  if (s.authSource?.startsWith("CLOUDFLARE_API_TOKEN") && process.env.CLOUDFLARE_API_TOKEN) return createCf(process.env.CLOUDFLARE_API_TOKEN, accountId);
+  if (s.authSource?.startsWith("CLOUDFLARE_API_TOKEN") && process.env.CLOUDFLARE_API_TOKEN) return process.env.CLOUDFLARE_API_TOKEN;
   let config: CfConfig;
   try {
     config = JSON.parse(readFileSync(configPath(s.authSource), "utf8")) as CfConfig;
@@ -31,5 +31,10 @@ export async function cfClient(accountId: string): Promise<Cf> {
   }
   if (!config.oauth_token) throw new Error("cf has no login token. Sign in again on the Cloudflare page.");
   if (config.expiration_time && Date.parse(config.expiration_time) < Date.now()) throw new Error("cf's login has expired. Sign in again on the Cloudflare page.");
-  return createCf(config.oauth_token, accountId);
+  return config.oauth_token;
+}
+
+/** An API client for one account, on cf's current login. Throws a readable error when cf can't be used. */
+export async function cfClient(accountId: string): Promise<Cf> {
+  return createCf(await cfToken(accountId), accountId);
 }

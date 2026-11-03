@@ -51,6 +51,29 @@ export function useOrgModal(): { section: SettingsSectionId | null; open: (secti
   return { section, open, close };
 }
 
+/** The docs modal, in the URL like settings (?docs=<page id>). */
+export function useDocsModal(): { page: string | null; open: (page?: string) => void; close: () => void } {
+  const [params, setParams] = useSearchParams();
+  const page = params.get("docs");
+  const open = React.useCallback(
+    (id = "overview") =>
+      setParams((p) => {
+        p.set("docs", id);
+        return p;
+      }),
+    [setParams],
+  );
+  const close = React.useCallback(
+    () =>
+      setParams((p) => {
+        p.delete("docs");
+        return p;
+      }),
+    [setParams],
+  );
+  return { page, open, close };
+}
+
 /** A boolean kept in localStorage, for the shell's own toggles. */
 export function useStoredFlag(key: string, fallback: boolean): [boolean, (v: boolean) => void] {
   const [value, setValue] = React.useState(() => {

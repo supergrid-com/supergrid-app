@@ -1,10 +1,12 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { join } from "node:path";
-import { channels, type AppInfo, type LocalState } from "../shared/bridge";
+import { channels, type AppInfo, type D1Target, type LocalState } from "../shared/bridge";
 import { registerAgent } from "./agent";
 import * as cfCli from "./cf-cli";
 import * as config from "./config";
 import * as cloudflare from "./cloudflare";
+import * as d1 from "./d1";
+import { registerLibrary } from "./library";
 import * as workspaces from "./workspaces";
 import * as workspaceApi from "./workspace-api";
 
@@ -87,7 +89,28 @@ ipcMain.handle(channels.wsMediaToken, (_e, wsId: unknown, token: unknown) => {
   return workspaceApi.setMediaToken(wsId, typeof token === "string" && token.trim() ? token.trim() : undefined);
 });
 
+// the workspace's D1: the target names the account and the Worker whose DB binding is the database
+const target = (v: unknown): D1Target => {
+  const t = v as Partial<D1Target> | undefined;
+  if (!t || typeof t.accountId !== "string" || !t.accountId || typeof t.worker !== "string" || !t.worker) throw new Error("A database call needs the account and the workspace Worker.");
+  return { accountId: t.accountId, worker: t.worker };
+};
+const sqlOf = (sql: unknown, params: unknown): [string, unknown[]] => {
+  if (typeof sql !== "string" || !sql.trim()) throw new Error("Nothing to run.");
+  return [sql, Array.isArray(params) ? params : []];
+};
+ipcMain.handle(channels.d1Query, (_e, t: unknown, sql: unknown, params: unknown) => d1.query(target(t), ...sqlOf(sql, params)));
+ipcMain.handle(channels.d1Raw, (_e, t: unknown, sql: unknown, params: unknown) => d1.raw(target(t), ...sqlOf(sql, params)));
+ipcMain.handle(channels.d1Info, (_e, t: unknown) => d1.info(target(t)));
+ipcMain.handle(channels.d1Bookmark, (_e, t: unknown, timestamp: unknown) => d1.bookmark(target(t), typeof timestamp === "string" && timestamp ? timestamp : undefined));
+ipcMain.handle(channels.d1Restore, (_e, t: unknown, to: unknown) => {
+  const o = (to ?? {}) as { bookmark?: unknown; timestamp?: unknown };
+  return d1.restore(target(t), { bookmark: typeof o.bookmark === "string" && o.bookmark ? o.bookmark : undefined, timestamp: typeof o.timestamp === "string" && o.timestamp ? o.timestamp : undefined });
+});
+ipcMain.handle(channels.d1Export, (_e, t: unknown) => d1.exportSql(target(t)));
+
 registerAgent();
+registerLibrary();
 
 void app.whenReady().then(() => {
   createWindow();

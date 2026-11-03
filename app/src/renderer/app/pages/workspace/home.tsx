@@ -7,8 +7,8 @@ import { useLatestRelease } from "~/lib/release";
 import { useOpenNav, useShell } from "~/shell/context";
 
 // The workspace at a glance, from what its Worker says about itself: where it lives, which release
-// it runs against the newest on the feed, and its apps. Traffic, contacts and activity join it once
-// those sections are real.
+// it runs against the newest on the feed, and its apps. It has no row in the rail; it's where a
+// workspace opens.
 
 function Row({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
   return (

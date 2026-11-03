@@ -1,18 +1,10 @@
 import * as React from "react";
+import { type Appearance, defaultAppearance, type InterfaceChoice, presets, type SidebarChoice, themeCss } from "~/lib/theme";
 
-// The window's own preferences, kept in localStorage: the color theme, the admin layer's theme
-// behind the workspace's cards, and the rail's and panels' sizes.
+// The window's own preferences, kept in localStorage: the appearance (the interface and sidebar
+// themes, lib/theme.ts) and the rail's and panels' sizes.
 
-export type Theme = "light" | "dark" | "system";
-// The admin layer behind a workspace's cards: see the themes in app.css.
-export const adminThemes = [
-  { id: "auto", name: "Match appearance", swatch: "#f5f5f3", dark: null },
-  { id: "graphite", name: "Graphite", swatch: "#171717", dark: true },
-  { id: "mist", name: "Mist", swatch: "#e9e9ec", dark: false },
-  { id: "blush", name: "Blush", swatch: "#f4e1e8", dark: false },
-  { id: "forest", name: "Forest", swatch: "#0f2a1f", dark: true },
-] as const;
-export type AdminTheme = (typeof adminThemes)[number]["id"];
+export type { Appearance };
 // The workspace rail is either full width or icons only (⌘B).
 export type RailState = "open" | "collapsed";
 
@@ -29,8 +21,9 @@ export const NAV_MIN_WIDTH = 220;
 export const NAV_MAX_WIDTH = 420;
 
 type PlatformState = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
+  appearance: Appearance;
+  setInterface: (c: InterfaceChoice) => void;
+  setSidebar: (c: SidebarChoice) => void;
   navDocked: boolean;
   setNavDocked: (v: boolean) => void;
   navOpen: boolean;
@@ -43,9 +36,9 @@ type PlatformState = {
   setChatWidth: (w: number) => void;
   subNavWidth: number;
   setSubNavWidth: (w: number) => void;
-  adminTheme: AdminTheme;
-  setAdminTheme: (t: AdminTheme) => void;
-  /** Whether the admin layer is dark, which the chat follows rather than the page theme. */
+  /** Whether the page is dark (the interface's background). */
+  pageDark: boolean;
+  /** Whether the sidebar layer is dark, which the chat follows rather than the page theme. */
   adminDark: boolean;
 };
 
@@ -66,30 +59,62 @@ function write(key: string, value: string): void {
   } catch {}
 }
 
-function applyAdminTheme(t: AdminTheme): void {
-  document.documentElement.setAttribute("data-admin-theme", t);
+const APPEARANCE_KEY = "sg.appearance";
+
+function readAppearance(): Appearance {
+  try {
+    const raw = window.localStorage.getItem(APPEARANCE_KEY);
+    if (raw) {
+      const a = JSON.parse(raw) as Partial<Appearance>;
+      if (a.interface && a.sidebar) {
+        // before the toggle, "match" was a preset of its own
+        const side = { ...defaultAppearance.sidebar, ...a.sidebar } as SidebarChoice & { preset: string };
+        if (!("enabled" in a.sidebar)) side.enabled = side.preset !== "match";
+        if (side.preset === "match") side.preset = defaultAppearance.sidebar.preset;
+        // a preset that is gone keeps its knobs as Custom
+        else if (side.preset !== "custom" && !presets.some((p) => p.id === side.preset)) side.preset = "custom";
+        return { interface: { ...defaultAppearance.interface, ...a.interface }, sidebar: side };
+      }
+    }
+    // the setting before themes had knobs: light, dark or system
+    const old = window.localStorage.getItem("sg.theme");
+    if (old === "light" || old === "dark") return { ...defaultAppearance, interface: { ...defaultAppearance.interface, preset: old } };
+  } catch {}
+  return defaultAppearance;
 }
 
-function applyTheme(theme: Theme): void {
-  const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+/**
+ * Writes the theme's stylesheet into the document and remembers it, so index.html can put it
+ * back before the first paint. The dark class follows the interface's background.
+ */
+function applyAppearance(a: Appearance): { dark: boolean; adminDark: boolean } {
+  const osDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const { css, dark, adminDark } = themeCss(a, osDark);
+  let el = document.getElementById("sg-theme") as HTMLStyleElement | null;
+  if (!el) {
+    el = document.createElement("style");
+    el.id = "sg-theme";
+    document.head.appendChild(el);
+  }
+  if (el.textContent !== css) el.textContent = css;
   document.documentElement.classList.toggle("dark", dark);
+  write("sg.theme", a.interface.preset === "system" ? "system" : dark ? "dark" : "light");
+  write("sg.theme.dark", dark ? "1" : "0");
+  write("sg.theme.css", css);
+  return { dark, adminDark };
 }
 
 export function PlatformProvider({ children }: { children: React.ReactNode }): React.ReactElement {
-  const [theme, setThemeState] = React.useState<Theme>(() => read<Theme>("sg.theme", "system"));
+  const [appearance, setAppearanceState] = React.useState<Appearance>(readAppearance);
   const [navDocked, setNavDockedState] = React.useState(false);
   const [navOpen, setNavOpen] = React.useState(false);
   const [navWidth, setNavWidthState] = React.useState(NAV_DEFAULT_WIDTH);
   const [railState, setRailStateRaw] = React.useState<RailState>("open");
   const [chatWidth, setChatWidthRaw] = React.useState(CHAT_SIDE_DEFAULT_WIDTH);
   const [subNavWidth, setSubNavWidthRaw] = React.useState(SUB_NAV_DEFAULT_WIDTH);
-  const [adminTheme, setAdminThemeRaw] = React.useState<AdminTheme>("auto");
 
   React.useEffect(() => {
     setRailStateRaw(read<RailState>("sg.rail", "open"));
-    const at = read<AdminTheme>("sg.adminTheme", "auto");
-    setAdminThemeRaw(at);
-    applyAdminTheme(at);
     const sw = Number(read<string>("sg.subNavWidth", String(SUB_NAV_DEFAULT_WIDTH)));
     if (Number.isFinite(sw)) setSubNavWidthRaw(Math.min(SUB_NAV_MAX_WIDTH, Math.max(SUB_NAV_MIN_WIDTH, sw)));
     const cw = Number(read<string>("sg.chatWidth", String(CHAT_SIDE_DEFAULT_WIDTH)));
@@ -99,25 +124,22 @@ export function PlatformProvider({ children }: { children: React.ReactNode }): R
     if (Number.isFinite(w)) setNavWidthState(Math.min(NAV_MAX_WIDTH, Math.max(NAV_MIN_WIDTH, w)));
   }, []);
 
-  // the page theme, resolved: System follows the OS, including while the app is open
-  const [pageDark, setPageDark] = React.useState(() => document.documentElement.classList.contains("dark"));
+  // the theme, applied: System follows the OS, including while the app is open
+  const [resolved, setResolved] = React.useState(() => ({ dark: document.documentElement.classList.contains("dark"), adminDark: document.documentElement.classList.contains("dark") }));
   React.useEffect(() => {
     const os = window.matchMedia("(prefers-color-scheme: dark)");
-    const update = () => {
-      applyTheme(theme);
-      setPageDark(document.documentElement.classList.contains("dark"));
-    };
+    const update = () => setResolved(applyAppearance(appearance));
     update();
     os.addEventListener("change", update);
     return () => os.removeEventListener("change", update);
-  }, [theme]);
-  const adminDark = adminThemes.find((t) => t.id === adminTheme)?.dark ?? pageDark;
+  }, [appearance]);
 
-  const setTheme = React.useCallback((t: Theme) => {
-    setThemeState(t);
-    write("sg.theme", t);
-    applyTheme(t);
+  const setAppearance = React.useCallback((a: Appearance) => {
+    setAppearanceState(a);
+    write(APPEARANCE_KEY, JSON.stringify(a));
   }, []);
+  const setInterface = React.useCallback((c: InterfaceChoice) => setAppearance({ ...appearance, interface: c }), [appearance, setAppearance]);
+  const setSidebar = React.useCallback((c: SidebarChoice) => setAppearance({ ...appearance, sidebar: c }), [appearance, setAppearance]);
   const setNavDocked = React.useCallback((v: boolean) => {
     setNavDockedState(v);
     setNavOpen(false);
@@ -127,11 +149,6 @@ export function PlatformProvider({ children }: { children: React.ReactNode }): R
     const v = Math.round(Math.min(NAV_MAX_WIDTH, Math.max(NAV_MIN_WIDTH, w)));
     setNavWidthState(v);
     write("sg.navWidth", String(v));
-  }, []);
-  const setAdminTheme = React.useCallback((t: AdminTheme) => {
-    setAdminThemeRaw(t);
-    write("sg.adminTheme", t);
-    applyAdminTheme(t);
   }, []);
   const setChatWidth = React.useCallback((w: number) => {
     const v = Math.round(Math.min(CHAT_SIDE_MAX_WIDTH, Math.max(CHAT_SIDE_MIN_WIDTH, w)));
@@ -149,8 +166,8 @@ export function PlatformProvider({ children }: { children: React.ReactNode }): R
   }, []);
 
   const value = React.useMemo(
-    () => ({ theme, setTheme, navDocked, setNavDocked, navOpen, setNavOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, adminTheme, setAdminTheme, adminDark }),
-    [theme, setTheme, navDocked, setNavDocked, navOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, adminTheme, setAdminTheme, adminDark],
+    () => ({ appearance, setInterface, setSidebar, navDocked, setNavDocked, navOpen, setNavOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, pageDark: resolved.dark, adminDark: resolved.adminDark }),
+    [appearance, setInterface, setSidebar, navDocked, setNavDocked, navOpen, navWidth, setNavWidth, railState, setRailState, chatWidth, setChatWidth, subNavWidth, setSubNavWidth, resolved],
   );
   return <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>;
 }

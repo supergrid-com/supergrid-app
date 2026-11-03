@@ -3,18 +3,20 @@ import { useNavigate } from "react-router";
 import { Command, CommandCollection, CommandDialog, CommandDialogPopup, CommandEmpty, CommandGroup, CommandGroupLabel, CommandInput, CommandItem, CommandList, CommandPanel } from "~/components/ui/command";
 import { useSession } from "~/lib/session";
 import { useWorkspaces, type WorkspaceSummary } from "~/lib/workspaces";
-import { useOrgModal } from "~/shell/context";
+import { useDocsModal, useOrgModal } from "~/shell/context";
+import { docGroups } from "../../../shared/docs";
 import { sections, settingsGroups, type SettingsSectionId } from "~/shell/sections";
 
 type Item = { value: string; label: string };
 type Group = { value: string; items: Item[] };
 
-// ⌘K: jump to a section of this workspace, another workspace, or one of the organization's pages.
+// ⌘K: jump to a section of this workspace, another workspace, one of the organization's pages, or a doc.
 export function SearchPalette({ ws, open, onOpenChange }: { ws: WorkspaceSummary; open: boolean; onOpenChange: (open: boolean) => void }): React.ReactElement {
   const navigate = useNavigate();
   const { org } = useSession();
   const { list } = useWorkspaces(org?.cloudflare ?? null);
   const modal = useOrgModal();
+  const docsModal = useDocsModal();
   const groups = React.useMemo<Group[]>(() => {
     const out: Group[] = [
       {
@@ -28,6 +30,7 @@ export function SearchPalette({ ws, open, onOpenChange }: { ws: WorkspaceSummary
     const others = (list ?? []).filter((w) => w.id !== ws.id);
     if (others.length) out.push({ value: "Workspaces", items: others.map((w) => ({ value: `go:/w/${w.id}`, label: w.name })) });
     for (const g of settingsGroups) out.push({ value: `${g.label} settings`, items: g.items.map((s) => ({ value: `org:${s.id}`, label: s.label })) });
+    out.push({ value: "Docs", items: docGroups.flatMap((g) => g.docs.map((d) => ({ value: `docs:${d.id}`, label: d.title }))) });
     return out;
   }, [ws, list]);
 
@@ -35,13 +38,14 @@ export function SearchPalette({ ws, open, onOpenChange }: { ws: WorkspaceSummary
     onOpenChange(false);
     if (value.startsWith("go:")) navigate(value.slice(3));
     else if (value.startsWith("org:")) modal.open(value.slice(4) as SettingsSectionId);
+    else if (value.startsWith("docs:")) docsModal.open(value.slice(5));
   };
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandDialogPopup>
         <Command items={groups} itemToStringValue={(i) => (i as Item).label}>
-          <CommandInput placeholder="Search pages, workspaces and settings…" />
+          <CommandInput placeholder="Search pages, workspaces, settings and docs…" />
           <CommandPanel>
             <CommandEmpty>Nothing matches.</CommandEmpty>
             <CommandList>

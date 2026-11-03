@@ -138,7 +138,7 @@ function Linked({ org }: { org: Org & { cloudflare: NonNullable<Org["cloudflare"
 
       <Separator />
 
-      <SettingsGroup title="Install prefix" description="Starts the name of every resource SuperGrid creates in this account. Change it only to run a second SuperGrid in the same account.">
+      <SettingsGroup title="Install Prefix" description="Starts the name of every resource SuperGrid creates in this account. Change it only to run a second SuperGrid in the same account.">
         <Field invalid={!prefixValid}>
           <FieldLabel>Prefix</FieldLabel>
           <Input value={prefix} onChange={(e) => setPrefix(e.target.value.toLowerCase())} className="w-50 font-mono" aria-invalid={prefixValid ? undefined : true} />
@@ -224,7 +224,7 @@ export function Cloudflare(): React.ReactElement {
   const { org } = useSession();
   if (!org) return <></>;
   return (
-    <SectionPage title="Cloudflare" description="The account this organization's workspaces and apps run in, through the cf CLI on this Mac." width={960}>
+    <SectionPage title="Cloudflare" width={960}>
       {org.cloudflare ? (
         <Linked key={org.id} org={{ ...org, cloudflare: org.cloudflare }} />
       ) : (

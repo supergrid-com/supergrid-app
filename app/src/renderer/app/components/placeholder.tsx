@@ -5,15 +5,15 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "~/
 
 // An organization section that isn't built yet: its header, then an honest empty state saying
 // what will be here.
-export function Placeholder({ title, description, icon: Icon, what }: { title: string; description: string; icon: LucideIcon; what: string }): React.ReactElement {
+export function Placeholder({ title, icon: Icon, what }: { title: string; icon: LucideIcon; what: string }): React.ReactElement {
   return (
-    <SectionPage title={title} description={description}>
+    <SectionPage title={title}>
       <Empty className="rounded-2xl border border-dashed">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <Icon />
           </EmptyMedia>
-          <EmptyTitle>Not built yet</EmptyTitle>
+          <EmptyTitle>Not Built Yet</EmptyTitle>
           <EmptyDescription>{what}</EmptyDescription>
         </EmptyHeader>
       </Empty>

@@ -24,7 +24,7 @@ function NotBuilt({ about }: { about: string }): React.ReactElement {
   return (
     <Empty className="py-16">
       <EmptyHeader>
-        <EmptyTitle>Not built yet</EmptyTitle>
+        <EmptyTitle>Not Built Yet</EmptyTitle>
         <EmptyDescription>{about}</EmptyDescription>
       </EmptyHeader>
     </Empty>
@@ -35,10 +35,10 @@ export function WorkspaceGeneral(): React.ReactElement {
   const { ws } = useShell();
   const { org } = useSession();
   return (
-    <SectionPage title="General" description={`${ws.name}, as its Worker describes itself.`} width={760}>
+    <SectionPage title="General" width={760}>
       <Card>
         <Row label="Name">{ws.name}</Row>
-        <Row label="Workspace id">
+        <Row label="Workspace ID">
           <span className="font-mono text-[13px]">{ws.id}</span>
         </Row>
         <Row label="Worker and D1">
@@ -61,7 +61,7 @@ export function WorkspaceUpdates(): React.ReactElement {
   const latest = useLatestRelease();
   const behind = !!latest && !!ws.version && ws.version !== latest.version;
   return (
-    <SectionPage title="Updates" description="The workspace Worker runs a signed release from the feed." width={760}>
+    <SectionPage title="Updates" width={760}>
       <Card>
         <Row label="Running">{ws.version ?? "unknown"}</Row>
         <Row label="Newest">
@@ -82,7 +82,7 @@ export function WorkspaceUpdates(): React.ReactElement {
 
 export function WorkspaceDomain(): React.ReactElement {
   return (
-    <SectionPage title="Domain & sitemap" description="Where the workspace is served, and which app serves which path.">
+    <SectionPage title="Domain & Sitemap">
       <NotBuilt about="A custom domain for the workspace, and which app serves which path." />
     </SectionPage>
   );
@@ -90,7 +90,7 @@ export function WorkspaceDomain(): React.ReactElement {
 
 export function WorkspaceDanger(): React.ReactElement {
   return (
-    <SectionPage title="Danger zone" description="Changes that are hard to undo.">
+    <SectionPage title="Danger Zone">
       <NotBuilt about="Pausing, moving or deleting the workspace." />
     </SectionPage>
   );

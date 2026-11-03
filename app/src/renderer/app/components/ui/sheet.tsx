@@ -32,7 +32,7 @@ export function SheetBackdrop({
   return (
     <SheetPrimitive.Backdrop
       className={cn(
-        "fixed inset-0 z-50 bg-black/32 backdrop-blur-sm transition-all duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-[-webkit-touch-callout:none]:absolute",
+        "fixed inset-0 z-50 bg-black/15 transition-all duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-[-webkit-touch-callout:none]:absolute",
         className,
       )}
       data-slot="sheet-backdrop"
@@ -41,14 +41,16 @@ export function SheetBackdrop({
   );
 }
 
+// A sheet floats as a panel by default: inset from the window's edges, rounded and bordered all
+// round, with its own shadow. `variant="edge"` pins it to the edge the old way.
 export function SheetViewport({
   className,
   side,
-  variant = "default",
+  variant = "inset",
   ...props
 }: SheetPrimitive.Viewport.Props & {
   side?: "right" | "left" | "top" | "bottom";
-  variant?: "default" | "inset";
+  variant?: "edge" | "inset";
 }): React.ReactElement {
   return (
     <SheetPrimitive.Viewport
@@ -58,7 +60,7 @@ export function SheetViewport({
         side === "top" && "grid grid-rows-[auto_1fr] pb-12",
         side === "left" && "flex justify-start",
         side === "right" && "flex justify-end",
-        variant === "inset" && "sm:p-4",
+        variant === "inset" && "p-3 sm:p-4",
         className,
       )}
       data-slot="sheet-viewport"
@@ -72,14 +74,14 @@ export function SheetPopup({
   children,
   showCloseButton = true,
   side = "right",
-  variant = "default",
+  variant = "inset",
   closeProps,
   portalProps,
   ...props
 }: SheetPrimitive.Popup.Props & {
   showCloseButton?: boolean;
   side?: "right" | "left" | "top" | "bottom";
-  variant?: "default" | "inset";
+  variant?: "edge" | "inset";
   closeProps?: SheetPrimitive.Close.Props;
   portalProps?: SheetPrimitive.Portal.Props;
 }): React.ReactElement {
@@ -95,11 +97,11 @@ export function SheetPopup({
             side === "top" &&
               "border-b data-ending-style:-translate-y-8 data-starting-style:-translate-y-8",
             side === "left" &&
-              "w-[calc(100%-(--spacing(12)))] max-w-md border-e data-ending-style:-translate-x-8 data-starting-style:-translate-x-8",
+              "w-[calc(100%-(--spacing(12)))] max-w-xl border-e data-ending-style:-translate-x-8 data-starting-style:-translate-x-8",
             side === "right" &&
-              "col-start-2 w-[calc(100%-(--spacing(12)))] max-w-md border-s data-ending-style:translate-x-8 data-starting-style:translate-x-8",
+              "col-start-2 w-[calc(100%-(--spacing(12)))] max-w-xl border-s data-ending-style:translate-x-8 data-starting-style:translate-x-8",
             variant === "inset" &&
-              "before:hidden sm:rounded-2xl sm:border sm:before:rounded-[calc(var(--radius-2xl)-1px)] sm:**:data-[slot=sheet-footer]:rounded-b-[calc(var(--radius-2xl)-1px)]",
+              "rounded-2xl border shadow-xl/10 before:hidden **:data-[slot=sheet-footer]:rounded-b-[calc(var(--radius-2xl)-1px)]",
             className,
           )}
           data-slot="sheet-popup"
@@ -109,7 +111,7 @@ export function SheetPopup({
           {showCloseButton && (
             <SheetPrimitive.Close
               aria-label="Close"
-              className="absolute end-2 top-2"
+              className="absolute end-3 top-3"
               render={<Button size="icon" variant="ghost" />}
               {...closeProps}
             >
@@ -174,7 +176,7 @@ export function SheetTitle({
 }: SheetPrimitive.Title.Props): React.ReactElement {
   return (
     <SheetPrimitive.Title
-      className={cn("font-bold font-heading text-xl leading-none", className)}
+      className={cn("font-semibold font-heading text-xl leading-none", className)}
       data-slot="sheet-title"
       {...props}
     />

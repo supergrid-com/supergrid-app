@@ -98,7 +98,7 @@ export function DrawerBackdrop({
   return (
     <DrawerPrimitive.Backdrop
       className={cn(
-        "fixed inset-0 z-50 bg-black/32 opacity-[calc(1-var(--drawer-swipe-progress))] backdrop-blur-sm transition-opacity duration-450 ease-[cubic-bezier(0.32,0.72,0,1)] data-ending-style:opacity-0 data-starting-style:opacity-0 data-ending-style:duration-[calc(var(--drawer-swipe-strength)*400ms)] data-swiping:duration-0 supports-[-webkit-touch-callout:none]:absolute",
+        "fixed inset-0 z-50 bg-black/15 opacity-[calc(1-var(--drawer-swipe-progress))] transition-opacity duration-450 ease-[cubic-bezier(0.32,0.72,0,1)] data-ending-style:opacity-0 data-starting-style:opacity-0 data-ending-style:duration-[calc(var(--drawer-swipe-strength)*400ms)] data-swiping:duration-0 supports-[-webkit-touch-callout:none]:absolute",
         className,
       )}
       data-slot="drawer-backdrop"
@@ -107,14 +107,16 @@ export function DrawerBackdrop({
   );
 }
 
+// A drawer floats as a panel by default: inset from the window's edges, rounded and bordered all
+// round, with its own shadow. `variant="edge"` pins it to the edge; `"straight"` also squares it.
 export function DrawerViewport({
   className,
   position,
-  variant = "default",
+  variant = "inset",
   ...props
 }: DrawerPrimitive.Viewport.Props & {
   position?: DrawerPosition;
-  variant?: "default" | "straight" | "inset";
+  variant?: "edge" | "straight" | "inset";
 }): React.ReactElement {
   return (
     <DrawerPrimitive.Viewport
@@ -126,7 +128,7 @@ export function DrawerViewport({
         position === "top" && "grid grid-rows-[auto_1fr] pb-12",
         position === "left" && "flex justify-start",
         position === "right" && "flex justify-end",
-        variant === "inset" && "px-(--inset) sm:[--inset:--spacing(4)]",
+        variant === "inset" && "px-(--inset) [--inset:--spacing(3)] sm:[--inset:--spacing(4)]",
         variant === "inset" && position !== "bottom" && "pt-(--inset)",
         variant === "inset" && position !== "top" && "pb-(--inset)",
         className,
@@ -142,14 +144,14 @@ export function DrawerPopup({
   children,
   showCloseButton = false,
   position: positionProp,
-  variant = "default",
+  variant = "inset",
   showBar = false,
   portalProps,
   ...props
 }: DrawerPrimitive.Popup.Props & {
   showCloseButton?: boolean;
   position?: DrawerPosition;
-  variant?: "default" | "straight" | "inset";
+  variant?: "edge" | "straight" | "inset";
   showBar?: boolean;
   portalProps?: DrawerPrimitive.Portal.Props;
 }): React.ReactElement {
@@ -169,9 +171,9 @@ export function DrawerPopup({
             position === "top" &&
               "data-starting-style:transform-[translateY(calc(-100%-var(--inset)))] data-ending-style:transform-[translateY(calc(-100%-var(--inset)))] transform-[translateY(var(--drawer-swipe-movement-y))] border-b after:inset-x-0 after:bottom-full after:h-(--bleed) has-data-[slot=drawer-bar]:pb-2",
             position === "left" &&
-              "data-starting-style:transform-[translateX(calc(-100%-var(--inset)))] data-ending-style:transform-[translateX(calc(-100%-var(--inset)))] transform-[translateX(var(--drawer-swipe-movement-x))] w-[calc(100%-(--spacing(12)))] max-w-md border-e after:inset-y-0 after:end-full after:w-(--bleed) has-data-[slot=drawer-bar]:pe-2",
+              "data-starting-style:transform-[translateX(calc(-100%-var(--inset)))] data-ending-style:transform-[translateX(calc(-100%-var(--inset)))] transform-[translateX(var(--drawer-swipe-movement-x))] w-[calc(100%-(--spacing(12)))] max-w-xl border-e after:inset-y-0 after:end-full after:w-(--bleed) has-data-[slot=drawer-bar]:pe-2",
             position === "right" &&
-              "transform-[translateX(var(--drawer-swipe-movement-x))] data-ending-style:transform-[translateX(calc(100%+var(--inset)))] data-starting-style:transform-[translateX(calc(100%+var(--inset)))] col-start-2 w-[calc(100%-(--spacing(12)))] max-w-md border-s after:inset-y-0 after:start-full after:w-(--bleed) has-data-[slot=drawer-bar]:ps-2",
+              "transform-[translateX(var(--drawer-swipe-movement-x))] data-ending-style:transform-[translateX(calc(100%+var(--inset)))] data-starting-style:transform-[translateX(calc(100%+var(--inset)))] col-start-2 w-[calc(100%-(--spacing(12)))] max-w-xl border-s after:inset-y-0 after:start-full after:w-(--bleed) has-data-[slot=drawer-bar]:ps-2",
             variant !== "straight" &&
               cn(
                 position === "bottom" && "rounded-t-2xl",
@@ -182,7 +184,7 @@ export function DrawerPopup({
                 position === "right" &&
                   "rounded-s-2xl **:data-[slot=drawer-footer]:rounded-es-[calc(var(--radius-2xl)-1px)]",
               ),
-            variant === "default" &&
+            variant === "edge" &&
               cn(
                 position === "bottom" &&
                   "before:rounded-t-[calc(var(--radius-2xl)-1px)]",
@@ -194,7 +196,7 @@ export function DrawerPopup({
                   "before:rounded-s-[calc(var(--radius-2xl)-1px)]",
               ),
             variant === "inset" &&
-              "before:hidden sm:rounded-2xl sm:border sm:after:bg-transparent sm:before:rounded-[calc(var(--radius-2xl)-1px)] sm:**:data-[slot=drawer-footer]:rounded-b-[calc(var(--radius-2xl)-1px)]",
+              "rounded-2xl border shadow-xl/10 before:hidden after:bg-transparent **:data-[slot=drawer-footer]:rounded-b-[calc(var(--radius-2xl)-1px)]",
             variant === "straight" && "[--stack-step:0]",
             (position === "bottom" || position === "top") &&
               "h-(--drawer-height,auto) [--height:max(0px,calc(var(--drawer-frontmost-height,var(--drawer-height))))] data-nested-drawer-open:h-(--height)",
@@ -215,7 +217,7 @@ export function DrawerPopup({
           {showCloseButton && (
             <DrawerPrimitive.Close
               aria-label="Close"
-              className="absolute end-2 top-2 z-1"
+              className="absolute end-3 top-3 z-1"
               render={<Button size="icon" variant="ghost" />}
             >
               <XIcon />
@@ -296,7 +298,7 @@ export function DrawerTitle({
 }: DrawerPrimitive.Title.Props): React.ReactElement {
   return (
     <DrawerPrimitive.Title
-      className={cn("font-bold font-heading text-xl leading-none", className)}
+      className={cn("font-semibold font-heading text-xl leading-none", className)}
       data-slot="drawer-title"
       {...props}
     />

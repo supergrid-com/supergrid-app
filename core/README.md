@@ -3,6 +3,7 @@
 The part that runs in a user's own Cloudflare account and that we ship updates for.
 
 ```
+docs/             the overview and "building an app"; the desktop's Docs modal and the agent's docs_list/docs_read read these and the docs below (app/src/shared/docs.ts)
 platform/         the control panel: React Router on a Worker, Better Auth on D1
 workspace/        the headless workspace Worker: router, RPC, core schema (sitemap design in workspace/SITEMAP.md, assets in workspace/ASSETS.md)
 packages/app-kit  what an app builds on: manifest, routes, RPC contract, resource names; docs/ covers events, contacts, hooks and workflows

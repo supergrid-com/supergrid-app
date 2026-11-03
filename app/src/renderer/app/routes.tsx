@@ -1,9 +1,12 @@
 import type { RouteObject } from "react-router";
 import { Welcome } from "~/pages/auth/welcome";
+import { Components } from "~/pages/dev/components";
 import { Launch } from "~/pages/launch";
 import { AppScreen } from "~/pages/workspace/app";
 import { Home } from "~/pages/workspace/home";
-import { Analytics, Assets, Contacts, Design, Events, Hooks, Secrets, Workflows } from "~/pages/workspace/section";
+import { Database } from "~/pages/workspace/database";
+import { Library } from "~/pages/workspace/library";
+import { Workflows } from "~/pages/workspace/workflows";
 import { ErrorBoundary, RequireSetup, Root } from "~/root";
 import { WorkspaceShell } from "~/shell/workspace-shell";
 
@@ -26,15 +29,12 @@ export const routes: RouteObject[] = [
             Component: WorkspaceShell,
             children: [
               { index: true, Component: Home },
-              { path: "contacts", Component: Contacts },
-              { path: "analytics", Component: Analytics },
-              { path: "assets", Component: Assets },
-              { path: "design", Component: Design },
-              { path: "workflows", Component: Workflows },
-              { path: "hooks", Component: Hooks },
-              { path: "events", Component: Events },
-              { path: "secrets", Component: Secrets },
+              { path: "database/*", Component: Database },
+              { path: "workflows/*", Component: Workflows },
+              { path: "library/*", Component: Library },
               { path: "apps/:app/*", Component: AppScreen },
+              // dev builds only, like its row in the rail (shell/sections.ts)
+              ...(import.meta.env.DEV ? [{ path: "components/*", Component: Components }] : []),
             ],
           },
         ],

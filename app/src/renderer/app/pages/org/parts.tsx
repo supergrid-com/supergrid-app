@@ -103,12 +103,12 @@ export function ScopeList({ scopes }: { scopes: string[] | null }): React.ReactE
         const ok = scopes.some((s) => c.scope.test(s));
         return (
           <li key={c.name} className="flex items-center gap-3 px-4 py-2.5">
-            {ok ? <CheckIcon className="size-4 shrink-0 text-success" aria-label="Granted" /> : <TriangleAlertIcon className="size-4 shrink-0 text-warning" aria-label="Not granted" />}
+            {ok ? <CheckIcon className="size-4 shrink-0 text-success" aria-label="Granted" /> : <TriangleAlertIcon className="size-4 shrink-0 text-warning" aria-label="Not Granted" />}
             <div className="flex min-w-0 flex-1 flex-col">
               <span className={cn("text-sm", !ok && "text-muted-foreground")}>{c.name}</span>
               <span className="text-xs text-muted-foreground">{c.why}</span>
             </div>
-            {!ok && <span className="shrink-0 text-xs text-muted-foreground">Not granted</span>}
+            {!ok && <span className="shrink-0 text-xs text-muted-foreground">Not Granted</span>}
           </li>
         );
       })}
@@ -275,7 +275,7 @@ export function ConnectCloudflare({ onConnected, cta = "Use this account" }: { o
           </div>
         )}
         <Field invalid={!!prefixError}>
-          <FieldLabel>Install prefix</FieldLabel>
+          <FieldLabel>Install Prefix</FieldLabel>
           <Input value={prefix} onChange={(e) => setPrefix(e.target.value.toLowerCase())} className="w-60 font-mono" aria-invalid={prefixError ? true : undefined} />
           {prefixError ? (
             <p className="text-xs text-destructive-foreground">{prefixError}</p>

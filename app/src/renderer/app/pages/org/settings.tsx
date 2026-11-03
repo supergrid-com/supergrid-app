@@ -25,7 +25,7 @@ export function OrgSettings(): React.ReactElement {
   const dirty = name.trim() !== org.name;
 
   return (
-    <SectionPage title={org.name} description={`Organization, created ${org.createdAt}`} width={960}>
+    <SectionPage title={org.name} width={960}>
       <div className="flex flex-col gap-8">
         <SettingsGroup title="General" description="How the organization appears in the app.">
           <Field>
@@ -88,10 +88,10 @@ export function OrgSettings(): React.ReactElement {
 
         <Separator />
 
-        <SettingsGroup title="Danger zone" description="Nothing here touches Cloudflare. Anything in the account keeps running.">
+        <SettingsGroup title="Danger Zone" description="Nothing here touches Cloudflare. Anything in the account keeps running.">
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border px-4 py-3">
             <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium">Remove organization</span>
+              <span className="text-sm font-medium">Remove Organization</span>
               <span className="text-xs text-muted-foreground">Forgets it and its Cloudflare account link on this Mac.</span>
             </div>
             <Button size="sm" variant="destructive-outline" onClick={() => setRemoving(true)}>

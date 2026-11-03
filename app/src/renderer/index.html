@@ -13,7 +13,14 @@
           var t = localStorage.getItem("sg.theme") || "system";
           var dark = t === "dark" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
           if (dark) document.documentElement.classList.add("dark");
-          document.documentElement.setAttribute("data-admin-theme", localStorage.getItem("sg.adminTheme") || "auto");
+          // the theme's stylesheet from last time (lib/theme.ts), when it was made for this mode
+          var css = localStorage.getItem("sg.theme.css");
+          if (css && (localStorage.getItem("sg.theme.dark") === "1") === dark) {
+            var el = document.createElement("style");
+            el.id = "sg-theme";
+            el.textContent = css;
+            document.head.appendChild(el);
+          }
         } catch (e) {}
       })();
     </script>

@@ -10,7 +10,10 @@ import { cn } from "~/lib/utils";
 // it. There is no side nav in the desktop app: this one button holds the way back to the
 // workspaces and the appearance. The org switcher and the account join it with the control plane.
 export function BrandMark({ className }: { className?: string }): React.ReactElement {
-  const { theme, setTheme } = usePlatform();
+  // the quick switch between the Light, Dark and System interface presets; Appearance has the rest
+  const { appearance, setInterface } = usePlatform();
+  const preset = appearance.interface.preset;
+  const quick = preset === "light" || preset === "dark" || preset === "system" ? preset : "";
   return (
     <Menu>
       <Tooltip>
@@ -39,7 +42,7 @@ export function BrandMark({ className }: { className?: string }): React.ReactEle
         <MenuSeparator />
         <MenuGroup>
           <MenuGroupLabel>Appearance</MenuGroupLabel>
-          <MenuRadioGroup value={theme} onValueChange={(v) => setTheme(v as typeof theme)}>
+          <MenuRadioGroup value={quick} onValueChange={(v) => setInterface({ ...appearance.interface, preset: v as string })}>
             <MenuRadioItem value="light">
               <span className="flex items-center gap-2"><SunIcon />Light</span>
             </MenuRadioItem>
