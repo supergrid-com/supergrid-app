@@ -4,7 +4,7 @@ import { packageGraph } from "@supergrid/app-kit/packages";
 import { scaffoldAppFolder, scaffoldWorkspace } from "@supergrid/app-kit/scaffold";
 import { withInlineIcon } from "@supergrid/app-kit/vite";
 import { activeVersion, deployWorkspace, readWorkspace, type Compiled } from "@supergrid/cloud";
-import { app, ipcMain, shell, type WebContents } from "electron";
+import { app, BrowserWindow, ipcMain, shell, type WebContents } from "electron";
 import { execFile, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { accessSync, constants, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { connect, createServer } from "node:net";
@@ -196,6 +196,12 @@ export function devToken(wsId: string): string {
   return token;
 }
 
+/** Tells every window that what a workspace serves changed (the agent added an app, a deploy landed, the dev server stopped). */
+export function changed(wsId: string): void {
+  workspaceApi.invalidate();
+  for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(channels.wsChanged, wsId);
+}
+
 // ---- apps in the repo ----
 
 const generated = (wsId: string): GeneratedApp[] => { const dir = repo(wsId); return readApps(dir, readWorkspaceFile(dir)); };
@@ -221,6 +227,7 @@ export async function create(wsId: string, input: NewAppInput): Promise<LocalApp
   const { dir, manifest } = scaffoldAppFolder({ core: coreDir(), workspace: ws, id: input.id, name: input.name, mount: input.mount, home: input.home, description: input.description, color: input.color, icon: input.icon });
   generateWorkspace(ws);
   await commit(ws, `Add ${manifest.name}`);
+  changed(wsId);
   return { dir, manifest, problems: [], disabled: false, installed: false, installedVersion: null };
 }
 
@@ -299,7 +306,7 @@ export async function devStart(wsId: string, owner: WebContents): Promise<DevSer
   createInterface({ input: child.stdout }).on("line", (l) => push("out", l));
   createInterface({ input: child.stderr }).on("line", (l) => push("err", l));
   child.on("error", (e) => push("sys", `could not start: ${e.message}`));
-  child.on("exit", (code) => { if (devs.get(wsId) === d) devs.delete(wsId); push("sys", `exited with ${code ?? "signal"}`); });
+  child.on("exit", (code) => { const was = devs.get(wsId) === d; if (was) devs.delete(wsId); push("sys", `exited with ${code ?? "signal"}`); if (was) changed(wsId); });
   d.starting = waitReady(wsId, d, push).finally(() => { d.starting = null; });
   return d.starting;
 }
@@ -408,6 +415,7 @@ export async function deploy(wsId: string, sender: WebContents): Promise<{ versi
     await deployWorkspace(cf, { ws: facts, apps, compiled, version });
     writeRepoFacts(wsId, { d1Id: facts.d1Id, url: facts.url, name: facts.name });
     workspaceApi.invalidate(accountId, prefix);
+    changed(wsId);
     report({ step: "done", detail: version });
     return { version };
   } catch (e) {

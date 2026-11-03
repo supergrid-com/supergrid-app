@@ -71,7 +71,7 @@ function send(c: Client, channel: string, payload: unknown): void {
 
 function ask(client: string, c: Client, tool: string, q: AskInput): Promise<AgentAnswer> {
   const id = randomUUID();
-  const full = { ...q, id, client, wsId: c.wsId, tool } as AgentAsk;
+  const full = { ...q, id, client, sessionId: c.sessionId, wsId: c.wsId, tool } as AgentAsk;
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       asks.delete(id);
@@ -101,8 +101,8 @@ async function call(client: string, c: Client, name: string, args: Json): Promis
     dev: modeOf(c.wsId) === "dev",
     context: contexts.get(c.wsId) ?? null,
     ask: (q) => ask(client, c, name, q),
-    widget: (widget: AgentWidget) => send(c, channels.agentWidget, { client, wsId: c.wsId, tool: name, widget }),
-    navigate: (to) => send(c, channels.agentNavigate, { client, wsId: c.wsId, to }),
+    widget: (widget: AgentWidget) => send(c, channels.agentWidget, { client, sessionId: c.sessionId, wsId: c.wsId, tool: name, widget }),
+    navigate: (to) => send(c, channels.agentNavigate, { client, sessionId: c.sessionId, wsId: c.wsId, to }),
     sender: () => c.sender,
   });
   try {

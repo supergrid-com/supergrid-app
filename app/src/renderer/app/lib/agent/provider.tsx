@@ -140,8 +140,13 @@ export class AgentStore {
   /** The shell's way to move the app when a tool asks (app_navigate). */
   onNavigate: ((event: AgentNavigateEvent) => void) | null = null;
 
-  constructor() {
-    if (!sg) return;
+  /**
+   * Listens to the bridge for the tools' asks, widgets and navigations. Called from the provider's effect, not the
+   * constructor: React's StrictMode builds the store twice in development and keeps one, and a listener on the orphan
+   * would answer every ask first, with "the thread is not open".
+   */
+  attach(): void {
+    if (!sg || this.unsubscribe.length) return;
     this.unsubscribe.push(
       sg.agent.onAsk((ask) => this.onAsk(ask)),
       sg.agent.onWidget((e) => this.onWidget(e)),
@@ -197,9 +202,9 @@ export class AgentStore {
     void sg?.agent.bindClient(client, { sessionId }).catch(() => undefined);
   }
 
-  /** The thread a tool's event is for: its session, else the thread open in that workspace. */
-  private threadFor(client: string, wsId: string): Thread | undefined {
-    const id = this.sessions.get(client);
+  /** The thread a tool's event is for: its session (named by the bridge, or bound to the client here), else the thread open in that workspace. */
+  private threadFor(client: string, wsId: string, sessionId: string | null = null): Thread | undefined {
+    const id = sessionId ?? this.sessions.get(client);
     const t = id ? this.threads.get(id) : undefined;
     if (t) return t;
     const open = this.viewing ? this.threads.get(this.viewing) : undefined;
@@ -207,7 +212,7 @@ export class AgentStore {
   }
 
   private onAsk(ask: AgentAsk): void {
-    const t = this.threadFor(ask.client, ask.wsId);
+    const t = this.threadFor(ask.client, ask.wsId, ask.sessionId);
     if (!t) {
       void sg?.agent.answer({ id: ask.id, ok: false, note: "The thread is not open." });
       return;
@@ -226,7 +231,7 @@ export class AgentStore {
   }
 
   private onWidget(e: AgentWidgetEvent): void {
-    const t = this.threadFor(e.client, e.wsId);
+    const t = this.threadFor(e.client, e.wsId, e.sessionId);
     if (!t) return;
     saveWidget(t.id, { tool: e.tool, widget: e.widget });
     const messages = withWidget(t.messages, e.tool, e.widget);
@@ -513,11 +518,16 @@ export class AgentStore {
     return [...out.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
+  /** Stops listening to the bridge (the provider unmounted, or StrictMode is about to mount it again). */
+  detach(): void {
+    for (const un of this.unsubscribe) un();
+    this.unsubscribe = [];
+  }
+
   dispose(): void {
     const conn = this.conn;
     this.drop();
-    for (const un of this.unsubscribe) un();
-    this.unsubscribe = [];
+    this.detach();
     void conn?.stop();
   }
 }
@@ -530,7 +540,10 @@ const AgentContext = React.createContext<AgentStore | null>(null);
 
 export function AgentProvider({ children }: { children: React.ReactNode }): React.ReactElement {
   const [store] = React.useState(() => new AgentStore());
-  React.useEffect(() => () => store.dispose(), [store]);
+  React.useEffect(() => {
+    store.attach();
+    return () => store.detach();
+  }, [store]);
   return <AgentContext.Provider value={store}>{children}</AgentContext.Provider>;
 }
 

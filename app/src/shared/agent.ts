@@ -45,18 +45,25 @@ export type AppContext = {
   dark: boolean;
 };
 
+/**
+ * Where a tool's event belongs: the client id the window made for the session, and the session itself once the window
+ * bound it. The window finds the thread by session first: Muse keeps one MCP server per session across loads, so after
+ * a reload the client id it still carries is one the window no longer knows.
+ */
+type From = { id: string; client: string; sessionId: string | null; wsId: string; tool: string };
+
 /** A question a tool puts to the user in the chat, and waits on. */
 export type AgentAsk =
   /** Yes or no, before something changes: a delete, a bulk update, a dropped table. */
-  | { id: string; client: string; wsId: string; tool: string; kind: "confirm"; title: string; detail?: string; preview?: { columns: string[]; rows: unknown[][]; total?: number }; danger?: boolean; confirmLabel?: string }
+  | (From & { kind: "confirm"; title: string; detail?: string; preview?: { columns: string[]; rows: unknown[][]; total?: number }; danger?: boolean; confirmLabel?: string })
   /** Pick files on this Mac and upload them to the library; the answer carries what landed. */
-  | { id: string; client: string; wsId: string; tool: string; kind: "upload"; title: string; accept: "image" | "media" | "file"; multiple: boolean; prefix?: string }
+  | (From & { kind: "upload"; title: string; accept: "image" | "media" | "file"; multiple: boolean; prefix?: string })
   /** Switch the desktop to Dev mode for this workspace, because the agent needs what it unlocks. */
-  | { id: string; client: string; wsId: string; tool: string; kind: "dev"; title: string; reason: string };
+  | (From & { kind: "dev"; title: string; reason: string });
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 /** What a tool passes to ask: the question without the ids the bridge fills in. */
-export type AskInput = DistributiveOmit<AgentAsk, "id" | "client" | "wsId" | "tool">;
+export type AskInput = DistributiveOmit<AgentAsk, "id" | "client" | "sessionId" | "wsId" | "tool">;
 
 export type AgentAnswer = { id: string; ok: boolean; /** For an upload: what landed, as the tool reports it. */ uploaded?: UploadedItem[]; note?: string };
 export type UploadedItem = { kind: "image" | "media" | "file"; id: string; name: string; url: string | null };
@@ -76,5 +83,5 @@ export type AgentWidget =
 
 export type ThemeCard = { id: string; name: string; mode: "light" | "dark"; isDefault: boolean; colors: { primary: string; secondary: string; accent: string; background: string; foreground: string }; fonts: { heading: string; body: string }; logo?: string };
 
-export type AgentWidgetEvent = { client: string; wsId: string; tool: string; widget: AgentWidget };
-export type AgentNavigateEvent = { client: string; wsId: string; to: string };
+export type AgentWidgetEvent = { client: string; sessionId: string | null; wsId: string; tool: string; widget: AgentWidget };
+export type AgentNavigateEvent = { client: string; sessionId: string | null; wsId: string; to: string };

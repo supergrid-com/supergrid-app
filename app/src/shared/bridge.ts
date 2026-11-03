@@ -187,6 +187,8 @@ export type Bridge = {
     get(wsId: string): Promise<WorkspaceSummary>;
     /** Live or Dev for a workspace. Dev starts its dev server first and resolves once it answers; Live stops it. Returns the summary for that mode. */
     setMode(wsId: string, mode: WorkspaceMode): Promise<WorkspaceSummary>;
+    /** Fires with the workspace id when the main process changed what a workspace serves (an app added by the agent, a deploy, the dev server stopping), so the window reads it again. Returns the unsubscribe. */
+    onChanged(cb: (wsId: string) => void): () => void;
     rpc(wsId: string, method: string, args: unknown[]): Promise<unknown>;
     /** The URL that opens an app's admin screen signed in: the workspace's handoff with a token minted here. `next` is relative to /admin/<app>. */
     adminUrl(wsId: string, app: string, next?: string): Promise<string>;
@@ -331,6 +333,7 @@ export const channels = {
   wsMediaToken: "sg:ws:media-token",
   wsGet: "sg:ws:get",
   wsSetMode: "sg:ws:set-mode",
+  wsChanged: "sg:ws:changed",
   wsAdminUrl: "sg:ws:admin-url",
   wsAppManifest: "sg:ws:app-manifest",
   wsAppCall: "sg:ws:app-call",

@@ -37,6 +37,7 @@ const bridge: Bridge = {
   ws: {
     get: (wsId) => ipcRenderer.invoke(channels.wsGet, wsId),
     setMode: (wsId, mode) => ipcRenderer.invoke(channels.wsSetMode, wsId, mode),
+    onChanged: (cb) => listen(channels.wsChanged, cb),
     rpc: (wsId, method, args) => ipcRenderer.invoke(channels.wsRpc, wsId, method, args),
     resetToken: (wsId) => ipcRenderer.invoke(channels.wsResetToken, wsId),
     setMediaToken: (wsId, token) => ipcRenderer.invoke(channels.wsMediaToken, wsId, token),

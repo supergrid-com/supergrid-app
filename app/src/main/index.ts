@@ -15,6 +15,9 @@ import * as workspaceApi from "./workspace-api";
 // the @supergrid/cloud operations against the account, and later git clones, the ACP agent and
 // local preview. The renderer asks through the bridge in ../shared/bridge.ts.
 
+// In development the renderer is inspectable over the DevTools protocol (http://localhost:9339/json), for tools that look inside the window.
+if (process.env.ELECTRON_RENDERER_URL) app.commandLine.appendSwitch("remote-debugging-port", process.env.SG_DEVTOOLS_PORT ?? "9339");
+
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,

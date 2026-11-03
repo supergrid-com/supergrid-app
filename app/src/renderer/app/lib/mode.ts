@@ -1,5 +1,6 @@
 import * as React from "react";
 import type { WorkspaceMode, WorkspaceSummary } from "../../../shared/bridge";
+import { refreshLocalApps } from "~/lib/apps";
 import { sg } from "~/lib/bridge";
 import { clean } from "~/lib/workspaces";
 
@@ -64,6 +65,12 @@ export function ensureMode(wsId: string): void {
   if (e.mode === "dev" && !e.summary) void setMode(wsId, "dev").catch(() => undefined);
   else void sg.apps.repo(wsId).catch(() => undefined);
 }
+
+// main says when what a workspace serves changed (the agent added an app, a deploy, the dev server went away): read it again
+sg?.ws.onChanged((wsId) => {
+  refreshLocalApps(wsId);
+  void refreshMode(wsId);
+});
 
 export function useMode(wsId: string): Entry & { setMode: (mode: WorkspaceMode) => Promise<void>; refresh: () => Promise<void> } {
   const e = React.useSyncExternalStore(
