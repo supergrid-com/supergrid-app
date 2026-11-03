@@ -9,7 +9,10 @@ import type { Sitemap, SitemapInput } from "./sitemap";
 export type { Sitemap, SitemapInput, SitemapRule } from "./sitemap";
 
 /** `public` and `home` are what each app was built with; `sitemap` is what the workspace wants (see workspace/SITEMAP.md). */
-export type WorkspaceInfo = { id: string; name: string; url: string; version: string; contract: number; apps: { app: string; name?: string; public?: string; home?: string; admin?: boolean; api?: boolean; nav?: { label: string; path: string }[]; subscribes?: string[] }[]; sitemap: Sitemap };
+import type { NavItem } from "./manifest";
+/** An installed app as the workspace lists it: the manifest's route summary (`routeSummary` in ./manifest). */
+export type InstalledAppInfo = { app: string; name?: string; version?: string; icon?: string; color?: string; public?: string; home?: string; admin?: boolean; api?: boolean; operations?: boolean; nav?: NavItem[]; subscribes?: string[]; entities?: string[] };
+export type WorkspaceInfo = { id: string; name: string; url: string; version: string; contract: number; apps: InstalledAppInfo[]; sitemap: Sitemap };
 export type Migration = { name: string; sql: string };
 
 // ---- Contacts ----------------------------------------------------------------------------------------------------

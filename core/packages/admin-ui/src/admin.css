@@ -1,0 +1,87 @@
+/* The admin layer's tokens. An app's admin screens render inside the SuperGrid shell, so they take the shell's
+   page colors, not the workspace's site theme: under [data-sg-admin] the kit's variables are redefined from the
+   `--sg-admin-*` values the shell pushes (admin-sdk `sg:init`), with the shell's own light and dark values as the
+   fallback so the screens look right standalone too. Import it after components/ui/tokens.css. */
+
+[data-sg-admin] {
+  color-scheme: light;
+  --font-sans: var(--sg-admin-font, "Cal Sans", ui-sans-serif, system-ui, sans-serif);
+  --font-heading: var(--font-sans);
+  --font-mono: var(--sg-admin-font-mono, ui-monospace, "Geist Mono", Menlo, monospace);
+  --background: var(--sg-admin-page, #ffffff);
+  --foreground: var(--sg-admin-fg, #262626);
+  --card: var(--sg-admin-card, #ffffff);
+  --card-foreground: var(--foreground);
+  --popover: var(--sg-admin-card, #ffffff);
+  --popover-foreground: var(--foreground);
+  --app-bg: var(--sg-admin-bg, #f5f5f3);
+  --primary: var(--sg-admin-primary, #262626);
+  --primary-foreground: var(--sg-admin-primary-fg, #fafafa);
+  --secondary: var(--sg-admin-hover, rgb(0 0 0 / 4%));
+  --secondary-foreground: var(--foreground);
+  --accent: var(--sg-admin-hover, rgb(0 0 0 / 4%));
+  --accent-foreground: var(--foreground);
+  --muted: var(--sg-admin-hover, rgb(0 0 0 / 4%));
+  --muted-foreground: var(--sg-admin-muted, #6b6b6b);
+  --border: var(--sg-admin-line, rgb(0 0 0 / 8%));
+  --input: var(--sg-admin-input, rgb(0 0 0 / 10%));
+  --ring: var(--sg-admin-accent, #e8604a);
+  --destructive: #ef4444;
+  --destructive-foreground: #b91c1c;
+  --success: #10b981;
+  --success-foreground: #047857;
+  --warning: #f59e0b;
+  --warning-foreground: #b45309;
+  --info: #3b82f6;
+  --info-foreground: #1d4ed8;
+  --radius: var(--sg-admin-radius, 0.625rem);
+  --radius-button: var(--radius);
+  --radius-input: var(--radius);
+  --radius-card: calc(var(--radius) * 1.6);
+  --spacing: 0.25rem;
+  --sg-button-weight: 500;
+  --sg-button-transform: none;
+  --sg-button-tracking: normal;
+  --sg-button-shadow: none;
+  --sg-input-bg: var(--background);
+  --sg-input-border: var(--input);
+  /* the shell's active color: active rows, focus rings, the selected item */
+  --active: var(--sg-admin-accent, #e8604a);
+  --active-foreground: var(--sg-admin-accent-fg, #ffffff);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.dark [data-sg-admin],
+[data-sg-admin].dark {
+  color-scheme: dark;
+  --background: var(--sg-admin-page, #181818);
+  --foreground: var(--sg-admin-fg, #f5f5f5);
+  --card: var(--sg-admin-card, #1c1c1c);
+  --popover: var(--sg-admin-card, #1c1c1c);
+  --app-bg: var(--sg-admin-bg, #1f1f1f);
+  --primary: var(--sg-admin-primary, #f5f5f5);
+  --primary-foreground: var(--sg-admin-primary-fg, #262626);
+  --secondary: var(--sg-admin-hover, rgb(255 255 255 / 4%));
+  --accent: var(--sg-admin-hover, rgb(255 255 255 / 4%));
+  --muted: var(--sg-admin-hover, rgb(255 255 255 / 4%));
+  --muted-foreground: var(--sg-admin-muted, #a3a3a3);
+  --border: var(--sg-admin-line, rgb(255 255 255 / 6%));
+  --input: var(--sg-admin-input, rgb(255 255 255 / 8%));
+  --destructive-foreground: #f87171;
+  --success-foreground: #34d399;
+  --warning-foreground: #fbbf24;
+  --info-foreground: #60a5fa;
+}
+
+/* Focus, as the shell draws it: the control's border turns the active color with a 1px ring outside. */
+[data-sg-admin] :where(button, a, summary, [role="checkbox"], [role="radio"], [role="switch"], [role="tab"], [tabindex]):not(:where([data-slot="input-control"], [data-slot="textarea-control"], [data-slot="input-group"]) *):focus-visible,
+[data-sg-admin] :where([data-slot="input-control"], [data-slot="textarea-control"], [data-slot="input-group"]):has(:focus-visible) {
+  outline: none;
+  border-color: var(--active);
+  box-shadow: 0 0 0 1px var(--active);
+}
+[data-sg-admin] :where([data-slot="input-control"], [data-slot="textarea-control"], [data-slot="input-group"]) :where(input, textarea):focus-visible {
+  outline: none;
+  box-shadow: none;
+}

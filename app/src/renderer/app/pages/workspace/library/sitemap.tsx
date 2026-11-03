@@ -5,7 +5,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, WorkspaceFrame } from "~/components/workspace/frame";
 import { FilterTabs, openExternal, useLibraryTarget } from "~/components/workspace/library/shared";
-import { mockApps } from "~/lib/apps-mock";
+import { AppGlyph } from "~/components/workspace/app-icon";
 import { useSession } from "~/lib/session";
 import { useOpenNav } from "~/shell/context";
 
@@ -15,7 +15,7 @@ import { useOpenNav } from "~/shell/context";
 // app's Worker, each with a link into the Cloudflare dashboard. With no app installed yet, Pages
 // shows an example set so the shape is clear; it is marked as such.
 
-type AppEntry = { app: string; name: string; public?: string; admin: boolean; api: boolean; nav?: { label: string; path: string }[]; pages?: string[] };
+type AppEntry = { app: string; name: string; icon?: string; public?: string; admin: boolean; api: boolean; nav?: { label: string; path: string }[]; pages?: string[] };
 
 // What an installed app looks like here, for a workspace with none yet. Marked Example on the page.
 const EXAMPLE_APPS: AppEntry[] = [
@@ -49,14 +49,13 @@ function Route({ path, kind, href }: { path: string; kind: "public" | "admin" | 
 
 function AppCard({ app, wsUrl, wsId, example }: { app: AppEntry; wsUrl: string; wsId: string; example: boolean }): React.ReactElement {
   const navigate = useNavigate();
-  const Icon = mockApps.find((m) => m.id === app.app)?.icon ?? PackageIcon;
   const site = wsUrl.replace(/\/$/, "");
   const pages = app.pages ?? (app.public ? [app.public] : []);
   return (
     <Card
       title={
-        <span className="flex items-center gap-2">
-          <Icon className="size-4 text-muted-foreground" />
+        <span className="flex items-center gap-2 [&_svg]:size-4 [&_svg]:text-muted-foreground">
+          <AppGlyph app={app} />
           {app.name}
         </span>
       }

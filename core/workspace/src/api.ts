@@ -28,7 +28,7 @@ export class WorkspaceApi extends WorkerEntrypoint<Env> implements WorkspaceRpc 
   async info(): Promise<WorkspaceInfo> {
     await ensureCore(this.db);
     return { id: this.env.WORKSPACE_ID, name: this.env.WORKSPACE_NAME, url: this.env.WORKSPACE_URL, version: this.env.SG_VERSION, contract: CONTRACT,
-      apps: this.env.ROUTES.map(({ app, name, public: pub, home, admin, api, nav, subscribes }) => ({ app, name, public: pub, home, admin, api, nav, subscribes })),
+      apps: this.env.ROUTES.map(({ binding: _b, ...r }) => r),
       sitemap: await sitemap.getSitemap(this.env) };
   }
   async getTheme() {

@@ -1,4 +1,5 @@
-// sg: what happens outside a running platform. `install` puts a platform into a Cloudflare account; `release` and `keygen` are ours.
+// sg: what happens outside a running platform. `install` puts a platform into a Cloudflare account; `release` and `keygen` are ours;
+// `app new` starts an app from core/template and `app check` reads a manifest back (docs/app-system.md).
 // Uses the same @supergrid/cloud code as the platform. Run from core/: pnpm sg <command>
 import { execFileSync, spawnSync } from "node:child_process";
 import { generateKeyPairSync, createPrivateKey, randomBytes, sign } from "node:crypto";
@@ -8,7 +9,9 @@ import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { CONTRACT } from "@supergrid/app-kit/rpc";
 import { isAppId, isPrefix, resourceNames } from "@supergrid/app-kit/names";
-import type { AppManifest } from "@supergrid/app-kit/manifest";
+import { checkManifest, type AppManifest } from "@supergrid/app-kit/manifest";
+import { scaffoldApp } from "@supergrid/app-kit/scaffold";
+import { withInlineIcon } from "@supergrid/app-kit/vite";
 import { CfApiError, accountSubdomain, createCf, enableWorkersDev, ensureD1, fetchBundle, fetchRelease, getSettings, putSchedules, putWorker, sha256Hex, waitForVersion, type Binding, type Bundle, type Cf, type Release } from "@supergrid/cloud";
 
 const CORE = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -66,7 +69,9 @@ function buildPart(part: string, version: string): { bundle: Bundle; manifest?: 
   const dir = resolve(part);
   const manifestPath = join(dir, "supergrid.app.json");
   if (!existsSync(manifestPath)) fail(`${part} is not platform, workspace or an app folder`);
-  const manifest = { ...(JSON.parse(readFileSync(manifestPath, "utf8")) as AppManifest), version };
+  const manifest = withInlineIcon({ ...(JSON.parse(readFileSync(manifestPath, "utf8")) as AppManifest), version }, dir);
+  const problems = checkManifest(manifest);
+  if (problems.length) fail(`${manifestPath}:\n${problems.map((x) => `  - ${x}`).join("\n")}`);
   if (!isAppId(manifest.id)) fail(`app id ${manifest.id} is not valid`);
   log(`building ${manifest.id}`);
   execFileSync("pnpm", ["build"], { cwd: dir, stdio: "pipe" });
@@ -146,7 +151,31 @@ async function install() {
   console.log(`\n  Your platform is live. Create the first account here (one-time link, keep it private):\n\n  ${url}/setup?token=${setupToken}\n`);
 }
 
-const commands: Record<string, () => unknown> = { keygen, release, install };
+// ---- app new / app check ----------------------------------------------------------------------------------------------
+const appNew = (dest: string, o: Omit<Parameters<typeof scaffoldApp>[0], "core" | "dest">) => scaffoldApp({ core: CORE, dest, ...o });
+
+function appCommand() {
+  const [sub, target] = args;
+  if (sub === "new") {
+    if (!target) fail("usage: sg app new <folder> --id=<id> [--name=...] [--mount=/path | --admin-only] [--description=...] [--color=#hex] [--icon=<svg file>]");
+    const { dir, manifest } = appNew(target, { id: flags.id ?? target.split("/").pop()!, name: flags.name, mount: flags["admin-only"] ? null : flags.mount, description: flags.description, color: flags.color, icon: flags.icon });
+    log(`${manifest.name} (${manifest.id}) is in ${dir}`);
+    console.log(`\n  cd ${relative(process.cwd(), dir) || "."} && pnpm install && pnpm dev\n\n  Then read GUIDE.md. Public pages: ${manifest.public ? manifest.public.mount : "none (admin only)"}; admin: /admin/${manifest.id}.\n`);
+    return;
+  }
+  if (sub === "check") {
+    const dir = resolve(target ?? ".");
+    const path = join(dir, "supergrid.app.json");
+    if (!existsSync(path)) fail(`${path} not found`);
+    const problems = checkManifest(JSON.parse(readFileSync(path, "utf8")));
+    if (problems.length) fail(`${path}:\n${problems.map((x) => `  - ${x}`).join("\n")}`);
+    log(`${path} is a valid manifest`);
+    return;
+  }
+  fail("usage: sg app new <folder> --id=<id> | sg app check [folder]");
+}
+
+const commands: Record<string, () => unknown> = { keygen, release, install, app: appCommand };
 const run = cmd ? commands[cmd] : undefined;
-if (!run) fail("usage: sg install | sg release | sg keygen");
+if (!run) fail("usage: sg install | sg release | sg keygen | sg app new | sg app check");
 await run();

@@ -77,7 +77,7 @@ export function currentModelName(choices: Choice[]): string | null {
 // Short names for the composer, after Claude Code's: Muse's approval modes and its effort levels.
 // The agent's own description still shows under each in the menu.
 const modeNames: Record<string, string> = { allowAll: "Auto", promptUnmatched: "Manual", onRequest: "Ask", denyUnmatched: "Strict" };
-const effortNames: Record<string, string> = { low: "Low", medium: "Medium", high: "High", xhigh: "Extra high", max: "Max" };
+const effortNames: Record<string, string> = { low: "Low", medium: "Medium", high: "High", xhigh: "Extra High", max: "Max" };
 
 export function shortName(choice: Choice, option: ChoiceOption): string {
   if (choice.category === "mode") return modeNames[option.id] ?? option.name;

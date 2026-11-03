@@ -1,7 +1,7 @@
 import { getSettings, provisionWorkspace, type Binding, type Cf, type ProvisionStep } from "@supergrid/cloud";
 import { isPrefix, isWorkspaceId, newWorkspaceId } from "@supergrid/app-kit/names";
 import type { WebContents } from "electron";
-import type { WorkspaceCreated, WorkspaceProgress, WorkspaceSummary } from "../shared/bridge";
+import type { InstalledApp, WorkspaceCreated, WorkspaceProgress, WorkspaceSummary } from "../shared/bridge";
 import { channels } from "../shared/bridge";
 import { cfClient } from "./cf-api";
 import { readConfig, writeConfig } from "./config";
@@ -12,7 +12,7 @@ import { workspaceBundle, workspaceRelease } from "./feed";
 // directory is needed to list them. Creating one deploys the signed workspace release with
 // provisionWorkspace from @supergrid/cloud, on cf's login.
 
-type RouteEntry = { app: string; name: string; public?: string; admin: boolean; api: boolean; nav?: { label: string; path: string }[] };
+type RouteEntry = InstalledApp & { binding?: string };
 
 function readBindings(bindings: Binding[]) {
   const text = (name: string) => { const b = bindings.find((x) => x.name === name); return b && b.type === "plain_text" ? String((b as { text: string }).text) : null; };
@@ -32,7 +32,7 @@ async function summary(cf: Cf, worker: string, head: string): Promise<WorkspaceS
       name: b.text("WORKSPACE_NAME") ?? id,
       url: b.text("WORKSPACE_URL") ?? `https://${worker}.workers.dev`,
       version: b.text("SG_VERSION"),
-      apps: routes.map((r) => ({ app: r.app, name: r.name, admin: !!r.admin, api: !!r.api, public: r.public, nav: r.nav })),
+      apps: routes.map(({ binding: _b, ...r }) => ({ ...r, name: r.name ?? r.app, admin: !!r.admin, api: !!r.api })),
     };
   } catch {
     return null; // a Worker we cannot read is not ours to show

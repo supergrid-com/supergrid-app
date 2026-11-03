@@ -53,6 +53,7 @@ function useHistoryButtons(): { back: boolean; forward: boolean } {
 export function WorkspaceTitleBar({
   canvasStart,
   chatStart,
+  chatEnd,
   animate,
   onToggleSidebar,
   chatRef,
@@ -61,8 +62,10 @@ export function WorkspaceTitleBar({
 }: {
   /** Where the canvas starts, from the window's left edge. */
   canvasStart: number;
-  /** Where the chat starts, when it is open. */
+  /** Where the chat starts, when it is open on the left of the page. */
   chatStart?: number;
+  /** The chat's width, when it is open on the right of the page instead. */
+  chatEnd?: number;
   /** Off during a resize drag, so the divider tracks the pointer. */
   animate: boolean;
   onToggleSidebar: () => void;
@@ -113,6 +116,15 @@ export function WorkspaceTitleBar({
         <div ref={titleRef} className="ms-3 flex min-w-0 items-center gap-2 text-foreground" />
         <div ref={actionsRef} className="ms-auto flex shrink-0 items-center justify-end gap-2 ps-3 pe-1 text-foreground" />
       </div>
+      {/* the chat pinned to the right: its section ends with the bar, over its panel */}
+      {chatEnd !== undefined && (
+        <>
+          <Divider />
+          <div className={cn("flex shrink-0 items-center overflow-hidden", easing)} style={{ width: chatEnd }}>
+            <div ref={chatRef} className="on-admin flex min-w-0 flex-1 items-center gap-2 ps-4 pe-3 text-foreground" />
+          </div>
+        </>
+      )}
     </header>
   );
 }

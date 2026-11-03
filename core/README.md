@@ -10,8 +10,10 @@ packages/app-kit  what an app builds on: manifest, routes, RPC contract, resourc
 packages/admin-sdk  postMessage protocol between the platform and an app's admin iframe
 packages/theme    the theme document, its validation and the CSS it compiles to (runtime, not build time)
 packages/ui       the base-ui design kit: the desktop app's components, copied into apps and themed by packages/theme
+packages/admin-ui the admin layer for an app's admin screens (Page, Card, DataTable, AssetField, the shell tokens), copied in beside the kit
 packages/cloud    everything that touches a Cloudflare account or a release feed
-cli/              sg: install a platform, cut and sign releases
+template/         the blank app every app starts from (`sg app new`, or New App in the desktop); docs/app-system.md is the map
+cli/              sg: install a platform, cut and sign releases, start and check apps
 ```
 
 The platform and the CLI share `packages/cloud`, so an install from the terminal and a click in the UI run the same code.
@@ -81,6 +83,15 @@ pnpm dev
 The platform is on <http://localhost:5300>. Copy `platform/.dev.vars.example` to `.dev.vars` on a fresh clone. `/setup?token=dev` creates the first account. See [dev/README.md](../dev/README.md) to run a workspace beside it or to try the update flow.
 
 After changing plugins or fields in `platform/src/auth-options.ts`, run `pnpm --filter platform auth:schema`.
+
+## Starting an app
+
+```bash
+pnpm sg app new ../dev/apps/bookings --id=bookings --name="Bookings" --mount=/book
+```
+
+Copies `template/`, copies the kits in, writes the manifest and links the packages; `pnpm sg app check <folder>` reads a
+manifest back. The desktop's New App does the same into the workspace's folder. See `docs/app-system.md`.
 
 ## Adding UI components
 

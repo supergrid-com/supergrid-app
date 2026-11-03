@@ -1,18 +1,37 @@
-import { ArrowUpIcon, CheckIcon, PlusIcon, SquareIcon } from "lucide-react";
+import { ArrowUpIcon, CameraIcon, CheckIcon, ImageIcon, PaperclipIcon, PlusIcon, SquareIcon } from "lucide-react";
 import * as React from "react";
-import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuPopup, MenuTrigger } from "~/components/ui/menu";
+import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuSeparator, MenuSub, MenuSubPopup, MenuSubTrigger, MenuTrigger } from "~/components/ui/menu";
 import { SegmentedControl, SegmentedControlItem } from "~/components/ui/segmented-control";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 
 // The composer, after Claude Code's: the text across the top, and under it a row with + on the left
-// and model, effort, mode and send on the right.
+// and model, effort, mode and send on the right. In a narrow panel the row can't hold them all, so
+// the + holds them instead (`useComposerNarrow`): the pickers fold into its menu as submenus.
 
 type Option = { id: string; name: string; description?: string | null };
+
+/** A picker as the + menu takes it: what PromptInputSelect shows, without the trigger. */
+export type ComposerChoice = { label: string; value: string; options: Option[]; onChange: (id: string) => void; nameOf?: (o: Option) => string; disabled?: boolean };
+
+const NarrowContext = React.createContext(false);
+/** True inside a PromptInput too narrow for the toolbar's pickers (the pin-narrow agent panel). */
+export const useComposerNarrow = (): boolean => React.useContext(NarrowContext);
+const NARROW_WIDTH = 500;
 
 /** The box: the text, then a toolbar. A click anywhere in it that isn't a control goes to the text. */
 export function PromptInput({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>): React.ReactElement {
   const ref = React.useRef<HTMLDivElement>(null);
+  const [narrow, setNarrow] = React.useState(false);
+  React.useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setNarrow(el.clientWidth < NARROW_WIDTH);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
     <div
       ref={ref}
@@ -24,7 +43,7 @@ export function PromptInput({ className, children, ...props }: React.HTMLAttribu
       className={cn("flex cursor-text flex-col rounded-[20px] border bg-card px-4 pt-3.5 pb-2.5 text-foreground shadow-xs/5 transition-colors focus-within:border-foreground/20", className)}
       {...props}
     >
-      {children}
+      <NarrowContext.Provider value={narrow}>{children}</NarrowContext.Provider>
     </div>
   );
 }
@@ -70,15 +89,75 @@ export function PromptInputToolbar({ start, children }: { start?: React.ReactNod
 
 const triggerClass = "flex h-8 min-w-0 cursor-pointer items-center rounded-lg px-2 text-sm text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-60 data-popup-open:bg-accent data-popup-open:text-foreground";
 
-/** The + at the start of the row, for attachments and more. It does nothing yet. */
-export function PromptInputAdd(): React.ReactElement {
+const menuPopupClass = "rounded-xl text-foreground";
+const menuItemClass = "gap-2.5 rounded-md px-2.5";
+
+/**
+ * The + at the start of the row: a menu of attachments (none wired up yet) and, in a narrow
+ * composer, the thread's kind and every picker the row has no room for, each as a submenu.
+ */
+export function PromptInputAdd({ kind, choices = [] }: { kind?: { dev: boolean; onChange: (dev: boolean) => void; disabled?: boolean }; choices?: (ComposerChoice | false | null | undefined)[] }): React.ReactElement {
+  const pickers = choices.filter((c): c is ComposerChoice => !!c);
+  const attach = (icon: React.ReactNode, label: string) => (
+    <MenuItem className={menuItemClass}>
+      {icon}
+      {label}
+      <span className="ms-auto text-xs text-muted-foreground">Soon</span>
+    </MenuItem>
+  );
   return (
-    <Tooltip>
-      <TooltipTrigger render={<button type="button" aria-label="Add" className={cn(triggerClass, "size-8 justify-center px-0")} />}>
+    <Menu>
+      <MenuTrigger render={<button type="button" aria-label="Add" className={cn(triggerClass, "size-8 justify-center px-0")} />}>
         <PlusIcon className="size-5" />
-      </TooltipTrigger>
-      <TooltipPopup>Add Files and More</TooltipPopup>
-    </Tooltip>
+      </MenuTrigger>
+      <MenuPopup align="start" side="top" sideOffset={8} className={cn(menuPopupClass, "w-60")}>
+        <MenuGroup>
+          <MenuGroupLabel className="px-2.5 pt-1.5 pb-1 text-xs font-normal">Attach</MenuGroupLabel>
+          {attach(<ImageIcon />, "Add Photos")}
+          {attach(<PaperclipIcon />, "Add Files")}
+          {attach(<CameraIcon />, "Take a Screenshot")}
+        </MenuGroup>
+        {kind && (
+          <>
+            <MenuSeparator />
+            <MenuRadioGroup value={kind.dev ? "dev" : "agent"} onValueChange={(v) => kind.onChange(v === "dev")}>
+              <MenuRadioItem value="agent" disabled={kind.disabled}>
+                Agent
+              </MenuRadioItem>
+              <MenuRadioItem value="dev" disabled={kind.disabled}>
+                Dev
+              </MenuRadioItem>
+            </MenuRadioGroup>
+          </>
+        )}
+        {pickers.length > 0 && (
+          <>
+            <MenuSeparator />
+            {pickers.map((c) => {
+              const nameOf = c.nameOf ?? ((o: Option) => o.name);
+              const current = c.options.find((o) => o.id === c.value);
+              return (
+                <MenuSub key={c.label}>
+                  <MenuSubTrigger disabled={c.disabled} className={menuItemClass}>
+                    <span className="shrink-0">{c.label}</span>
+                    <span className="ms-auto min-w-0 truncate text-muted-foreground">{current ? nameOf(current) : c.value}</span>
+                  </MenuSubTrigger>
+                  <MenuSubPopup className={cn(menuPopupClass, "w-52")}>
+                    <MenuRadioGroup value={c.value} onValueChange={(v) => c.onChange(String(v))}>
+                      {c.options.map((o) => (
+                        <MenuRadioItem key={o.id} value={o.id}>
+                          {nameOf(o)}
+                        </MenuRadioItem>
+                      ))}
+                    </MenuRadioGroup>
+                  </MenuSubPopup>
+                </MenuSub>
+              );
+            })}
+          </>
+        )}
+      </MenuPopup>
+    </Menu>
   );
 }
 

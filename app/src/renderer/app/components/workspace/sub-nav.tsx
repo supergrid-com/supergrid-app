@@ -53,7 +53,7 @@ export function SubNav({ title, icon, meta, action, items, groups = [], loading,
   const [folded, toggle] = useFolded(title, groups);
   const groupOf = (label: string | undefined) => (label ? groups.find((g) => g.label === label) : undefined);
   return (
-    <div data-slot="sub-nav" className={cn("flex h-full w-full flex-col overflow-hidden rounded-2xl border bg-background bg-clip-padding text-foreground", className)}>
+    <div data-slot="sub-nav" className={cn("on-admin on-admin-panel flex h-full w-full flex-col overflow-hidden rounded-2xl border bg-background bg-clip-padding text-foreground", className)}>
       {/* the title lines up with the rows' icons (the nav's px-3 plus a row's ps-2.5) */}
       <div className="flex shrink-0 items-center gap-2 pe-4 pt-5 pb-1.5 ps-[22px]">
         {icon && <span className="flex size-5 shrink-0 items-center justify-center [&_svg]:size-4">{icon}</span>}

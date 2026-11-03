@@ -23,7 +23,7 @@ Organization               one Cloudflare account, its members and roles
 | Area | What it is for |
 |---|---|
 | **Threads** | Conversations with the coding agent. Each one works in the workspace's folder, can change apps and themes, and keeps its history. |
-| **Apps** | The workspace's installed apps; each opens its admin screens in the canvas. **+** adds one. |
+| **Apps** | The workspace's installed apps, each with its icon and menu; an app opens its admin screens in the canvas, and its Dev panel (files, dev server, git, deploy) is one click away. **+** makes a new app from the template. Folders on this Mac not installed yet show with a Dev mark. |
 | **Database** | Every table and its rows, a SQL console, the migrations apps have applied, and backups. |
 | **Workflows** | Steps that run when an event happens: wait, branch, tag a contact, send. |
 | **Events** | Everything the workspace records, live: page views, sign-ups, orders, app events. |
@@ -44,6 +44,6 @@ Organization               one Cloudflare account, its members and roles
 
 ## For agents
 
-Read *Building an app* before writing app code, then the reference docs it points to. Use the kit components and theme
+Read *The app system* and *Building an app* before writing app code, then the reference docs they point to. Use the kit components and theme
 tokens for every screen (*UI kit*), change the look through the theme (*Themes*), and record what happens as events
 (*Events*). The `supergrid` MCP server has `docs_list` and `docs_read` for these pages and the theme tools.

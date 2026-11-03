@@ -12,5 +12,11 @@ export type AppCtx = {
   user: SgUser | null;
   /** Emit events as this app; see `@supergrid/app-kit/events`. */
   events: AppEvents;
+  /** The public prefix this app is served at right now (the sitemap's, or the manifest's); null for an admin-only app. */
+  mount: string | null;
+  /** A public path under the mount: `href("/thanks")` is `/forms/thanks`. */
+  href: (path: string) => string;
+  /** Run one of the app's own operations with this request's user; see `@supergrid/app-kit/operations`. */
+  call: <O = unknown>(name: string, input?: unknown) => Promise<O>;
 };
 export const appContext = createContext<AppCtx>();

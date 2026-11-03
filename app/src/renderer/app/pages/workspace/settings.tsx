@@ -3,7 +3,9 @@ import type * as React from "react";
 import { SectionPage } from "~/components/section-page";
 import { Badge } from "~/components/ui/badge";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "~/components/ui/empty";
+import { SegmentedControl, SegmentedControlItem } from "~/components/ui/segmented-control";
 import { Card } from "~/components/workspace/frame";
+import { useChatSide } from "~/lib/chat-side";
 import { useLatestRelease } from "~/lib/release";
 import { useSession } from "~/lib/session";
 import { useShell } from "~/shell/context";
@@ -34,6 +36,7 @@ function NotBuilt({ about }: { about: string }): React.ReactElement {
 export function WorkspaceGeneral(): React.ReactElement {
   const { ws } = useShell();
   const { org } = useSession();
+  const [side, setSide] = useChatSide(ws.id);
   return (
     <SectionPage title="General" width={760}>
       <Card>
@@ -51,6 +54,15 @@ export function WorkspaceGeneral(): React.ReactElement {
           </a>
         </Row>
         <Row label="Cloudflare">{org?.cloudflare?.accountName ?? "—"}</Row>
+        <Row label="Agent Panel">
+          <SegmentedControl size="sm" aria-label="Agent Panel Side">
+            {(["left", "right"] as const).map((s) => (
+              <SegmentedControlItem key={s} aria-pressed={side === s} data-pressed={side === s || undefined} onClick={() => setSide(s)}>
+                {s === "left" ? "Left of the Page" : "Right of the Page"}
+              </SegmentedControlItem>
+            ))}
+          </SegmentedControl>
+        </Row>
       </Card>
     </SectionPage>
   );

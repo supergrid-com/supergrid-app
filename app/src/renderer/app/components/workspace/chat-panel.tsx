@@ -1,6 +1,6 @@
 import { LoaderCircleIcon, SparklesIcon } from "lucide-react";
 import * as React from "react";
-import { AskCard, Confirmation, Conversation, ConversationContent, ConversationEmptyState, ConversationScrollButton, CopyAction, Message, MessageActions, MessageContent, MessageNotice, MessageResponse, MessageTime, Plan, PromptInput, PromptInputAdd, PromptInputKind, PromptInputSelect, PromptInputSubmit, PromptInputTextarea, PromptInputToolbar, Reasoning, Tool, WidgetContext } from "~/components/ai-elements";
+import { AskCard, type ComposerChoice, Confirmation, Conversation, ConversationContent, ConversationEmptyState, ConversationScrollButton, CopyAction, Message, MessageActions, MessageContent, MessageNotice, MessageResponse, MessageTime, Plan, PromptInput, PromptInputAdd, PromptInputKind, PromptInputSelect, PromptInputSubmit, PromptInputTextarea, PromptInputToolbar, Reasoning, Tool, useComposerNarrow, WidgetContext } from "~/components/ai-elements";
 import { Shimmer } from "~/components/shimmer";
 import { MetaMark } from "~/components/meta-mark";
 import { Button } from "~/components/ui/button";
@@ -66,6 +66,12 @@ function Turn({ message, streaming }: { message: ChatMessage; streaming: boolean
       )}
     </Message>
   );
+}
+
+// The composer's row, one way or the other: the pickers along it when the panel is wide enough,
+// else folded into the + menu, with only send beside the text.
+function ComposerToolbar({ wide, narrow }: { wide: React.ReactNode; narrow: React.ReactNode }): React.ReactElement {
+  return <>{useComposerNarrow() ? narrow : wide}</>;
 }
 
 // What shows before there is a conversation: the agent's state, or where to begin.
@@ -135,7 +141,7 @@ function Empty({ thread, onSuggest }: { thread: Thread | undefined; onSuggest: (
 // in the agent store, so this can unmount freely, even mid-turn.
 export function ChatPanel({ ws, thread }: { ws: WorkspaceSummary; thread: Thread | undefined }): React.ReactElement {
   const agent = useAgent();
-  const { pageDark } = usePlatform();
+  const { adminDark } = usePlatform();
   const choices = useChoices(thread);
   const [draft, setDraft] = React.useState("");
   const ready = !!thread?.live && agent.state === "ready";
@@ -157,8 +163,14 @@ export function ChatPanel({ ws, thread }: { ws: WorkspaceSummary; thread: Thread
   const model = muse && modelChoice(muse);
   const mode = choices.find((c) => c.category === "mode");
   const effort = choices.find((c) => c.category === "thought_level");
-  const picker = (choice: Choice | undefined, label: string, look?: { icon?: React.ReactNode; strong?: boolean }) =>
-    choice && thread && <PromptInputSelect label={label} icon={look?.icon} strong={look?.strong} value={choice.current} options={choice.options} nameOf={(o) => shortName(choice, o)} disabled={busy} onChange={(v) => void agent.setChoice(thread.id, choice, v)} />;
+  // each picker once, as the row shows it when there is room and as the + menu folds it when not
+  const choiceOf = (choice: Choice | undefined, label: string): ComposerChoice | undefined =>
+    choice && thread ? { label, value: choice.current, options: choice.options, nameOf: (o) => shortName(choice, o), disabled: busy, onChange: (v) => void agent.setChoice(thread.id, choice, v) } : undefined;
+  const picker = (c: ComposerChoice | undefined, look?: { icon?: React.ReactNode; strong?: boolean }) => c && <PromptInputSelect {...c} icon={look?.icon} strong={look?.strong} />;
+  const modelChoiceRow = choiceOf(model, "Model");
+  const effortChoice = choiceOf(effort, "Effort");
+  const modeChoice = choiceOf(mode, "Mode");
+  const kind = thread ? { dev: thread.dev, disabled: busy, onChange: (dev: boolean) => agent.setDev(thread.id, dev) } : undefined;
   const last = messages[messages.length - 1];
   // the turn has started but nothing of the agent's has arrived yet
   const waiting = busy && last?.role === "user";
@@ -180,7 +192,7 @@ export function ChatPanel({ ws, thread }: { ws: WorkspaceSummary; thread: Thread
             ))}
             {waiting && (
               <Message from="assistant">
-                <Shimmer className="text-base">Thinking…</Shimmer>
+                <Shimmer className="text-sm">Thinking…</Shimmer>
               </Message>
             )}
           </ConversationContent>
@@ -199,19 +211,28 @@ export function ChatPanel({ ws, thread }: { ws: WorkspaceSummary; thread: Thread
         )}
         <PromptInput>
           <PromptInputTextarea value={draft} onChange={setDraft} onSubmit={submit} autoFocus disabled={!isDesktop} placeholder={`Ask or build in ${ws.name}`} />
-          <PromptInputToolbar
-            start={
-              <>
-                <PromptInputAdd />
-                {thread && <PromptInputKind dev={thread.dev} disabled={busy} onChange={(dev) => agent.setDev(thread.id, dev)} />}
-              </>
+          <ComposerToolbar
+            wide={
+              <PromptInputToolbar
+                start={
+                  <>
+                    <PromptInputAdd />
+                    {kind && <PromptInputKind {...kind} />}
+                  </>
+                }
+              >
+                {picker(modelChoiceRow, { icon: <MetaMark dark={adminDark} className="h-3 w-4.5 shrink-0" />, strong: true })}
+                {picker(effortChoice)}
+                {picker(modeChoice)}
+                <PromptInputSubmit busy={busy} disabled={!ready || !draft.trim()} onSubmit={submit} onStop={stop} />
+              </PromptInputToolbar>
             }
-          >
-            {picker(model, "Model", { icon: <MetaMark dark={pageDark} className="h-3 w-4.5 shrink-0" />, strong: true })}
-            {picker(effort, "Effort")}
-            {picker(mode, "Mode")}
-            <PromptInputSubmit busy={busy} disabled={!ready || !draft.trim()} onSubmit={submit} onStop={stop} />
-          </PromptInputToolbar>
+            narrow={
+              <PromptInputToolbar start={<PromptInputAdd kind={kind} choices={[modelChoiceRow, effortChoice, modeChoice]} />}>
+                <PromptInputSubmit busy={busy} disabled={!ready || !draft.trim()} onSubmit={submit} onStop={stop} />
+              </PromptInputToolbar>
+            }
+          />
         </PromptInput>
       </div>
     </div>

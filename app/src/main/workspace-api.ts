@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
-import { getSettings, mediaToken, setSecrets, type EnvValue } from "@supergrid/cloud";
+import { type Cf, getSettings, mediaToken, setSecrets, type EnvValue } from "@supergrid/cloud";
 import { RPC_METHOD_NAMES } from "@supergrid/app-kit/rpc";
-import type { WorkspaceSummary } from "../shared/bridge";
+import type { ServedManifest, WorkspaceSummary } from "../shared/bridge";
+import { cfClient } from "./cf-api";
 import * as cloudflare from "./cloudflare";
 import { readConfig, readState, writeConfig } from "./config";
 import { listWorkspaces } from "./workspaces";
@@ -41,20 +42,62 @@ function listed(accountId: string, prefix: string): Promise<WorkspaceSummary[]> 
   return c.list;
 }
 
+/** Forgets a listing, so the next look at the account reads it again (after an app install changed a Worker's bindings). */
+export function invalidate(accountId?: string, prefix?: string): void {
+  if (accountId && prefix) caches.delete(`${accountId}/${prefix}`);
+  else caches.clear();
+}
+
+/** The account each workspace was found in, so later calls (secrets, tokens) go to the same one. */
+const accountOf = new Map<string, string>();
+
+/** The organizations' Cloudflare links, the current one first, then the app's own connection when it has one. */
+async function links(): Promise<{ accountId: string; prefix: string }[] > {
+  const { orgs, currentOrg } = readState();
+  const out = orgs.filter((o) => o.cloudflare).sort((a, b) => (a.id === currentOrg ? -1 : b.id === currentOrg ? 1 : 0)).map((o) => ({ accountId: o.cloudflare!.accountId, prefix: o.cloudflare!.prefix }));
+  const own = await cloudflare.client().catch(() => null);
+  if (own) out.push({ accountId: own.cf.accountId, prefix: own.prefix });
+  const seen = new Set<string>();
+  return out.filter((l) => { const k = `${l.accountId}/${l.prefix}`; if (seen.has(k)) return false; seen.add(k); return true; });
+}
+
+/** An API client for an account: cf's login (the way the pages reach it), else the app's own token when it is for that account. */
+async function clientFor(accountId: string): Promise<Cf> {
+  try {
+    return await cfClient(accountId);
+  } catch (e) {
+    const own = await cloudflare.client().catch(() => null);
+    if (own && own.cf.accountId === accountId) return own.cf;
+    throw e;
+  }
+}
+
 /**
- * A workspace by id, found among the Workers of the account. The install prefix is the connection's,
- * and each organization's own when it differs (an organization picks its prefix in its settings).
+ * A workspace by id, found among the Workers of the organizations' accounts under their prefixes, the way the
+ * renderer lists them (src/renderer/app/lib/workspaces.ts); the app's own connection is looked at last.
  */
 export async function workspace(wsId: string): Promise<WorkspaceSummary> {
   if (wsId === "local") return { id: "local", name: "Local dev", url: process.env.SG_WORKSPACE_URL ?? LOCAL_URL, worker: "", version: null, apps: [] };
-  const { cf, prefix } = await cloudflare.client();
-  const prefixes = [...new Set([prefix, ...readState().orgs.map((o) => o.cloudflare?.prefix ?? "").filter(Boolean)])];
-  for (const p of prefixes) {
-    const ws = (await listed(cf.accountId, p).catch(() => [] as WorkspaceSummary[])).find((w) => w.id === wsId);
-    if (ws) return ws;
+  const all = await links();
+  if (!all.length) throw new Error("No Cloudflare account to look in: connect one on the Cloudflare page.");
+  let lastError: unknown = null;
+  for (const fresh of [false, true]) {
+    for (const l of all) {
+      // a workspace made since the list was read is looked for once more with a fresh list
+      if (fresh) caches.delete(`${l.accountId}/${l.prefix}`);
+      const ws = (await listed(l.accountId, l.prefix).catch((e) => { lastError = e; return [] as WorkspaceSummary[]; })).find((w) => w.id === wsId);
+      if (ws) {
+        accountOf.set(ws.id, l.accountId);
+        return ws;
+      }
+    }
   }
-  throw new Error(`Unknown workspace ${wsId}.`);
+  const where = all.map((l) => `${l.prefix}-ws-* on ${l.accountId}`).join(", ");
+  throw new Error(`Unknown workspace ${wsId}: not among ${where}.${lastError ? ` ${String((lastError as Error).message ?? lastError)}` : ""}`);
 }
+
+/** The client for the account a workspace was found in. */
+const clientOf = async (ws: WorkspaceSummary): Promise<Cf> => clientFor(accountOf.get(ws.id) ?? (await links())[0]?.accountId ?? (await cloudflare.client()).cf.accountId);
 
 async function tokenFor(ws: WorkspaceSummary, fresh = false): Promise<string> {
   const cfg = readConfig();
@@ -66,7 +109,7 @@ async function tokenFor(ws: WorkspaceSummary, fresh = false): Promise<string> {
   const have = cfg.wsTokens?.[ws.id];
   if (have && !fresh) return have;
   const token = randomBytes(32).toString("hex");
-  const { cf } = await cloudflare.client();
+  const cf = await clientOf(ws);
   await setSecrets(cf, ws.worker, { SG_WORKSPACE_TOKEN: { type: "secret_text", text: token } }, "Workspace token");
   writeConfig({ wsTokens: { ...readConfig().wsTokens, [ws.id]: token } });
   return token;
@@ -84,7 +127,7 @@ async function installSecretsKey(ws: WorkspaceSummary): Promise<void> {
   const key = readConfig().wsSecretKeys?.[ws.id] ?? randomBytes(32).toString("hex");
   // remembered before it is set, so a failure after this point reuses the same key instead of minting a second one
   writeConfig({ wsSecretKeys: { ...readConfig().wsSecretKeys, [ws.id]: key } });
-  const { cf } = await cloudflare.client();
+  const cf = await clientOf(ws);
   await setSecrets(cf, ws.worker, { SG_SECRETS_KEY: { type: "secret_text", text: key } }, "Secrets key");
   for (let i = 0; i < 20; i++) {
     const status = (await send(ws, "secretsStatus", []).catch(() => null)) as { ready?: boolean } | null;
@@ -146,8 +189,10 @@ export async function rpc(wsId: string, method: string, args: unknown[]): Promis
 export async function setMediaToken(wsId: string, token?: string): Promise<void> {
   const ws = await workspace(wsId);
   if (isLocal(ws)) throw new Error("The local workspace reads CF_ACCOUNT_ID and SG_MEDIA_TOKEN from core/workspace/.dev.vars (see .dev.vars.example).");
-  const { cf, token: own } = await cloudflare.client();
-  const text = token ?? (await mediaToken(cf, ws, { shared: own }))?.text;
+  // the app's own token is a shared fallback only where it is for this account; cf's OAuth login is never written to a Worker
+  const cf = await clientOf(ws);
+  const own = await cloudflare.client().catch(() => null);
+  const text = token ?? (await mediaToken(cf, ws, own && own.cf.accountId === cf.accountId ? { shared: own.token } : undefined))?.text;
   if (!text) throw new Error("Could not set a media token for this workspace.");
   // the account id is a plain var on workspaces made since media; older ones get it here
   const { bindings } = await getSettings(cf, ws.worker);
@@ -166,4 +211,54 @@ export async function setMediaToken(wsId: string, token?: string): Promise<void>
 export async function connection(wsId: string): Promise<{ url: string; token: string; name: string }> {
   const ws = await workspace(wsId);
   return { url: ws.url, token: await tokenFor(ws), name: ws.name };
+}
+
+// ---- Apps: the admin handoff, the served manifest, and operations with the workspace's token ----
+
+const b64u = (b: ArrayBuffer | Uint8Array) => Buffer.from(new Uint8Array(b)).toString("base64url");
+async function hmac(secret: string, data: string): Promise<string> {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return b64u(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data)));
+}
+
+/**
+ * The URL that opens an app's admin screen signed in: a handoff token (HMAC with the workspace's token, five minutes,
+ * the same shape core/workspace/src/staff.ts verifies) that `/_ws/auth` swaps for the staff cookie before it redirects
+ * to the screen. The desktop acts as an owner; a real staff identity comes with the control plane.
+ */
+export async function adminUrl(wsId: string, app: string, next = "/"): Promise<string> {
+  const ws = await workspace(wsId);
+  if (!/^[a-z][a-z0-9-]*$/.test(app)) throw new Error("Not an app id.");
+  const claims = { sub: "desktop", name: "SuperGrid", email: "", org: null, role: "owner", permissions: ["*"], aud: ws.id, exp: Math.floor(Date.now() / 1000) + 300, typ: "handoff" };
+  const body = b64u(new TextEncoder().encode(JSON.stringify(claims)));
+  const token = `${body}.${await hmac(await tokenFor(ws), body)}`;
+  const path = `/admin/${app}${next.startsWith("/") ? next : `/${next}`}`.replace(/\/$/, "") || `/admin/${app}`;
+  return `${ws.url.replace(/\/$/, "")}/_ws/auth?token=${encodeURIComponent(token)}&next=${encodeURIComponent(path)}`;
+}
+
+/** An installed app's served manifest: what its running code says about its data, operations and screens. */
+export async function appManifest(wsId: string, app: string): Promise<ServedManifest> {
+  const ws = await workspace(wsId);
+  if (!/^[a-z][a-z0-9-]*$/.test(app)) throw new Error("Not an app id.");
+  const res = await fetch(`${ws.url.replace(/\/$/, "")}/_app/${app}/manifest.json`, { headers: { accept: "application/json" } }).catch((e) => { throw new Error(`Workspace unreachable: ${(e as Error).message}`); });
+  if (res.status === 404) throw new Error(`${app} is not installed in ${ws.name}, or runs code from before served manifests.`);
+  if (!res.ok) throw new Error(`${app} answered ${res.status} for its manifest.`);
+  return (await res.json()) as ServedManifest;
+}
+
+/** Runs one of an app's operations through `POST /api/<app>/ops/<name>` with the workspace's token, so the app sees an owner. */
+export async function appCall(wsId: string, app: string, operation: string, input: unknown): Promise<unknown> {
+  const ws = await workspace(wsId);
+  if (!/^[a-z][a-z0-9-]*$/.test(app)) throw new Error("Not an app id.");
+  if (!/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/.test(operation)) throw new Error("Not an operation name.");
+  const res = await fetch(`${ws.url.replace(/\/$/, "")}/api/${app}/ops/${operation}`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${await tokenFor(ws)}`, "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify(input ?? {}),
+  }).catch((e) => { throw new Error(`Workspace unreachable: ${(e as Error).message}`); });
+  const text = await res.text();
+  let json: { result?: unknown; error?: string; problems?: string[] } | null = null;
+  try { json = text ? JSON.parse(text) : null; } catch { json = null; }
+  if (!res.ok || json?.error) throw new Error(json?.error ? [json.error, ...(json.problems ?? [])].join("\n") : `${app} answered ${res.status}${text ? `: ${text.slice(0, 200)}` : ""}`);
+  return json?.result ?? null;
 }

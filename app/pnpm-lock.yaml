@@ -20,6 +20,9 @@ importers:
       '@streamdown/code':
         specifier: ^2.0.0
         version: 2.0.0(react@19.3.1)
+      '@supergrid/admin-sdk':
+        specifier: link:../core/packages/admin-sdk
+        version: link:../core/packages/admin-sdk
       '@supergrid/app-kit':
         specifier: link:../core/packages/app-kit
         version: link:../core/packages/app-kit

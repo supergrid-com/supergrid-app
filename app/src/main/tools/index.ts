@@ -38,6 +38,8 @@ export type ToolCtx = {
   widget(widget: AgentWidget): void;
   /** Moves the app to a page inside the workspace. */
   navigate(to: string): void;
+  /** The window the calling thread is in, for work that reports progress to it. */
+  sender(): import("electron").WebContents;
 };
 
 export type Tool = {
@@ -105,7 +107,7 @@ export function tabular(rows: Record<string, unknown>[], columns?: string[], lim
 }
 
 /** The context a tool runs with, built by the bridge for one call. */
-export function makeCtx(base: Pick<ToolCtx, "wsId" | "client" | "tool" | "dev" | "context" | "ask" | "widget" | "navigate">): ToolCtx {
+export function makeCtx(base: Pick<ToolCtx, "wsId" | "client" | "tool" | "dev" | "context" | "ask" | "widget" | "navigate" | "sender">): ToolCtx {
   let ws: Promise<WorkspaceSummary> | null = null;
   let target: Promise<D1Target> | null = null;
   const ctx: ToolCtx = {

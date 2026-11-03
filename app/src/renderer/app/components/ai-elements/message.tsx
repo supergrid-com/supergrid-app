@@ -16,7 +16,7 @@ export function MessageContent({ className, ...props }: React.HTMLAttributes<HTM
   return (
     <div
       className={cn(
-        "flex w-fit min-w-0 max-w-full flex-col gap-2 overflow-hidden text-base leading-[1.65] text-foreground",
+        "flex w-fit min-w-0 max-w-full flex-col gap-2 overflow-hidden text-sm leading-[1.6] text-foreground",
         "group-[.is-user]:max-w-[88%] group-[.is-user]:rounded-2xl group-[.is-user]:rounded-br-md group-[.is-user]:border group-[.is-user]:bg-background group-[.is-user]:px-3.5 group-[.is-user]:py-2 group-[.is-user]:whitespace-pre-wrap",
         className,
       )}

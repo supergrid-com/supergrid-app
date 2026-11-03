@@ -101,6 +101,7 @@ async function call(client: string, c: Client, name: string, args: Json): Promis
     ask: (q) => ask(client, c, name, q),
     widget: (widget: AgentWidget) => send(c, channels.agentWidget, { client, wsId: c.wsId, tool: name, widget }),
     navigate: (to) => send(c, channels.agentNavigate, { client, wsId: c.wsId, to }),
+    sender: () => c.sender,
   });
   try {
     const out = await tool.run(ctx, args);

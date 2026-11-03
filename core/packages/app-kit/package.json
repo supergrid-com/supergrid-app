@@ -17,7 +17,13 @@
     "./react": "./src/react.tsx",
     "./events": "./src/events.ts",
     "./media": "./src/media.ts",
-    "./media-react": "./src/media-react.tsx"
+    "./media-react": "./src/media-react.tsx",
+    "./data": "./src/data.ts",
+    "./schema": "./src/schema.ts",
+    "./operations": "./src/operations.ts",
+    "./packages": "./src/packages.ts",
+    "./SKILL.md": "./SKILL.md",
+    "./scaffold": "./src/scaffold.ts"
   },
   "dependencies": {
     "@supergrid/theme": "workspace:*"

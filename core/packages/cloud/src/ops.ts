@@ -1,7 +1,7 @@
 // The things a platform does to an account: pure functions over a client and the facts they need, so the caller decides where those facts live.
 import { CONTRACT } from "@supergrid/app-kit/rpc";
 import { appBinding, resourceNames } from "@supergrid/app-kit/names";
-import type { AppManifest } from "@supergrid/app-kit/manifest";
+import { routeSummary, type AppManifest, type RouteSummary } from "@supergrid/app-kit/manifest";
 import type { Cf } from "./client";
 import { activeVersion, deployVersion, getSettings, putWorker, setBindings, uploadVersion, type Binding, type Compiled } from "./deploy";
 import type { Bundle } from "./release";
@@ -13,7 +13,8 @@ import { MEDIA_PERMISSIONS } from "./scopes";
 
 /** `queue` is null on accounts without Queues: the Worker then writes events straight to D1. */
 export type WorkspaceFacts = { id: string; name: string; url: string; token: string; d1Id: string; worker: string; queue?: string | null; /** The R2 bucket, or null when the account has no R2. */ files?: string | null; /** Filled from the client when absent. */ accountId?: string; /** How the media token was set, when this run set it. */ media?: MediaSource };
-export type InstalledApp = { app: string; name: string; worker: string; mount: string | null; admin: boolean; api: boolean; nav?: { label: string; path: string }[]; subscribes?: string[] };
+/** An installed app as the workspace's ROUTES binding records it: the manifest's route summary plus its Worker. */
+export type InstalledApp = RouteSummary & { worker: string; mount: string | null };
 
 const plain = (name: string, text: string): Binding => ({ type: "plain_text", name, text });
 const hex = (bytes: number) => Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -22,8 +23,10 @@ const SECRETS_KEY = "SG_SECRETS_KEY";
 const WORKSPACE_TOKEN = "SG_WORKSPACE_TOKEN";
 
 export function installedFrom(manifest: AppManifest, worker: string): InstalledApp {
-  return { app: manifest.id, name: manifest.name, worker, mount: manifest.public?.mount ?? null, admin: !!manifest.admin, api: !!manifest.api, nav: manifest.admin?.nav, subscribes: manifest.subscribes };
+  return { ...routeSummary(manifest), worker, mount: manifest.public?.mount ?? null };
 }
+/** The ROUTES entry for an installed app: everything the summary carries, the binding, and `public` as the mount. */
+export const routeEntry = (a: InstalledApp) => { const { worker: _w, mount, ...rest } = a; return { ...rest, binding: appBinding(a.app), public: mount ?? undefined }; };
 
 function workspaceBindings(ws: WorkspaceFacts, apps: InstalledApp[], version: string, keep: Binding[] = []): Binding[] {
   return [
@@ -32,7 +35,7 @@ function workspaceBindings(ws: WorkspaceFacts, apps: InstalledApp[], version: st
     plain("WORKSPACE_ID", ws.id), plain("WORKSPACE_NAME", ws.name), plain("WORKSPACE_URL", ws.url), plain("SG_VERSION", version),
     // The token is written once, at creation; an update inherits whatever is deployed, since the desktop may have minted its own since.
     ...(keep.some((b) => b.name === WORKSPACE_TOKEN) ? [] : [{ type: "secret_text", name: WORKSPACE_TOKEN, text: ws.token } as Binding]),
-    { type: "json", name: "ROUTES", json: apps.map((a) => ({ app: a.app, name: a.name, binding: appBinding(a.app), public: a.mount ?? undefined, admin: a.admin, api: a.api, nav: a.nav, subscribes: a.subscribes })) },
+    { type: "json", name: "ROUTES", json: apps.map(routeEntry) },
     ...apps.map((a): Binding => ({ type: "service", name: appBinding(a.app), service: a.worker })),
     ...(ws.queue ? [{ type: "queue", name: "EVENTS", queue_name: ws.queue } as Binding] : []),
     { type: "workflow", name: "HOOK_RUN", workflow_name: hooksWorkflow(ws), class_name: HOOKS_CLASS },
@@ -195,7 +198,7 @@ export async function updatePlatform(cf: Cf, opts: { worker: string; d1Id: strin
   return rollOut(cf, opts.worker, opts.d1Id, opts.bundle, next, `Platform ${opts.bundle.version}`, () => waitForVersion(`${opts.url}/api/health`, opts.bundle.version));
 }
 
-const appBindings = (ws: WorkspaceFacts, version: string): Binding[] => [
+export const appBindings = (ws: WorkspaceFacts, version: string): Binding[] => [
   { type: "service", name: "WORKSPACE", service: ws.worker, entrypoint: "WorkspaceApi" },
   { type: "d1", name: "DB", id: ws.d1Id },
   plain("SG_VERSION", version),
@@ -251,6 +254,54 @@ export async function setWorkspaceApps(cf: Cf, ws: WorkspaceFacts, apps: Install
   const { bindings } = await getSettings(cf, ws.worker);
   const version = (bindings.find((b) => b.name === "SG_VERSION") as { text?: string } | undefined)?.text ?? "unknown";
   await setBindings(cf, ws.worker, workspaceBindings(ws, apps, version, keptSecrets(bindings)));
+}
+
+/**
+ * A workspace as its Worker describes itself: the facts every operation here needs (read back from the bindings, the
+ * token left blank since it is only ever inherited) and the apps it routes to. This is how the desktop, which keeps no
+ * directory, gets a `WorkspaceFacts` to install into.
+ */
+export async function readWorkspace(cf: Cf, worker: string): Promise<{ facts: WorkspaceFacts; apps: InstalledApp[]; version: string }> {
+  const { bindings } = await getSettings(cf, worker);
+  const find = <T extends Binding>(name: string) => bindings.find((b) => b.name === name) as T | undefined;
+  const text = (name: string) => (find<{ type: string; name: string; text?: string }>(name)?.text ?? "");
+  const d1 = find<{ type: "d1"; name: string; id: string }>("DB");
+  if (!d1) throw new Error(`${worker} has no DB binding; is it a workspace?`);
+  const routes = (find<{ type: "json"; name: string; json: unknown }>("ROUTES")?.json ?? []) as (ReturnType<typeof routeEntry> & { binding: string })[];
+  const serviceOf = (binding: string) => (find<{ type: "service"; name: string; service: string }>(binding)?.service ?? "");
+  const apps: InstalledApp[] = routes.map(({ binding, public: pub, ...r }) => ({ ...r, worker: serviceOf(binding), mount: pub ?? null }));
+  const version = text("SG_VERSION") || "unknown";
+  const id = text("WORKSPACE_ID") || worker.replace(/^.*-ws-/, "");
+  const facts: WorkspaceFacts = {
+    id, name: text("WORKSPACE_NAME") || id, url: text("WORKSPACE_URL") || `https://${worker}.workers.dev`, token: "", d1Id: d1.id, worker,
+    queue: find<{ type: "queue"; name: string; queue_name: string }>("EVENTS")?.queue_name ?? null,
+    files: find<{ type: "r2_bucket"; name: string; bucket_name: string }>("FILES")?.bucket_name ?? null,
+    accountId: text("CF_ACCOUNT_ID") || cf.accountId,
+  };
+  return { facts, apps, version };
+}
+
+/**
+ * Install or redeploy an app built on this machine (no signed bundle, no Artifacts repo): the compiled Worker goes up
+ * under the app's name and the workspace is pointed at it. `mount` overrides the manifest's when the sitemap moved it.
+ */
+export async function installLocalApp(cf: Cf, opts: { ws: WorkspaceFacts; apps: InstalledApp[]; prefix: string; manifest: AppManifest; compiled: Compiled; mount?: string | null }): Promise<InstalledApp> {
+  const { ws, manifest, compiled, prefix } = opts;
+  const worker = resourceNames(prefix).app(ws.id, manifest.id);
+  await putWorker(cf, worker, compiled, appBindings(ws, manifest.version), `Deploy ${manifest.id} ${manifest.version}`);
+  const app = installedFrom(manifest, worker);
+  if (opts.mount !== undefined) app.mount = opts.mount;
+  await setWorkspaceApps(cf, ws, [...opts.apps.filter((a) => a.app !== app.app), app]);
+  return app;
+}
+
+/** Remove an app from the workspace's routes and delete its Worker. Its tables stay; drop them from the Database pages. */
+export async function uninstallApp(cf: Cf, opts: { ws: WorkspaceFacts; apps: InstalledApp[]; app: string }): Promise<InstalledApp[]> {
+  const gone = opts.apps.find((a) => a.app === opts.app);
+  const rest = opts.apps.filter((a) => a.app !== opts.app);
+  await setWorkspaceApps(cf, opts.ws, rest);
+  if (gone?.worker) await cf.request("DELETE", cf.acct(`/workers/scripts/${gone.worker}?force=true`)).catch(() => undefined);
+  return rest;
 }
 
 export { CONTRACT };

@@ -163,7 +163,7 @@ function NewThemeDialog({ open, onOpenChange, taken, onCreate }: { open: boolean
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPopup className="max-w-md">
-        <form onSubmit={submit}>
+        <form onSubmit={submit} className="contents">
           <DialogHeader>
             <DialogTitle>New Theme</DialogTitle>
             <DialogDescription>It starts from the default colors and fonts. Save it once it looks right.</DialogDescription>

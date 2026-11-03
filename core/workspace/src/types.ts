@@ -1,8 +1,9 @@
+import type { RouteSummary } from "@supergrid/app-kit/manifest";
 import type { EventRow } from "@supergrid/app-kit/rpc";
 import type { HookRunParams } from "./workflows";
 
-/** `public` is the mount the app was built with; `home` the page under it also built as `/` (see ../SITEMAP.md). */
-export type RouteEntry = { app: string; name?: string; binding: string; public?: string; home?: string; admin?: boolean; api?: boolean; nav?: { label: string; path: string }[]; subscribes?: string[] };
+/** An installed app's route summary (its manifest's) plus its service binding. `public` is the mount the app was built with; `home` the page under it also built as `/` (see ../SITEMAP.md). */
+export type RouteEntry = RouteSummary & { binding: string };
 export type Env = {
   DB: D1Database;
   WORKSPACE_ID: string;

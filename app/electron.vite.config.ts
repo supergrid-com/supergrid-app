@@ -7,7 +7,7 @@ import { defineConfig, externalizeDepsPlugin } from "electron-vite";
 // Main has a second entry, mcp: the stdio MCP proxy the coding agent spawns (see src/main/mcp.ts).
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin({ exclude: ["@supergrid/cloud", "@supergrid/app-kit", "@supergrid/theme"] })],
+    plugins: [externalizeDepsPlugin({ exclude: ["@supergrid/cloud", "@supergrid/app-kit", "@supergrid/theme", "@supergrid/admin-sdk"] })],
     build: { rollupOptions: { input: { index: resolve("src/main/index.ts"), mcp: resolve("src/main/mcp.ts") } } },
   },
   preload: { plugins: [externalizeDepsPlugin()] },

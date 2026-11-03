@@ -12,6 +12,7 @@ const PAGES: { re: RegExp; label: (m: RegExpExecArray) => string }[] = [
   { re: /^workflows(?:\/([\w-]+))?$/, label: (m) => (m[1] ? `Workflows · ${m[1]}` : "Workflows") },
   { re: /^workflows\/(reports|events|logging|hooks)(?:\/([\w-]+))?$/, label: (m) => `Workflows · ${m[1]![0]!.toUpperCase()}${m[1]!.slice(1)}${m[2] ? ` · ${m[2]}` : ""}` },
   { re: /^library(?:\/(media|files|themes|skills|sitemap)(?:\/([\w.-]+))?)?$/, label: (m) => `Library · ${m[1] ? `${m[1][0]!.toUpperCase()}${m[1].slice(1)}` : "Images"}${m[2] ? ` · ${m[2]}` : ""}` },
+  { re: /^apps\/([a-z0-9-]+)\/_dev(?:\/.*)?$/, label: (m) => `App · ${m[1]} · Dev` },
   { re: /^apps\/([a-z0-9-]+)(?:\/.*)?$/, label: (m) => `App · ${m[1]}` },
 ];
 
@@ -38,7 +39,7 @@ export const appTools: Tool[] = [
   },
   {
     name: "app_navigate",
-    description: "Open a page of the workspace in the app, so the user sees what you are talking about. Pages: '' (home), database, database/<table>, database/query|migrations|backups, workflows, workflows/reports, workflows/events, workflows/hooks, workflows/logging, library (images), library/media, library/files, library/themes, library/themes/<id>, library/skills, library/sitemap, apps/<app>.",
+    description: "Open a page of the workspace in the app, so the user sees what you are talking about. Pages: '' (home), database, database/<table>, database/query|migrations|backups, workflows, workflows/reports, workflows/events, workflows/hooks, workflows/logging, library (images), library/media, library/files, library/themes, library/themes/<id>, library/skills, library/sitemap, apps/<app> (its admin, with the screen's path after it), apps/<app>/_dev (its Dev panel: files, dev server, git, deploy).",
     inputSchema: { type: "object", required: ["to"], properties: { to: { type: "string" } } },
     run: async (ctx, { to }) => {
       const path = str(to, "to", { optional: true }).replace(/^\/+|\/+$/g, "");
@@ -51,12 +52,12 @@ export const appTools: Tool[] = [
   },
   {
     name: "apps_list",
-    description: "The apps installed in this workspace: each with its public mount (where its pages live on the site), whether it has an admin screen and an API, and its admin menu. None installed means the workspace is bare; the apps system is still being built.",
+    description: "The apps installed in this workspace: each with its public mount (where its pages live on the site), whether it has an admin screen, an API and operations, its entities and its admin menu. apps_local lists the app folders on this Mac, installed or not.",
     inputSchema: { type: "object", properties: {} },
     run: async (ctx) => {
       const ws = await ctx.ws();
       if (!ws.apps.length) return { apps: [], note: "No apps are installed in this workspace yet. The workspace still has its own tables (contacts, events, segments), themes, library, workflows and analytics." };
-      return { apps: ws.apps.map((a) => ({ app: a.app, name: a.name, public: a.public ?? null, admin: a.admin, api: a.api, nav: a.nav ?? [], adminPage: a.admin ? `apps/${a.app}` : null })) };
+      return { apps: ws.apps.map((a) => ({ app: a.app, name: a.name, version: a.version ?? null, public: a.public ?? null, admin: a.admin, api: a.api, operations: !!a.operations, entities: a.entities ?? [], nav: a.nav ?? [], adminPage: a.admin ? `apps/${a.app}` : null, devPage: `apps/${a.app}/_dev` })), note: "app_describe reads an app's full served manifest (operations, entities, where rows are seen)." };
     },
   },
   {

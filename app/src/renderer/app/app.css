@@ -346,6 +346,15 @@
   --sidebar: var(--admin-hover);
   --ring: var(--admin-ring);
 }
+/* The sidebar layer's panels (the sub nav, the chat): a step into the rail's color, with their
+   cards (the composer) a step out of it. Used with .on-admin. */
+.on-admin-panel {
+  --background: var(--admin-panel);
+  --card: var(--admin-raised);
+  --popover: var(--admin-raised);
+  --active: var(--admin-accent);
+  --active-foreground: var(--admin-accent-foreground);
+}
 
 /* Scrollbars everywhere: a slim pill in the text color, in a clear gutter, darker under the
    pointer and gone when there's nothing to scroll. Chromium's own pseudo-elements (this is

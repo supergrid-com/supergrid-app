@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { join } from "node:path";
 import { channels, type AppInfo, type D1Target, type LocalState } from "../shared/bridge";
 import { registerAgent } from "./agent";
+import { registerApps } from "./apps";
 import * as cfCli from "./cf-cli";
 import * as config from "./config";
 import * as cloudflare from "./cloudflare";
@@ -111,6 +112,7 @@ ipcMain.handle(channels.d1Export, (_e, t: unknown) => d1.exportSql(target(t)));
 
 registerAgent();
 registerLibrary();
+registerApps();
 
 void app.whenReady().then(() => {
   createWindow();

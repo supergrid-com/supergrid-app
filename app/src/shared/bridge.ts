@@ -5,7 +5,7 @@ export type CfAccount = { id: string; name: string };
 
 /** An organization, kept on this Mac: a name for a set of workspaces on one Cloudflare account. */
 export type CloudflareLink = { accountId: string; accountName: string; email: string | null; prefix: string };
-export type Org = { id: string; name: string; slug: string; createdAt: string; cloudflare: CloudflareLink | null; /** The workspace opened last, reopened on launch. */ lastWorkspace?: string; /** Each workspace's accent color, by workspace id (renderer lib/accent.ts). */ accents?: Record<string, string> };
+export type Org = { id: string; name: string; slug: string; createdAt: string; cloudflare: CloudflareLink | null; /** The workspace opened last, reopened on launch. */ lastWorkspace?: string; /** Each workspace's accent color, by workspace id (renderer lib/accent.ts). */ accents?: Record<string, string>; /** Which side of the page each workspace's agent panel sits on, by workspace id; left when unset (renderer lib/chat-side.ts). */ chatSides?: Record<string, "left" | "right"> };
 /** What the app keeps between runs about the user's organizations (src/main/config.ts). */
 export type LocalState = { orgs: Org[]; currentOrg: string | null };
 
@@ -35,6 +35,13 @@ export type CfCliStatus =
       authSource: string | null;
     };
 
+import type { AppManifest, NavItem, ServedManifest } from "@supergrid/app-kit/manifest";
+import type { PackageGraph } from "@supergrid/app-kit/packages";
+export type { AppManifest, NavItem, PackageGraph, ServedManifest };
+
+/** An installed app as the workspace's ROUTES binding records it: the manifest's route summary. */
+export type InstalledApp = { app: string; name: string; version?: string; icon?: string; color?: string; admin: boolean; api: boolean; operations?: boolean; public?: string; home?: string; nav?: NavItem[]; subscribes?: string[]; entities?: string[] };
+
 /** A workspace as read back from its Worker's bindings: what the account itself knows, no directory needed. */
 export type WorkspaceSummary = {
   id: string;
@@ -42,8 +49,21 @@ export type WorkspaceSummary = {
   url: string;
   worker: string;
   version: string | null;
-  apps: { app: string; name: string; admin: boolean; api: boolean; public?: string; nav?: { label: string; path: string }[] }[];
+  apps: InstalledApp[];
 };
+
+// ---- Apps on this Mac: the folders under the workspace's own folder, one app each (src/main/apps.ts) ----
+
+/** An app folder on disk, with its manifest and whether it is installed in the workspace. */
+export type LocalApp = { dir: string; manifest: AppManifest; problems: string[]; installed: boolean; /** The installed version, when it differs from the folder's. */ installedVersion?: string | null };
+export type NewAppInput = { id: string; name: string; /** The public prefix; null for admin-only; absent for `/<id>`. */ mount?: string | null; description?: string; color?: string; icon?: string };
+export type FileEntry = { name: string; path: string; kind: "file" | "dir"; size?: number };
+export type DevServerStatus = { running: boolean; pid?: number; port?: number; url?: string; startedAt?: string };
+export type DevLogLine = { wsId: string; app: string; stream: "out" | "err" | "sys"; line: string; at: string };
+export type GitCommit = { hash: string; short: string; date: string; author: string; message: string };
+export type GitStatus = { branch: string | null; changed: number; ahead: number; behind: number; remote: string | null; commits: GitCommit[] };
+/** A step of an install or deploy as it starts, then `done`; `error` when it stopped. */
+export type AppDeployProgress = { wsId: string; app: string; step: "build" | "upload" | "route" | "done"; detail?: string; error?: string };
 
 /** A provisioning step as it starts: `release` (verify and download), the steps of provisionWorkspace, then `done`. */
 export type WorkspaceProgress = { id: string; step: "release" | "database" | "queues" | "files" | "media" | "worker" | "wiring" | "url" | "health" | "done" };
@@ -155,6 +175,12 @@ export type Bridge = {
   /** A workspace's RPC surface (`/_ws/rpc`), called with its token from the main process. */
   ws: {
     rpc(wsId: string, method: string, args: unknown[]): Promise<unknown>;
+    /** The URL that opens an app's admin screen signed in: the workspace's handoff with a token minted here. `next` is relative to /admin/<app>. */
+    adminUrl(wsId: string, app: string, next?: string): Promise<string>;
+    /** An installed app's served manifest (/_app/<id>/manifest.json): data, operations, nav as the running code reports them. */
+    appManifest(wsId: string, app: string): Promise<ServedManifest>;
+    /** Runs one of an app's operations through its REST route with the workspace's token (an owner). */
+    appCall(wsId: string, app: string, operation: string, input: unknown): Promise<unknown>;
     /** Forgets the stored token so the next call mints a new one. */
     resetToken(wsId: string): Promise<void>;
     /** Writes the Images/Stream/Analytics token (and the account id) as the workspace Worker's secrets, for assets. */
@@ -206,6 +232,35 @@ export type Bridge = {
       /** Downloads one object to a place the user picks. False when they cancel. */
       save(accountId: string, bucket: string, key: string): Promise<boolean>;
     };
+  };
+  /** The apps on this Mac for a workspace: folders made from the template, run, built and installed from here. */
+  apps: {
+    /** Every app folder under the workspace's folder, with whether it is installed. */
+    list(wsId: string): Promise<LocalApp[]>;
+    /** The folder a workspace's apps live in. */
+    dir(wsId: string): Promise<string>;
+    /** A new app from the template, in the workspace's folder, with its dependencies installed. */
+    create(wsId: string, input: NewAppInput): Promise<LocalApp>;
+    /** Reveals the app's folder in the Finder. */
+    reveal(wsId: string, app: string): Promise<void>;
+    /** The files of an app folder (one level), or a file's text. */
+    files(wsId: string, app: string, path?: string): Promise<FileEntry[]>;
+    read(wsId: string, app: string, path: string): Promise<{ text: string; size: number; truncated: boolean }>;
+    /** Builds the app and installs it into the workspace (or redeploys it); progress arrives through onDeploy. */
+    install(wsId: string, app: string): Promise<InstalledApp>;
+    /** Takes the app out of the workspace's routes and deletes its Worker; the folder and the tables stay. */
+    uninstall(wsId: string, app: string): Promise<void>;
+    onDeploy(cb: (p: AppDeployProgress) => void): () => void;
+    /** The app's dev server (`pnpm dev`), one per app. */
+    devStatus(wsId: string, app: string): Promise<DevServerStatus>;
+    devStart(wsId: string, app: string): Promise<DevServerStatus>;
+    devStop(wsId: string, app: string): Promise<DevServerStatus>;
+    devLog(wsId: string, app: string): Promise<DevLogLine[]>;
+    onDevLog(cb: (line: DevLogLine) => void): () => void;
+    /** The app folder's git: the branch, the change count and the latest commits. */
+    git(wsId: string, app: string): Promise<GitStatus>;
+    /** Which apps export packages, which use them, and which are behind (manifest `packages`). */
+    packages(wsId: string): Promise<PackageGraph>;
   };
   /** The coding agent: a child process speaking ACP, relayed line by line. */
   agent: {
@@ -259,6 +314,25 @@ export const channels = {
   wsRpc: "sg:ws:rpc",
   wsResetToken: "sg:ws:reset-token",
   wsMediaToken: "sg:ws:media-token",
+  wsAdminUrl: "sg:ws:admin-url",
+  wsAppManifest: "sg:ws:app-manifest",
+  wsAppCall: "sg:ws:app-call",
+  appsList: "sg:apps:list",
+  appsDir: "sg:apps:dir",
+  appsCreate: "sg:apps:create",
+  appsReveal: "sg:apps:reveal",
+  appsFiles: "sg:apps:files",
+  appsRead: "sg:apps:read",
+  appsInstall: "sg:apps:install",
+  appsUninstall: "sg:apps:uninstall",
+  appsDeploy: "sg:apps:deploy",
+  appsDevStatus: "sg:apps:dev-status",
+  appsDevStart: "sg:apps:dev-start",
+  appsDevStop: "sg:apps:dev-stop",
+  appsDevLog: "sg:apps:dev-log",
+  appsDevLogLine: "sg:apps:dev-log-line",
+  appsGit: "sg:apps:git",
+  appsPackages: "sg:apps:packages",
   d1Query: "sg:d1:query",
   d1Raw: "sg:d1:raw",
   d1Info: "sg:d1:info",

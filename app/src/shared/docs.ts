@@ -1,8 +1,15 @@
 // The documentation, one list for both readers: the Docs modal in the renderer (shell/docs-modal.tsx)
 // and the coding agent, through docs_list and docs_read on our MCP server (main/mcp.ts). The pages
 // stay beside the code they describe; this file only gathers them, as raw markdown bundled at build.
+import adminUi from "../../../core/docs/admin-ui.md?raw";
+import appDev from "../../../core/docs/app-dev.md?raw";
+import appSystem from "../../../core/docs/app-system.md?raw";
 import buildAnApp from "../../../core/docs/build-an-app.md?raw";
+import manifest from "../../../core/docs/manifest.md?raw";
 import overview from "../../../core/docs/overview.md?raw";
+import packages from "../../../core/docs/packages.md?raw";
+import publicPages from "../../../core/docs/public.md?raw";
+import appSkill from "../../../core/packages/app-kit/SKILL.md?raw";
 import contacts from "../../../core/packages/app-kit/docs/contacts.md?raw";
 import events from "../../../core/packages/app-kit/docs/events.md?raw";
 import hooks from "../../../core/packages/app-kit/docs/hooks.md?raw";
@@ -30,7 +37,19 @@ const groups: { label: string; docs: Entry[] }[] = [
     label: "Start here",
     docs: [
       { id: "overview", source: "core/docs/overview.md", raw: overview, summary: "Organizations, workspaces and apps, and what each area of the desktop app is for." },
-      { id: "build-an-app", source: "core/docs/build-an-app.md", raw: buildAnApp, summary: "The manifest, routes, app context, migrations and hooks: everything an app is made of." },
+      { id: "build-an-app", source: "core/docs/build-an-app.md", raw: buildAnApp, summary: "The short path: the files, the manifest, the app context, migrations and operations." },
+    ],
+  },
+  {
+    label: "Apps",
+    docs: [
+      { id: "app-system", source: "core/docs/app-system.md", raw: appSystem, summary: "The map: what an app is made of, what the core knows about it and when, the lifecycle." },
+      { id: "manifest", source: "core/docs/manifest.md", raw: manifest, summary: "Every field of supergrid.app.json: identity, mount, nav, data types, locate templates, operations, packages." },
+      { id: "admin-ui", title: "Admin screens", source: "core/docs/admin-ui.md", raw: adminUi, summary: "Screens that look native: the admin layer, the admin SDK, the media picker, dos and don'ts." },
+      { id: "public", title: "Public pages", source: "core/docs/public.md", raw: publicPages, summary: "Pages on the workspace theme: the site layer, tracking, media, links that follow the mount." },
+      { id: "packages", title: "Shared packages", source: "core/docs/packages.md", raw: packages, summary: "One app's code in another: exports, uses, the workspace's pnpm workspace and the package graph." },
+      { id: "app-dev", title: "Create, run, install", source: "core/docs/app-dev.md", raw: appDev, summary: "sg app new and New App, the dev server, installing and deploying, moving the mount, the Dev panel." },
+      { id: "app-skill", title: "Building apps (skill)", source: "core/packages/app-kit/SKILL.md", raw: appSkill, summary: "What the agent reads before creating or changing an app: the parts, the order of work, the rules." },
     ],
   },
   {

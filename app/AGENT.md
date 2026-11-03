@@ -44,12 +44,13 @@ A tool's result can draw a card (`components/ai-elements/widgets.tsx`): pictures
 | Area | Tools |
 |---|---|
 | App | `app_context`, `app_navigate`, `apps_list`, `sitemap`, `suggest_dev_mode`, `docs_list`, `docs_read` |
+| Apps | `app_describe` (an installed app's served manifest: entities, operations, screens), `app_call` (run an operation; `confirm` ones ask), `app_locate` (where a row is seen), `apps_local` (the folders on this Mac); Dev: `apps_create` (from the template), `apps_install` (build and deploy, asks) |
 | Database | `db_tables`, `db_describe`, `db_rows`, `db_query` (SELECT only), `db_insert`, `db_update` (asks), `db_delete` (asks); Dev: `db_execute`, `db_create_table`, `db_add_column`, `db_drop_table` |
 | Library | `images_list`, `media_list`, `files_list`, `library_show`, `library_upload` (picker in the chat), `skills_search`, `skills_read`, `skills_save` |
 | Themes | `theme_guide`, `themes_list`, `theme_get`, `theme_save`, `theme_create`, `theme_set_default`, `theme_delete` (asks) |
 | Analytics | `event_names`, `analytics_query` (metric, line or bar), `analytics_funnel`, `events_recent` |
 
-Apps have no tools of their own yet beyond `apps_list` and the sitemap; when the apps system lands, an installed app's manifest is where its tools, data model and nav come from.
+An installed app's served manifest (`/_app/<id>/manifest.json`) is where its operations, data model and screens come from: `app_describe` reads it, `app_call` runs an operation through `/api/<id>/ops/<name>` with the workspace's token, and `app_locate` fills the manifest's locate templates from the row. See `core/docs/app-system.md`.
 
 ## Checking it without the window
 

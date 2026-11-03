@@ -88,7 +88,7 @@ function TableSample(): React.ReactElement {
 export function ShellPieces(): React.ReactElement {
   return (
     <>
-      <Specimen title="Sub Nav" about="The second panel beside the folded rail (components/workspace/sub-nav.tsx): a page surface on the sidebar layer. Rows group when their group changes." canvas="admin">
+      <Specimen title="Sub Nav" about="The second panel beside the folded rail (components/workspace/sub-nav.tsx), on the sidebar theme like the chat: a step into the rail's color. Rows group when their group changes." canvas="admin">
         <div className="h-[22rem] w-72">
           <SubNavSample />
         </div>

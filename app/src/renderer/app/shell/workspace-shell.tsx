@@ -1,4 +1,5 @@
-import { ChartColumnIcon, Loader2Icon, WorkflowIcon } from "lucide-react";
+import { ChartColumnIcon, CodeIcon, Loader2Icon, WorkflowIcon, type LucideIcon } from "lucide-react";
+import * as lucide from "lucide-react";
 import * as React from "react";
 import { Navigate, Outlet, useLocation, useNavigate, useParams } from "react-router";
 import { Button } from "~/components/ui/button";
@@ -10,7 +11,9 @@ import { SubNav, type SubNavGroup, type SubNavItem } from "~/components/workspac
 import { WorkspaceTitleBar } from "~/components/workspace/title-bar";
 import { useApplyAccent, useWorkspaceAccent } from "~/lib/accent";
 import { useAgentContext } from "~/lib/agent/context";
+import { useLocalApps, type LocalApp } from "~/lib/apps";
 import { useAgent } from "~/lib/agent/provider";
+import { useChatSide } from "~/lib/chat-side";
 import { updateOrg } from "~/lib/orgs";
 import { type DbTable, groupLabels, tableLabel, useSchema } from "~/lib/db";
 import { CHAT_SIDE_DEFAULT_WIDTH, NAV_DEFAULT_WIDTH, SUB_NAV_DEFAULT_WIDTH, usePlatform } from "~/lib/platform";
@@ -31,12 +34,19 @@ import { sections } from "~/shell/sections";
 // sections with sub pages, the agent's panel, and the page in a card. The organization's own pages
 // open as a modal over it (?org=…).
 
+/** A lucide icon by the name an app's manifest gives (`list`, `settings`, `file-text`), or null. */
+function navIconFor(name: string): LucideIcon | null {
+  const pascal = name.replace(/(^|[-_ ])(\w)/g, (_, __, c: string) => c.toUpperCase());
+  const icon = (lucide as unknown as Record<string, LucideIcon | undefined>)[`${pascal}Icon`];
+  return typeof icon === "function" || (typeof icon === "object" && icon !== null) ? icon : null;
+}
+
 // The gaps the resize handles sit in, after the sub panel and after the agent.
 const SUB_NAV_GAP = 8;
 const CHAT_GAP = 8;
 
 /** The second panel for the current page (a section's sub items, or an app's own menu), or null when it has none. `rest` is the path inside the workspace. */
-function subNavFor(ws: WorkspaceSummary, rest: string, go: (to: string) => void, tables: DbTable[] | null, loading = false, lists: { workflows: Workflow[] | null; reports: Report[] | null; loading: boolean } = { workflows: null, reports: null, loading: false }): { title: string; action?: React.ReactNode; items: SubNavItem[]; groups?: SubNavGroup[]; loading?: boolean } | null {
+function subNavFor(ws: WorkspaceSummary, rest: string, go: (to: string) => void, tables: DbTable[] | null, loading = false, lists: { workflows: Workflow[] | null; reports: Report[] | null; loading: boolean } = { workflows: null, reports: null, loading: false }, localApps: LocalApp[] | null = null): { title: string; action?: React.ReactNode; items: SubNavItem[]; groups?: SubNavGroup[]; loading?: boolean } | null {
   const base = `/w/${ws.id}`;
   const parts = rest.split("/");
   const section = sections.find((s) => s.path === parts[0]);
@@ -103,28 +113,41 @@ function subNavFor(ws: WorkspaceSummary, rest: string, go: (to: string) => void,
     const appItems: SubNavItem[] = appsWithout.map((a) => ({ key: `app:${a.app}`, label: "No tables yet", icon: <TableRowIcon />, group: `App · ${a.name}`, active: false, onClick: () => go(`${base}/apps/${a.app}`) }));
     const system = list.filter((t) => t.group === "system").length;
     const appGroups = [...new Set([...tableItems, ...appItems].map((it) => it.group!).filter((g) => g.startsWith("App · ")))].map((label): SubNavGroup => ({ label }));
-    const groups: SubNavGroup[] = [{ label: groupLabels.core }, ...appGroups, { label: groupLabels.custom }, { label: groupLabels.system, collapsible: true, collapsed: true, meta: system ? system.toLocaleString() : undefined }];
-    // core, then each app, then custom, then the folded system group, then the tools
-    const order = (it: SubNavItem) => (it.group === groupLabels.core ? 0 : it.group?.startsWith("App · ") ? 1 : it.group === groupLabels.custom ? 2 : it.group === groupLabels.system ? 3 : 4);
+    // core, then each app, then custom; the tools under a line; the folded system group last, under its own line
+    const groups: SubNavGroup[] = [{ label: groupLabels.core }, ...appGroups, { label: groupLabels.custom }, { label: "Tools", divider: true }, { label: groupLabels.system, collapsible: true, collapsed: true, divider: true, meta: system ? system.toLocaleString() : undefined }];
+    const order = (it: SubNavItem) => (it.group === groupLabels.core ? 0 : it.group?.startsWith("App · ") ? 1 : it.group === groupLabels.custom ? 2 : 3);
     const all = [...tableItems, ...appItems].sort((a, b) => order(a) - order(b) || (a.group ?? "").localeCompare(b.group ?? ""));
+    const own = all.filter((it) => it.group !== groupLabels.system);
+    const sys = all.filter((it) => it.group === groupLabels.system);
     // no custom tables yet: no group for them; the + above still makes one
-    groups.push({ label: "Tools", divider: true });
-    return { title: section.label, action: <NewTableButton />, items: [...all, ...items.map((it) => ({ ...it, group: "Tools" }))], groups, loading: loading && !tables };
+    return { title: section.label, action: <NewTableButton />, items: [...own, ...items.map((it) => ({ ...it, group: "Tools" })), ...sys], groups, loading: loading && !tables };
   }
   if (parts[0] === "apps" && parts[1]) {
-    // an app's own admin menu, as its manifest declares it (the workspace's ROUTES binding)
+    // an app's own admin menu, as its manifest declares it (the workspace's ROUTES binding): nested entries become a
+    // titled group, `place: "settings"` entries sit under Settings, and the Dev panel closes the list
     const app = ws.apps.find((a) => a.app === parts[1]);
-    if (!app?.nav?.length) return null;
+    const name = app?.name ?? localApps?.find((l) => l.manifest.id === parts[1])?.manifest.name ?? parts[1];
+    const inDev = parts[2] === "_dev";
     const sub = `/${parts.slice(2).join("/")}`;
-    return {
-      title: app.name,
-      items: app.nav.map((n) => ({
-        key: n.path,
-        label: n.label,
-        active: n.path === "/" ? sub === "/" : sub === n.path || sub.startsWith(`${n.path}/`),
-        onClick: () => go(`${base}/apps/${app.app}${n.path === "/" ? "" : n.path}`),
-      })),
-    };
+    const hit = (path: string, match?: string[]) => !inDev && (path === "/" ? sub === "/" : sub === path || sub.startsWith(`${path}/`) || (match ?? []).some((m) => (m.endsWith("/*") ? sub.startsWith(m.slice(0, -1)) : sub === m)));
+    const openNav = (path: string) => go(`${base}/apps/${parts[1]}${path === "/" ? "" : path}`);
+    const items: SubNavItem[] = [];
+    const groups: SubNavGroup[] = [];
+    const nav = app?.nav ?? [];
+    for (const n of nav.filter((x) => x.place !== "settings")) {
+      const Icon = n.icon ? navIconFor(n.icon) : null;
+      items.push({ key: n.id ?? n.path, label: n.label, icon: Icon ? <Icon /> : undefined, active: hit(n.path, n.match) && !(n.children ?? []).some((c) => hit(c.path, c.match)), onClick: () => openNav(n.path) });
+      for (const c of n.children ?? []) items.push({ key: c.id ?? c.path, label: c.label, group: n.label, active: hit(c.path, c.match), onClick: () => openNav(c.path) });
+      if (n.children?.length) groups.push({ label: n.label });
+    }
+    const settings = nav.filter((x) => x.place === "settings");
+    if (settings.length) {
+      groups.push({ label: "Settings", divider: true });
+      for (const n of settings) items.push({ key: n.id ?? n.path, label: n.label, group: "Settings", active: hit(n.path, n.match), onClick: () => openNav(n.path) });
+    }
+    groups.push({ label: "Developer", divider: true });
+    items.push({ key: "_dev", label: "Dev Panel", icon: <CodeIcon />, group: "Developer", active: inDev, onClick: () => go(`${base}/apps/${parts[1]}/_dev`) });
+    return { title: name, items, groups };
   }
   return null;
 }
@@ -184,6 +207,7 @@ export function WorkspaceShell(): React.ReactElement {
   const navigate = useNavigate();
   const { railState, setRailState, navWidth, setNavWidth, chatWidth, setChatWidth, subNavWidth, setSubNavWidth } = usePlatform();
   const [agentOpen, setAgentOpen] = useStoredFlag("sg.agent.open", false);
+  const [chatSide, setChatSide] = useChatSide(id ?? "");
   const [resizing, setResizing] = React.useState(false);
   const [navOpen, setNavOpen] = React.useState(false);
   const [search, setSearch] = React.useState(false);
@@ -203,7 +227,8 @@ export function WorkspaceShell(): React.ReactElement {
   const inWorkflows = rest.startsWith("workflows");
   const workflows = useWorkflows(inWorkflows && ws ? ws.id : null);
   const reports = useReports(inWorkflows ? target : null);
-  const sub = ws ? subNavFor(ws, rest, (to) => navigate(to), tables, tablesLoading, { workflows: workflows.data, reports: reports.data, loading: workflows.loading || reports.loading }) : null;
+  const localApps = useLocalApps(rest.startsWith("apps/") && ws ? ws.id : null);
+  const sub = ws ? subNavFor(ws, rest, (to) => navigate(to), tables, tablesLoading, { workflows: workflows.data, reports: reports.data, loading: workflows.loading || reports.loading }, localApps.data) : null;
   const subKey = sub?.title ?? null;
   const [railOpenIn, setRailOpenIn] = React.useState<string | null>(null);
   if (railOpenIn !== null && railOpenIn !== subKey) setRailOpenIn(null);
@@ -278,14 +303,22 @@ export function WorkspaceShell(): React.ReactElement {
 
   const panelOpen = !!sub;
   const collapsed = subKey ? railOpenIn !== subKey : railState === "collapsed";
+  const chatLeft = agentOpen && chatSide === "left";
+  const chatRight = agentOpen && chatSide === "right";
   const chatStart = (collapsed ? NAV_COLLAPSED_WIDTH : navWidth) + (panelOpen ? subNavWidth + SUB_NAV_GAP : 0);
-  const canvasStart = chatStart + (agentOpen ? chatWidth + CHAT_GAP : 0);
+  const canvasStart = chatStart + (chatLeft ? chatWidth + CHAT_GAP : 0);
+  const agent = (
+    <div className={cn("flex h-full shrink-0 pt-1 pb-2 max-md:hidden", chatRight && "pe-2")} style={{ width: chatWidth + (chatRight ? 8 : 0) }}>
+      <AgentSide ws={ws} threadId={threadId} onOpenThread={setThreadId} headerSlot={chatSlot} side={chatSide} onPin={setChatSide} onClose={() => setAgentOpen(false)} />
+    </div>
+  );
+  const agentHandle = <ResizeHandle label="Resize Agent" width={chatWidth} defaultWidth={CHAT_SIDE_DEFAULT_WIDTH} onChange={setChatWidth} onDragging={setResizing} invert={chatRight} className="max-md:hidden" style={{ width: CHAT_GAP }} />;
 
   return (
     <ShellContext.Provider value={shell}>
       {/* while a panel is dragged, nothing inside animates (see [data-resizing] in app.css) */}
       <div className="flex h-full w-full flex-col overflow-hidden overscroll-none bg-admin text-foreground" data-resizing={resizing || undefined}>
-        <WorkspaceTitleBar canvasStart={canvasStart} chatStart={agentOpen ? chatStart : undefined} animate={!resizing} onToggleSidebar={toggleNav} chatRef={setChatSlot} titleRef={setTitleSlot} actionsRef={setActionsSlot} />
+        <WorkspaceTitleBar canvasStart={canvasStart} chatStart={chatLeft ? chatStart : undefined} chatEnd={chatRight ? chatWidth : undefined} animate={!resizing} onToggleSidebar={toggleNav} chatRef={setChatSlot} titleRef={setTitleSlot} actionsRef={setActionsSlot} />
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <WorkspaceSidebar ws={ws} width={navWidth} animate={!resizing} collapsed={collapsed} className="max-md:hidden" />
           {/* the open rail resizes from its right edge; the handle takes no room of its own */}
@@ -297,13 +330,11 @@ export function WorkspaceShell(): React.ReactElement {
             </div>
           </div>
           {panelOpen && <ResizeHandle label="Resize Menu" width={subNavWidth} defaultWidth={SUB_NAV_DEFAULT_WIDTH} onChange={setSubNavWidth} onDragging={setResizing} className="max-md:hidden" style={{ width: SUB_NAV_GAP }} />}
-          {/* the agent, in a panel of its own */}
-          {agentOpen && (
+          {/* the agent, in a panel of its own, before the page or (pinned) after it */}
+          {chatLeft && (
             <>
-              <div className="flex h-full shrink-0 pt-1 pb-2 max-md:hidden" style={{ width: chatWidth }}>
-                <AgentSide ws={ws} threadId={threadId} onOpenThread={setThreadId} headerSlot={chatSlot} onClose={() => setAgentOpen(false)} />
-              </div>
-              <ResizeHandle label="Resize Agent" width={chatWidth} defaultWidth={CHAT_SIDE_DEFAULT_WIDTH} onChange={setChatWidth} onDragging={setResizing} className="max-md:hidden" style={{ width: CHAT_GAP }} />
+              {agent}
+              {agentHandle}
             </>
           )}
           {/* small screens: the sidebar slides over the page */}
@@ -313,11 +344,17 @@ export function WorkspaceShell(): React.ReactElement {
               <WorkspaceSidebar ws={ws} onClose={() => setNavOpen(false)} />
             </div>
           </div>
-          <div className="relative flex h-full min-w-0 flex-1 flex-col pt-1 pe-2 pb-2 ps-1 md:ps-0">
+          <div className={cn("relative flex h-full min-w-0 flex-1 flex-col pt-1 pb-2 ps-1 md:ps-0", chatRight ? "pe-0" : "pe-2")}>
             <FrameSlots.Provider value={slots}>
               <Outlet context={{ onOpenNav: () => setNavOpen(true) }} />
             </FrameSlots.Provider>
           </div>
+          {chatRight && (
+            <>
+              {agentHandle}
+              {agent}
+            </>
+          )}
         </div>
         <SearchPalette ws={ws} open={search} onOpenChange={setSearch} />
         <OrgModal />

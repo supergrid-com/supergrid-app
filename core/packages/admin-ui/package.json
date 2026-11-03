@@ -1,0 +1,14 @@
+{
+  "name": "@supergrid/admin-ui",
+  "version": "0.1.0",
+  "description": "The admin layer for an app's admin screens: page, cards, tables, the asset field and the shell tokens, on the base-ui kit. Copy src/ into an app beside components/ui.",
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./admin.css": "./src/admin.css", "./*": "./src/*" },
+  "peerDependencies": {
+    "@supergrid/admin-sdk": "*",
+    "@supergrid/app-kit": "*",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-router": "*"
+  }
+}

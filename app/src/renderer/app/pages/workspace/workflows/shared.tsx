@@ -39,7 +39,8 @@ export function NewNameDialog({ open, onOpenChange, title, description, placehol
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPopup className="max-w-md">
-        <form onSubmit={(e) => void submit(e)}>
+        {/* contents: the header, panel and footer stay the popup's own flex children, which the panel's scroll area sizes against */}
+        <form onSubmit={(e) => void submit(e)} className="contents">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>

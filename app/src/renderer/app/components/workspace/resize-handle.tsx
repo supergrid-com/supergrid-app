@@ -2,13 +2,15 @@ import * as React from "react";
 import { cn } from "~/lib/utils";
 
 // A drag handle in the gap on a panel's right edge: dragging right widens the panel, a double
-// click puts it back. `onChange` keeps the width within its limits.
+// click puts it back. `onChange` keeps the width within its limits. For a panel on the right of
+// the page the handle sits on its left edge and `invert` makes dragging left widen it.
 export function ResizeHandle({
   label,
   width,
   defaultWidth,
   onChange,
   onDragging,
+  invert = false,
   className,
   style,
 }: {
@@ -17,6 +19,7 @@ export function ResizeHandle({
   defaultWidth: number;
   onChange: (width: number) => void;
   onDragging?: (dragging: boolean) => void;
+  invert?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }): React.ReactElement {
@@ -33,7 +36,7 @@ export function ResizeHandle({
     set(true);
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
-    const move = (ev: PointerEvent) => onChange(width + (ev.clientX - startX));
+    const move = (ev: PointerEvent) => onChange(width + (ev.clientX - startX) * (invert ? -1 : 1));
     const up = () => {
       set(false);
       document.body.style.cursor = "";

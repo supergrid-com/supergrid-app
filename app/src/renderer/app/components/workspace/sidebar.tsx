@@ -1,4 +1,4 @@
-import { BookOpenIcon, BuildingIcon, CheckIcon, ChevronRightIcon, ChevronsUpDownIcon, CloudIcon, LoaderCircleIcon, MessageCircleIcon, PackageIcon, PanelLeftIcon, PlusIcon, Settings2Icon, SunMoonIcon, TriangleAlertIcon } from "lucide-react";
+import { BookOpenIcon, BuildingIcon, CheckIcon, ChevronRightIcon, ChevronsUpDownIcon, CloudIcon, LoaderCircleIcon, MessageCircleIcon, PanelLeftIcon, PlusIcon, Settings2Icon, SunMoonIcon, TriangleAlertIcon } from "lucide-react";
 import * as React from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Shimmer } from "~/components/shimmer";
@@ -10,7 +10,9 @@ import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "~/compon
 import { useThreads, type ThreadStatus, type ThreadSummary } from "~/lib/agent/provider";
 import { NAV_DEFAULT_WIDTH } from "~/lib/platform";
 import { useSession } from "~/lib/session";
-import { mockApps } from "~/lib/apps-mock";
+import { useLocalApps } from "~/lib/apps";
+import { AppGlyph } from "~/components/workspace/app-icon";
+import { NewAppDialog } from "~/components/workspace/new-app-dialog";
 import { cn } from "~/lib/utils";
 import { useWorkspaces, type WorkspaceSummary } from "~/lib/workspaces";
 import { useDocsModal, useOrgModal, useShell, useStoredFlag } from "~/shell/context";
@@ -94,7 +96,7 @@ function RailTooltip({ label, children }: { label: React.ReactNode; children: Re
   );
 }
 
-function Row({ icon, label, onClick, active }: { icon: React.ReactNode; label: string; onClick: () => void; active: boolean }): React.ReactElement {
+function Row({ icon, label, onClick, active, trailing }: { icon: React.ReactNode; label: string; onClick: () => void; active: boolean; /** At the row's end, hidden with the label when the rail folds: a "Dev" mark on an app that is only a folder here. */ trailing?: React.ReactNode }): React.ReactElement {
   const { onClose } = React.useContext(SidebarContext);
   return (
     <li>
@@ -111,6 +113,7 @@ function Row({ icon, label, onClick, active }: { icon: React.ReactNode; label: s
         >
           <span className={iconSlotClass}>{icon}</span>
           <Label>{label}</Label>
+          {trailing && <Label className="flex-none">{trailing}</Label>}
         </button>
       </RailTooltip>
     </li>
@@ -122,7 +125,7 @@ function Row({ icon, label, onClick, active }: { icon: React.ReactNode; label: s
 // Working shows in the row itself (a spinner and a shimmering title); idle shows nothing.
 const statusLabel: Record<ThreadStatus, string> = { working: "Working", "needs-input": "Needs your input", done: "Done, not viewed yet", failed: "Failed", idle: "" };
 
-function StatusMark({ status }: { status: ThreadStatus }): React.ReactElement | null {
+export function StatusMark({ status }: { status: ThreadStatus }): React.ReactElement | null {
   if (status === "done") return <span aria-hidden className="size-2 shrink-0 rounded-full bg-info" />;
   if (status === "needs-input")
     return (
@@ -267,13 +270,17 @@ function ThreadsPopover({
   );
 }
 
-// The workspace's apps, under the threads: its installed ones (read from its Worker), then the
-// mock ones (lib/apps-mock.ts) while there's nothing to install yet. + opens the apps settings.
+// The workspace's apps, under the threads: its installed ones (read from its Worker, with the icon each
+// manifest carries), then the folders on this Mac not installed yet, marked Dev (lib/apps.ts). + makes a
+// new app from the template (new-app-dialog.tsx).
 function Apps({ ws, isActive, open }: { ws: WorkspaceSummary; isActive: (path: string) => boolean; open: (path: string) => void }): React.ReactElement {
   const { collapsed } = React.useContext(SidebarContext);
-  const modal = useOrgModal();
   const [shown, setShown] = useStoredFlag("sg.rail.apps.open", true);
-  const apps = [...ws.apps.map((a) => ({ id: a.app, name: a.name, icon: PackageIcon })), ...mockApps.filter((m) => !ws.apps.some((a) => a.app === m.id))];
+  const [creating, setCreating] = React.useState(false);
+  const local = useLocalApps(ws.id);
+  const installed = ws.apps.map((a) => ({ id: a.app, name: a.name, icon: a.icon, local: false }));
+  const folders = (local.data ?? []).filter((l) => !ws.apps.some((a) => a.app === l.manifest.id)).map((l) => ({ id: l.manifest.id, name: l.manifest.name, icon: l.manifest.icon?.trimStart().startsWith("<svg") ? l.manifest.icon : undefined, local: true }));
+  const apps = [...installed, ...folders];
   return (
     <>
       <GroupHeading
@@ -282,14 +289,20 @@ function Apps({ ws, isActive, open }: { ws: WorkspaceSummary; isActive: (path: s
         onToggle={() => setShown(!shown)}
         action={
           <Tooltip>
-            <TooltipTrigger render={<button type="button" aria-label="Add an App" tabIndex={collapsed ? -1 : undefined} onClick={() => modal.open("apps")} className={plusClass} />}>
+            <TooltipTrigger render={<button type="button" aria-label="New App" tabIndex={collapsed ? -1 : undefined} onClick={() => setCreating(true)} className={plusClass} />}>
               <PlusIcon className="size-4" />
             </TooltipTrigger>
-            <TooltipPopup className={railTooltipClass}>Add an App</TooltipPopup>
+            <TooltipPopup className={railTooltipClass}>New App</TooltipPopup>
           </Tooltip>
         }
       />
-      {(shown || collapsed) && apps.map((a) => <Row key={a.id} icon={<a.icon />} label={a.name} active={isActive(`apps/${a.id}`)} onClick={() => open(`apps/${a.id}`)} />)}
+      {(shown || collapsed) && apps.map((a) => (
+        <Row key={a.id} icon={<AppGlyph app={a} />} label={a.name} active={isActive(`apps/${a.id}`)} onClick={() => open(a.local ? `apps/${a.id}/_dev` : `apps/${a.id}`)} trailing={a.local ? <span className="rounded px-1 text-[10px] font-medium uppercase tracking-wider text-admin-dim">Dev</span> : undefined} />
+      ))}
+      {(shown || collapsed) && apps.length === 0 && !collapsed && (
+        <li className="px-2.5 py-1.5 text-[13px] text-admin-dim">No apps yet</li>
+      )}
+      <NewAppDialog wsId={ws.id} open={creating} onOpenChange={setCreating} />
     </>
   );
 }

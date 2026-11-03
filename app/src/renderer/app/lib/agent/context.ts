@@ -45,7 +45,7 @@ export function buildContext(ws: WorkspaceSummary, org: { name: string; accountI
     location.app = second;
     location.page = app?.name ?? second;
     const sub = parts.slice(2).join("/");
-    location.label = `App · ${app?.name ?? second}${sub ? ` · /${sub}` : ""}`;
+    location.label = third === "_dev" ? `App · ${app?.name ?? second} · Dev panel (${parts[3] ?? "overview"})` : `App · ${app?.name ?? second}${sub ? ` · /${sub}` : ""}`;
   }
   if (modal.settings) {
     location.settings = settingsSections.find((s) => s.id === modal.settings)?.label ?? modal.settings;

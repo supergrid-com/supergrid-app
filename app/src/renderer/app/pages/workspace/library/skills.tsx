@@ -35,7 +35,7 @@ function NewSkillDialog({ open, onOpenChange, taken, onCreate }: { open: boolean
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPopup className="max-w-md">
-        <form onSubmit={submit}>
+        <form onSubmit={submit} className="contents">
           <DialogHeader>
             <DialogTitle>New Skill</DialogTitle>
             <DialogDescription>Name what it teaches. The text comes next, in the editor.</DialogDescription>

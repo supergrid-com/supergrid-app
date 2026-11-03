@@ -40,6 +40,12 @@ function match(routes: RouteEntry[], path: string): RouteEntry | undefined {
 
 const SPOOFABLE = ["x-sg-workspace", "x-sg-app", "x-sg-mount", "x-sg-user", "x-sg-anon"];
 
+/** The desktop (or a script with the workspace's token) calling an app's operations: it acts as an owner. */
+const DESKTOP_USER = { id: "desktop", name: "SuperGrid", email: "", org: null, role: "owner", permissions: ["*"] };
+const bearerOf = (request: Request) => request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? null;
+/** `/api/<id>/ops*` and `/api/<id>/mcp` with the workspace token: the app sees an owner. Without it they stay public (the app's own access rules apply). */
+const isOpsPath = (pathname: string) => /^\/api\/[^/]+\/(ops(\/|$)|mcp$)/.test(pathname);
+
 async function forward(request: Request, env: Env, route: RouteEntry, user?: unknown): Promise<Response> {
   const headers = new Headers(request.headers);
   for (const h of SPOOFABLE) headers.delete(h);
@@ -108,6 +114,13 @@ export default {
         if (!staff) return notStaffResponse(env.WORKSPACE_NAME);
         const { sub, name, email, org, role, permissions } = staff;
         return forward(request, env, route, { id: sub, name, email, org, role, permissions });
+      }
+      if (isOpsPath(url.pathname)) {
+        const token = bearerOf(request);
+        if (token && env.SG_WORKSPACE_TOKEN && token === env.SG_WORKSPACE_TOKEN) return forward(request, env, route, DESKTOP_USER);
+        // a staff member's own browser session (the admin UI calling its app's operations) counts too
+        const staff = await staffUser(request, env.SG_WORKSPACE_TOKEN, env.WORKSPACE_ID);
+        if (staff) { const { sub, name, email, org, role, permissions } = staff; return forward(request, env, route, { id: sub, name, email, org, role, permissions }); }
       }
       return forward(request, env, route);
     }
