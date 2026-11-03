@@ -11,12 +11,13 @@ import { useThreads, type ThreadStatus, type ThreadSummary } from "~/lib/agent/p
 import { NAV_DEFAULT_WIDTH } from "~/lib/platform";
 import { useSession } from "~/lib/session";
 import { useLocalApps } from "~/lib/apps";
+import { useMode } from "~/lib/mode";
 import { AppGlyph } from "~/components/workspace/app-icon";
 import { NewAppDialog } from "~/components/workspace/new-app-dialog";
 import { cn } from "~/lib/utils";
 import { useWorkspaces, type WorkspaceSummary } from "~/lib/workspaces";
 import { useDocsModal, useOrgModal, useShell, useStoredFlag } from "~/shell/context";
-import { sections, type Section } from "~/shell/sections";
+import { codeSection, sections, type Section } from "~/shell/sections";
 
 // The workspace sidebar: a dark rail with the workspace's sections, after Shopify's admin. One
 // row per section; a section's sub items open in the second panel (sub-nav.tsx), never here.
@@ -270,17 +271,17 @@ function ThreadsPopover({
   );
 }
 
-// The workspace's apps, under the threads: its installed ones (read from its Worker, with the icon each
-// manifest carries), then the folders on this Mac not installed yet, marked Dev (lib/apps.ts). + makes a
-// new app from the template (new-app-dialog.tsx).
+// The workspace's apps, under the threads: the ones it serves (the Worker's in Live, the repo's folders in Dev, with
+// the icon each manifest carries), then the repo's folders it does not serve, marked Dev (not deployed yet), Off
+// (disabled in the workspace file) or Fix (a manifest problem) (lib/apps.ts). + adds an app to the repo (new-app-dialog.tsx).
 function Apps({ ws, isActive, open }: { ws: WorkspaceSummary; isActive: (path: string) => boolean; open: (path: string) => void }): React.ReactElement {
   const { collapsed } = React.useContext(SidebarContext);
   const [shown, setShown] = useStoredFlag("sg.rail.apps.open", true);
   const [creating, setCreating] = React.useState(false);
   const local = useLocalApps(ws.id);
-  const installed = ws.apps.map((a) => ({ id: a.app, name: a.name, icon: a.icon, local: false }));
-  const folders = (local.data ?? []).filter((l) => !ws.apps.some((a) => a.app === l.manifest.id)).map((l) => ({ id: l.manifest.id, name: l.manifest.name, icon: l.manifest.icon?.trimStart().startsWith("<svg") ? l.manifest.icon : undefined, local: true }));
-  const apps = [...installed, ...folders];
+  const served = ws.apps.map((a) => ({ id: a.app, name: a.name, icon: a.icon, mark: null as string | null }));
+  const folders = (local.data ?? []).filter((l) => !ws.apps.some((a) => a.app === l.manifest.id)).map((l) => ({ id: l.manifest.id, name: l.manifest.name, icon: l.manifest.icon?.trimStart().startsWith("<svg") ? l.manifest.icon : undefined, mark: l.disabled ? "Off" : l.problems.length ? "Fix" : "Dev" }));
+  const apps = [...served, ...folders];
   return (
     <>
       <GroupHeading
@@ -297,7 +298,7 @@ function Apps({ ws, isActive, open }: { ws: WorkspaceSummary; isActive: (path: s
         }
       />
       {(shown || collapsed) && apps.map((a) => (
-        <Row key={a.id} icon={<AppGlyph app={a} />} label={a.name} active={isActive(`apps/${a.id}`)} onClick={() => open(a.local ? `apps/${a.id}/_dev` : `apps/${a.id}`)} trailing={a.local ? <span className="rounded px-1 text-[10px] font-medium uppercase tracking-wider text-admin-dim">Dev</span> : undefined} />
+        <Row key={a.id} icon={<AppGlyph app={a} />} label={a.name} active={isActive(`apps/${a.id}`)} onClick={() => open(`apps/${a.id}`)} trailing={a.mark ? <span className="rounded px-1 text-[10px] font-medium uppercase tracking-wider text-admin-dim">{a.mark}</span> : undefined} />
       ))}
       {(shown || collapsed) && apps.length === 0 && !collapsed && (
         <li className="px-2.5 py-1.5 text-[13px] text-admin-dim">No apps yet</li>
@@ -435,6 +436,7 @@ export function WorkspaceSidebar({
 }): React.ReactElement {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { mode } = useMode(ws.id);
   const base = `/w/${ws.id}`;
   const rest = pathname.slice(base.length).replace(/^\//, "");
   const isActive = (path: string) => (path === "" ? rest === "" : rest === path || rest.startsWith(`${path}/`));
@@ -470,7 +472,11 @@ export function WorkspaceSidebar({
               <Threads ws={ws} />
               <li aria-hidden className="mx-2 my-2 h-px bg-admin-line" />
               <Apps ws={ws} isActive={isActive} open={open} />
-              <Group id="core" title="Core">{sections.map(row)}</Group>
+              <Group id="core" title="Core">
+                {sections.map(row)}
+                {/* the repo on this Mac, while the workspace runs from it */}
+                {mode === "dev" && row(codeSection)}
+              </Group>
             </ul>
           </nav>
           </ScrollArea>

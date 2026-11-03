@@ -13,6 +13,15 @@
 > `site` at /site with `/` as its home) runs locally on `pnpm dev` and is deployed as `sgdev-ws-w2nqwt` on the test
 > account: public pages, admin screens behind the handoff, operations and MCP per app, and both apps' migrations through
 > the ledger, all from one Worker. Things learned on the way are in §13.
+>
+> **Step 2 is built (2026-11-03).** The desktop (`app/`) works on a workspace repo: provisioning scaffolds
+> `workspaces/<id>` from the template, builds it and deploys that build; opening a workspace finds or makes the repo; New
+> App is `scaffoldAppFolder` plus a regenerate; one `react-router dev` per workspace; Deploy is one upload
+> (`deployWorkspace` in `@supergrid/cloud`); Live / Dev sits in the title bar and is the mode the agent's tools read; the
+> Code section (Files by app, Git, Server, Deploys) shows in Dev; the Database section reads the local D1 in Dev through
+> the dev-only `/_ws/dev/sql`. The "local dev workspace" special case, `core/template`, `createAppWorker`, the per-app
+> dev server and `installLocalApp`'s use are gone; `core/workspace/src/index.ts` (the router over service bindings) is
+> still there until the old test Workers are deleted.
 
 ---
 
@@ -404,5 +413,20 @@ migration tool is needed for them.
 - **The `.sg/` generate step runs as a Vite plugin** (`workspaceViteConfig` in app-kit), on config load and on changes to a
   manifest or an app's routes file, so `pnpm dev`, `pnpm build` and `react-router typegen` all see the current folders;
   `sg ws generate` is the same code for the terminal.
-- **Still the old shape beside it**: `core/template`, `createAppWorker`, the desktop's per-app dev server and install flow,
-  and `workspace/src/index.ts` (the router over service bindings) are untouched; they go in step 2.
+- **The old shape beside it**: `workspace/src/index.ts` (the router over service bindings) and `installLocalApp` in
+  `@supergrid/cloud` are still there for the per-app Workers on the test account; the rest went with step 2.
+
+## 14. Notes from building step 2
+
+- **Provisioning builds first.** A new workspace's Worker is the repo's own build (no apps yet), uploaded through
+  `provisionWorkspace` as the bundle; the signed workspace release is no longer what a workspace starts from. The repo's
+  `wrangler.jsonc` gets the real D1 id and address afterwards, so `wrangler deploy` from a terminal targets the same database.
+- **Dev data needs a path in.** The Database pages read D1 over Cloudflare's REST API; a local D1 has no API. The composed
+  Worker answers `POST /_ws/dev/sql` with the workspace token in a dev session only (`import.meta.env.DEV`), in the REST
+  API's shape, and `src/main/d1.ts` sends there when the target names the dev server. Time Travel, export and the database
+  record stay Live-only.
+- **The mode lives in main.** `workspace(wsId)` answers the dev summary (localhost, the repo's apps, `dev: true`) while the
+  mode is Dev and the server is up, so the handoff, the served manifest, operations and the agent's tools follow the mode
+  without each knowing about it; the renderer swaps the shell's workspace for that summary.
+- **Old folders move aside.** A `workspaces/<id>` in the one-repo-per-app shape is renamed `<id>-before-repo-<stamp>` the
+  first time the workspace opens, and the repo is made fresh; nothing is deleted.

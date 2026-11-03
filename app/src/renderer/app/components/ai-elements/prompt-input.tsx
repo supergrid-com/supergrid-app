@@ -1,7 +1,6 @@
 import { ArrowUpIcon, CameraIcon, CheckIcon, ImageIcon, PaperclipIcon, PlusIcon, SquareIcon } from "lucide-react";
 import * as React from "react";
 import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuSeparator, MenuSub, MenuSubPopup, MenuSubTrigger, MenuTrigger } from "~/components/ui/menu";
-import { SegmentedControl, SegmentedControlItem } from "~/components/ui/segmented-control";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 
@@ -94,9 +93,9 @@ const menuItemClass = "gap-2.5 rounded-md px-2.5";
 
 /**
  * The + at the start of the row: a menu of attachments (none wired up yet) and, in a narrow
- * composer, the thread's kind and every picker the row has no room for, each as a submenu.
+ * composer, every picker the row has no room for, each as a submenu.
  */
-export function PromptInputAdd({ kind, choices = [] }: { kind?: { dev: boolean; onChange: (dev: boolean) => void; disabled?: boolean }; choices?: (ComposerChoice | false | null | undefined)[] }): React.ReactElement {
+export function PromptInputAdd({ choices = [] }: { choices?: (ComposerChoice | false | null | undefined)[] }): React.ReactElement {
   const pickers = choices.filter((c): c is ComposerChoice => !!c);
   const attach = (icon: React.ReactNode, label: string) => (
     <MenuItem className={menuItemClass}>
@@ -117,19 +116,6 @@ export function PromptInputAdd({ kind, choices = [] }: { kind?: { dev: boolean; 
           {attach(<PaperclipIcon />, "Add Files")}
           {attach(<CameraIcon />, "Take a Screenshot")}
         </MenuGroup>
-        {kind && (
-          <>
-            <MenuSeparator />
-            <MenuRadioGroup value={kind.dev ? "dev" : "agent"} onValueChange={(v) => kind.onChange(v === "dev")}>
-              <MenuRadioItem value="agent" disabled={kind.disabled}>
-                Agent
-              </MenuRadioItem>
-              <MenuRadioItem value="dev" disabled={kind.disabled}>
-                Dev
-              </MenuRadioItem>
-            </MenuRadioGroup>
-          </>
-        )}
         {pickers.length > 0 && (
           <>
             <MenuSeparator />
@@ -158,26 +144,6 @@ export function PromptInputAdd({ kind, choices = [] }: { kind?: { dev: boolean; 
         )}
       </MenuPopup>
     </Menu>
-  );
-}
-
-/**
- * Agent or Dev, after the +: Agent works in the workspace (its rows, themes, library, analytics);
- * Dev may also change the shape of tables, run SQL by hand, and build and change the apps' code.
- * The thread's tools and the context each prompt carries follow it (lib/agent/provider.tsx).
- */
-export function PromptInputKind({ dev, onChange, disabled }: { dev: boolean; onChange: (dev: boolean) => void; disabled?: boolean }): React.ReactElement {
-  const item = (on: boolean, label: string, hint: string, value: boolean) => (
-    <Tooltip>
-      <TooltipTrigger render={<SegmentedControlItem aria-pressed={on} data-pressed={on || undefined} disabled={disabled} onClick={() => onChange(value)} className="px-2.5 text-[13px]" />}>{label}</TooltipTrigger>
-      <TooltipPopup>{hint}</TooltipPopup>
-    </Tooltip>
-  );
-  return (
-    <SegmentedControl size="sm" aria-label="Agent or Dev" className="ms-1 bg-foreground/6">
-      {item(!dev, "Agent", "Works in the workspace: rows, themes, library, analytics", false)}
-      {item(dev, "Dev", "Can also change table shapes, run SQL and build app code", true)}
-    </SegmentedControl>
   );
 }
 

@@ -5,29 +5,28 @@ import type { ServedManifest, WorkspaceSummary } from "../shared/bridge";
 import { cfClient } from "./cf-api";
 import * as cloudflare from "./cloudflare";
 import { readConfig, readState, writeConfig } from "./config";
+import * as apps from "./apps";
 import { listWorkspaces } from "./workspaces";
 
 // The desktop's path into a workspace: POST `/_ws/rpc` on its public URL with the workspace token.
 // The token is minted here on first use (32 random bytes, written as the Worker's
 // SG_WORKSPACE_TOKEN secret) and kept in the config file; a 401 means someone else minted one
-// since, so it is minted again once. The local dev workspace never mints: its token comes from
-// the environment or the config, the way `dev/` starts it.
+// since, so it is minted again once. In Dev mode the workspace is its dev server on this Mac
+// (apps.ts): the URL is localhost, the apps are the repo's folders, and the token is the one in
+// the repo's .dev.vars; nothing is minted.
 //
 // The secrets key (SG_SECRETS_KEY, what the workspace seals its secrets table with) is set the
 // same way, once: a workspace that answers SECRETS_KEY_MISSING gets the key this machine remembers
 // for it, or a fresh one when there is none. It is never minted again on its own, because a new
 // key would make every stored secret unreadable.
 
-const LOCAL_URL = "http://localhost:5301";
 const CACHE_TTL = 60_000;
 const KEY_MISSING = "SECRETS_KEY_MISSING";
 const methods = new Set<string>(RPC_METHOD_NAMES);
 
 const caches = new Map<string, { at: number; list: Promise<WorkspaceSummary[]> }>();
 
-function isLocal(ws: Pick<WorkspaceSummary, "id" | "url">): boolean {
-  return ws.id === "local" || /^http:\/\/localhost(:\d+)?(\/|$)/.test(ws.url);
-}
+const isLocal = (ws: Pick<WorkspaceSummary, "dev">): boolean => !!ws.dev;
 
 function listed(accountId: string, prefix: string): Promise<WorkspaceSummary[]> {
   const key = `${accountId}/${prefix}`;
@@ -73,11 +72,22 @@ async function clientFor(accountId: string): Promise<Cf> {
 }
 
 /**
- * A workspace by id, found among the Workers of the organizations' accounts under their prefixes, the way the
- * renderer lists them (src/renderer/app/lib/workspaces.ts); the app's own connection is looked at last.
+ * A workspace as the desktop sees it in its current mode: the deployed Worker, or in Dev mode its dev server on this Mac
+ * with the repo's apps (the deployed Worker's name stays, for the account-side things: its database, its bucket, its secrets).
  */
 export async function workspace(wsId: string): Promise<WorkspaceSummary> {
-  if (wsId === "local") return { id: "local", name: "Local dev", url: process.env.SG_WORKSPACE_URL ?? LOCAL_URL, worker: "", version: null, apps: [] };
+  const cloud = await cloudWorkspace(wsId);
+  if (apps.modeOf(wsId) !== "dev") return cloud;
+  const dev = apps.devStatus(wsId);
+  if (!dev.running || !dev.url) return cloud;
+  return { ...cloud, url: dev.url, version: "dev", apps: apps.builtApps(wsId), dev: true };
+}
+
+/**
+ * A workspace by id as its Worker describes it, found among the Workers of the organizations' accounts under their
+ * prefixes, the way the renderer lists them (src/renderer/app/lib/workspaces.ts); the app's own connection is looked at last.
+ */
+export async function cloudWorkspace(wsId: string): Promise<WorkspaceSummary> {
   const all = await links();
   if (!all.length) throw new Error("No Cloudflare account to look in: connect one on the Cloudflare page.");
   let lastError: unknown = null;
@@ -100,12 +110,8 @@ export async function workspace(wsId: string): Promise<WorkspaceSummary> {
 const clientOf = async (ws: WorkspaceSummary): Promise<Cf> => clientFor(accountOf.get(ws.id) ?? (await links())[0]?.accountId ?? (await cloudflare.client()).cf.accountId);
 
 async function tokenFor(ws: WorkspaceSummary, fresh = false): Promise<string> {
+  if (isLocal(ws)) return apps.devToken(ws.id);
   const cfg = readConfig();
-  if (isLocal(ws)) {
-    const token = process.env.SG_WORKSPACE_TOKEN ?? cfg.wsTokens?.[ws.id];
-    if (!token) throw new Error("Set SG_WORKSPACE_TOKEN to reach the local workspace.");
-    return token;
-  }
   const have = cfg.wsTokens?.[ws.id];
   if (have && !fresh) return have;
   const token = randomBytes(32).toString("hex");
@@ -150,7 +156,7 @@ async function send(ws: WorkspaceSummary, method: string, args: unknown[]): Prom
     }
   };
   let res = await post(await tokenFor(ws));
-  // a 401 on a cloud workspace means its secret no longer matches ours: mint once and retry
+  // a 401 on the deployed Worker means its secret no longer matches ours: mint once and retry
   if (res.status === 401 && !isLocal(ws)) res = await post(await tokenFor(ws, true));
   const text = await res.text();
   type Reply = { result?: unknown; error?: unknown };
@@ -173,7 +179,7 @@ export async function rpc(wsId: string, method: string, args: unknown[]): Promis
     return await send(ws, method, args);
   } catch (e) {
     if (!String((e as Error).message).startsWith(KEY_MISSING)) throw e;
-    if (isLocal(ws)) throw new Error("The local workspace has no SG_SECRETS_KEY. Add it to the vars in core/workspace/wrangler.jsonc.");
+    if (isLocal(ws)) throw new Error("The dev server has no SG_SECRETS_KEY. Add it to the repo's .dev.vars.");
     await installSecretsKey(ws);
     return send(ws, method, args);
   }
@@ -188,7 +194,7 @@ export async function rpc(wsId: string, method: string, args: unknown[]): Promis
  */
 export async function setMediaToken(wsId: string, token?: string): Promise<void> {
   const ws = await workspace(wsId);
-  if (isLocal(ws)) throw new Error("The local workspace reads CF_ACCOUNT_ID and SG_MEDIA_TOKEN from core/workspace/.dev.vars (see .dev.vars.example).");
+  if (isLocal(ws)) throw new Error("The media token is set on the deployed Worker: switch to Live. The dev server reads CF_ACCOUNT_ID and SG_MEDIA_TOKEN from the repo's .dev.vars.");
   // the app's own token is a shared fallback only where it is for this account; cf's OAuth login is never written to a Worker
   const cf = await clientOf(ws);
   const own = await cloudflare.client().catch(() => null);

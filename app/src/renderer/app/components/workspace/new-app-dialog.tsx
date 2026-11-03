@@ -12,15 +12,17 @@ import { AppIcon, safeSvg } from "~/components/workspace/app-icon";
 import { openExternal } from "~/components/workspace/library/shared";
 import { appSlug, refreshLocalApps } from "~/lib/apps";
 import { sg } from "~/lib/bridge";
+import { refreshMode, useMode } from "~/lib/mode";
 import { clean } from "~/lib/workspaces";
 
-// New App: a folder from the template in the workspace's folder on this Mac, with its name, id, mount, icon and color.
-// Creating it installs its dependencies, which takes a moment; then its Dev panel opens.
+// New App: a folder from the app template under apps/<id> in the workspace's repo on this Mac, with its name, id,
+// mount, icon and color (src/main/apps.ts). In Dev the dev server picks it up at once; a deploy sends it live.
 
 const ICONS_URL = "https://icon-sets.iconify.design/lucide/";
 
 export function NewAppDialog({ wsId, open, onOpenChange }: { wsId: string; open: boolean; onOpenChange: (o: boolean) => void }): React.ReactElement {
   const navigate = useNavigate();
+  const { mode } = useMode(wsId);
   const [name, setName] = React.useState("");
   const [id, setId] = React.useState("");
   const [idTouched, setIdTouched] = React.useState(false);
@@ -44,10 +46,11 @@ export function NewAppDialog({ wsId, open, onOpenChange }: { wsId: string; open:
     try {
       const made = await sg.apps.create(wsId, { id: slug, name: name.trim(), mount: adminOnly ? null : path || undefined, description: description.trim() || undefined, color: /^#[0-9a-f]{6}$/i.test(color) ? color : undefined, icon: icon.trim() || undefined });
       refreshLocalApps(wsId);
-      toastManager.add({ title: `${made.manifest.name} Created`, description: "Its folder is ready; run it or install it from the Dev panel.", type: "success" });
+      await refreshMode(wsId);
+      toastManager.add({ title: `${made.manifest.name} Added`, description: mode === "dev" ? "Its folder is in the repo and the dev server is serving it." : "Its folder is in the repo. Switch to Dev to see it; deploy to send it live.", type: "success" });
       onOpenChange(false);
       reset();
-      navigate(`/w/${wsId}/apps/${made.manifest.id}/_dev`);
+      navigate(`/w/${wsId}/apps/${made.manifest.id}`);
     } catch (err) {
       setError(clean(err));
     } finally {
@@ -60,7 +63,7 @@ export function NewAppDialog({ wsId, open, onOpenChange }: { wsId: string; open:
         <form onSubmit={(e) => void submit(e)} className="flex min-h-0 flex-1 flex-col">
           <DialogHeader>
             <DialogTitle>New App</DialogTitle>
-            <DialogDescription>A folder from the template on this Mac: a public page, an admin screen, one table and its operations. Install it into the workspace when it is ready.</DialogDescription>
+            <DialogDescription>A folder in the workspace's repo on this Mac: a public page, an admin screen, one table and its operations. Dev shows it at once; a deploy sends it live with the rest.</DialogDescription>
           </DialogHeader>
           <DialogPanel className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
             <div className="flex items-center gap-3">
@@ -73,7 +76,7 @@ export function NewAppDialog({ wsId, open, onOpenChange }: { wsId: string; open:
                 <Field>
                   <FieldLabel>ID</FieldLabel>
                   <Input value={slug} onChange={(e) => { setIdTouched(true); setId(appSlug(e.target.value)); }} placeholder="bookings" className="font-mono" required />
-                  <FieldDescription>Names the Worker, the tables (app_{slug || "id"}_*) and the admin path (/admin/{slug || "id"}). Fixed once installed.</FieldDescription>
+                  <FieldDescription>Names the folder (apps/{slug || "id"}), the tables (app_{slug || "id"}_*) and the admin path (/admin/{slug || "id"}). Fixed once deployed.</FieldDescription>
                 </Field>
               </div>
             </div>

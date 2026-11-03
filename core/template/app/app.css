@@ -1,5 +1,0 @@
-/* Tailwind, the kit's theme layer (public pages follow the workspace theme through /_ws/theme.css), then the admin
-   layer's tokens for screens inside the SuperGrid shell. */
-@import "tailwindcss";
-@import "./components/ui/tokens.css";
-@import "./components/admin/admin.css";

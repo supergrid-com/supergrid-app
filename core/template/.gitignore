@@ -1,6 +1,0 @@
-node_modules
-build
-.react-router
-.wrangler
-dist
-.DS_Store

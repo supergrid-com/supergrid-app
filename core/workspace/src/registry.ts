@@ -1,4 +1,4 @@
-// The apps composed into this Worker (WORKSPACE-REPO.md). Set once at module load by `createWorkspaceWorker`; every
+// The apps composed into this Worker (WORKSPACE-REPO.md). Set at module load by `createWorkspaceWorker`; every
 // module that used to read `env.ROUTES` (the route table a multi-Worker workspace carried as a binding) asks `routes()`
 // instead, so one workspace runtime serves both shapes while they coexist. Module-level on purpose: a Workflow's `this.env`
 // is the raw bindings, and hooks delivered from a run still need to find the app's handler.

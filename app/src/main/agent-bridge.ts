@@ -6,11 +6,13 @@ import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { channels, type AgentAnswer, type AgentAsk, type AgentWidget, type AppContext, type AskInput } from "../shared/bridge";
 import { appTools } from "./tools/app";
+import { appsTools } from "./tools/apps";
 import { analyticsTools } from "./tools/analytics";
 import { databaseTools } from "./tools/database";
 import { asText, makeCtx, ToolError, type Json, type Tool } from "./tools/index";
 import { libraryTools } from "./tools/library";
 import { themeTools } from "./tools/themes";
+import { modeOf } from "./apps";
 import { workspace } from "./workspace-api";
 
 // The bridge between the agent's MCP server and the app. Muse spawns our stdio MCP server
@@ -21,13 +23,13 @@ import { workspace } from "./workspace-api";
 // in the chat (ask), draw its result as a card (widget) and move the app to a page (navigate).
 //
 // A client is one agent session. The renderer makes the client id when it asks for the session's
-// MCP config, then binds it to the session id and the thread's Dev flag once the session exists,
-// so what a tool does reaches the thread that called it.
+// MCP config, then binds it to the session id once the session exists, so what a tool does
+// reaches the thread that called it. Whether Dev tools answer is the workspace's mode (apps.ts).
 
-export const tools: Tool[] = [...appTools, ...databaseTools, ...libraryTools, ...themeTools, ...analyticsTools];
+export const tools: Tool[] = [...appTools, ...appsTools, ...databaseTools, ...libraryTools, ...themeTools, ...analyticsTools];
 
 type Rpc = { jsonrpc: "2.0"; id?: number | string | null; method?: string; params?: Json; result?: unknown; error?: { code: number; message: string } };
-type Client = { wsId: string; sender: WebContents; sessionId: string | null; dev: boolean };
+type Client = { wsId: string; sender: WebContents; sessionId: string | null };
 
 const clients = new Map<string, Client>();
 const contexts = new Map<string, AppContext>();
@@ -43,10 +45,10 @@ export function socketPath(): string {
 }
 
 export function registerClient(client: string, wsId: string, sender: WebContents): void {
-  clients.set(client, { wsId, sender, sessionId: null, dev: false });
+  clients.set(client, { wsId, sender, sessionId: null });
 }
 
-export function bindClient(client: string, opts: { sessionId: string | null; dev: boolean }): void {
+export function bindClient(client: string, opts: { sessionId: string | null }): void {
   const c = clients.get(client);
   if (c) clients.set(client, { ...c, ...opts });
 }
@@ -83,8 +85,8 @@ function ask(client: string, c: Client, tool: string, q: AskInput): Promise<Agen
 const instructions = (wsName: string) =>
   [
     `You are the agent inside SuperGrid, a desktop app that manages the workspace "${wsName}" on the user's own Cloudflare account. The tools here are the workspace itself: its database tables and rows, its themes, its library (pictures, video, files), its skills, the events it records and analytics over them, and the app's own navigation.`,
-    "Every prompt arrives with a context resource (supergrid://context): the workspace, the page the user is on, and whether the thread is in Agent or Dev mode. Use it: a question about 'this table' means the one in the context. app_context reads it again.",
-    "Before doing something the user may have a way of doing, call skills_search. Before writing an app or app code, read docs_list and build-an-app, and make sure the thread is in Dev mode (suggest_dev_mode). When the user asks to build an app or change code while in Agent mode, call suggest_dev_mode with why, then carry on with what they decide.",
+    "Every prompt arrives with a context resource (supergrid://context): the workspace, whether the desktop is in Live or Dev mode for it, and the page the user is on. Use it: a question about 'this table' means the one in the context. app_context reads it again. Live is the deployed Worker and its data; Dev is the workspace's repo on this Mac, served by its dev server with its own local data, where code changes show at once.",
+    "Before doing something the user may have a way of doing, call skills_search. Before writing an app or app code, read docs_list and build-an-app, and make sure the desktop is in Dev mode (suggest_dev_mode). When the user asks to build an app or change code while in Live mode, call suggest_dev_mode with why, then carry on with what they decide. Code lives in the workspace repo (apps_local says where); a change goes live with ws_deploy.",
     "Reads are free. Adding rows is free up to a batch. Updating and deleting rows, dropping tables and running SQL by hand always go through the user, who sees a card and approves or declines: never work around a decline. events and the system tables are read only.",
     "Tool results draw cards in the chat (tables, charts, pictures, themes). When a card shows the data, keep your words short and point at it rather than repeating it. Prefer app_navigate over describing where something is in the app.",
   ].join("\n\n");
@@ -96,7 +98,7 @@ async function call(client: string, c: Client, name: string, args: Json): Promis
     wsId: c.wsId,
     client,
     tool: name,
-    dev: c.dev,
+    dev: modeOf(c.wsId) === "dev",
     context: contexts.get(c.wsId) ?? null,
     ask: (q) => ask(client, c, name, q),
     widget: (widget: AgentWidget) => send(c, channels.agentWidget, { client, wsId: c.wsId, tool: name, widget }),

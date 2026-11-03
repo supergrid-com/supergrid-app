@@ -102,7 +102,6 @@ export function SitemapPage({ tab }: { tab?: string }): React.ReactElement {
   const onOpenNav = useOpenNav();
   const navigate = useNavigate();
   const active = tab === "workers" ? "workers" : "pages";
-  const prefix = org?.cloudflare?.prefix ?? "sg";
   const example = ws.apps.length === 0;
   const apps: AppEntry[] = example ? EXAMPLE_APPS : ws.apps;
   const dash = `https://dash.cloudflare.com/${accountId}`;
@@ -124,7 +123,7 @@ export function SitemapPage({ tab }: { tab?: string }): React.ReactElement {
               <Badge variant="info" size="sm">
                 Example
               </Badge>
-              No app is installed in this workspace yet. This is what the map looks like once a few are: each app, where it mounts on the site, its public pages, its admin pages and its API.
+              No app is served yet. This is what the map looks like once a few are: each app, where it mounts on the site, its public pages, its admin pages and its API.
             </div>
           )}
           <div className="grid gap-4 md:grid-cols-2">
@@ -153,12 +152,9 @@ export function SitemapPage({ tab }: { tab?: string }): React.ReactElement {
               </div>
             </div>
           </Card>
-          <Card title="App Workers" description={example ? "Each app runs as its own Worker next to the workspace, named after it. None is installed yet; these are what they would be called." : "One Worker per installed app, which the workspace routes to."}>
+          <Card title="Apps in the Worker" description={example ? "Every app is a folder in the workspace's repo, built into this one Worker. None yet; these are examples." : "Every app is a folder in the workspace's repo (apps/<id>), built into this one Worker with each deploy."}>
             <div className="grid gap-3 sm:grid-cols-2">
-              {apps.map((a) => {
-                const name = `${prefix}-app-${ws.id}-${a.app}`;
-                return <Node key={a.app} icon={PackageIcon} name={name} kind={`Worker · ${a.name}`} href={example ? undefined : workerUrl(name)} />;
-              })}
+              {apps.map((a) => <Node key={a.app} icon={PackageIcon} name={`apps/${a.app}`} kind={`Folder · ${a.name}`} />)}
             </div>
           </Card>
         </>

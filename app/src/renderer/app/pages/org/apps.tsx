@@ -8,7 +8,7 @@ export function OrgApps(): React.ReactElement {
     <Placeholder
       title="Apps"
       icon={BoxIcon}
-      what="Apps are separate Workers installed into a workspace, each with its own repo. This page comes once apps can be installed from SuperGrid."
+      what="Apps are folders in a workspace's repo, built into its Worker. This page comes once apps can be installed from elsewhere (WORKSPACE-REPO.md step 3)."
     />
   );
 }

@@ -7,7 +7,7 @@ import * as workspaceApi from "../workspace-api";
 // bridge (src/main/agent-bridge.ts). A tool runs in the main process, where the Cloudflare login,
 // the workspace tokens and the window all are: it reads the workspace's database through the same
 // path the Database pages use, asks the user through a card in the chat, and draws its result as a
-// widget beside the call. `dev` tools answer only while the thread is in Dev mode.
+// widget beside the call. `dev` tools answer only while the desktop is in Dev mode for the workspace.
 
 export type Json = Record<string, unknown>;
 
@@ -17,12 +17,12 @@ export type ToolCtx = {
   wsId: string;
   client: string;
   tool: string;
-  /** Whether the thread that called is in Dev mode. */
+  /** Whether the desktop is in Dev mode for the workspace (the repo's dev server on this Mac, local data). */
   dev: boolean;
   /** What is open in the app for this workspace, or null before the window has said. */
   context: AppContext | null;
   ws(): Promise<WorkspaceSummary>;
-  /** The account and Worker whose D1 the workspace is. Throws for the local dev workspace, which has no cloud database. */
+  /** The account and Worker whose D1 the workspace is; in Dev mode, the dev server whose local D1 answers instead. */
   target(): Promise<D1Target>;
   /** One statement on the workspace's D1, rows as objects. */
   query(sql: string, params?: unknown[]): Promise<D1Result>;
@@ -46,7 +46,7 @@ export type Tool = {
   name: string;
   description: string;
   inputSchema: Json;
-  /** Only in Dev mode; in Agent mode the call answers with how to switch. */
+  /** Only in Dev mode; in Live mode the call answers with how to switch. */
   dev?: boolean;
   run: (ctx: ToolCtx, args: Json) => Promise<unknown>;
 };
@@ -56,10 +56,10 @@ export const asText = (v: unknown): string => (typeof v === "string" ? v : JSON.
 
 export class ToolError extends Error {}
 
-/** Throws unless the thread is in Dev mode, telling the agent what to do instead. */
+/** Throws unless the desktop is in Dev mode for the workspace, telling the agent what to do instead. */
 export function requireDev(ctx: ToolCtx, what: string): void {
   if (ctx.dev) return;
-  throw new ToolError(`${what} needs Dev mode, and this thread is in Agent mode. Call suggest_dev_mode with why, and the user can switch; or do what Agent mode allows.`);
+  throw new ToolError(`${what} needs Dev mode, and the desktop is in Live mode for this workspace. Call suggest_dev_mode with why, and the user can switch; or do what Live mode allows.`);
 }
 
 // ---- argument helpers ----
@@ -117,8 +117,7 @@ export function makeCtx(base: Pick<ToolCtx, "wsId" | "client" | "tool" | "dev" |
     target: () =>
       (target ??= (async () => {
         const w = await ctx.ws();
-        if (!w.worker) throw new ToolError("The local dev workspace keeps its database on disk, so the database tools work on cloud workspaces only. The workspace RPC tools (contacts, events, analytics, themes) still work here.");
-        return { accountId: await ctx.accountId(), worker: w.worker };
+        return { accountId: await ctx.accountId(), worker: w.worker, ...(w.dev ? { local: { ws: w.id, url: w.url } } : {}) };
       })()),
     query: async (sql, params = []) => d1.query(await ctx.target(), sql, params),
     raw: async (sql, params = []) => d1.raw(await ctx.target(), sql, params),

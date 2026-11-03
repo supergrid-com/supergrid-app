@@ -10,7 +10,7 @@ import { cn } from "~/lib/utils";
 
 // A tool's question to the user, in the chat above the composer, while the turn waits on it: an
 // approval with a preview of what changes, a file picker that uploads to the library, or the
-// switch to Dev mode. The answer goes back through the bridge to the tool (lib/agent/provider.tsx).
+// switch the desktop to Dev. The answer goes back through the bridge to the tool (lib/agent/provider.tsx).
 
 function Preview({ columns, rows, total }: { columns: string[]; rows: unknown[][]; total?: number }): React.ReactElement {
   return (
@@ -141,13 +141,13 @@ function Dev({ ask, respond }: { ask: Extract<AgentAsk, { kind: "dev" }>; respon
   return (
     <Shell icon={<CodeIcon className="size-4" />} title={ask.title} tone="info">
       <p className="text-xs leading-relaxed text-muted-foreground">{ask.reason}</p>
-      <p className="text-xs leading-relaxed text-muted-foreground">Dev mode lets this thread change the shape of custom tables, run SQL by hand, and build and change app code. Everything still asks before it changes data.</p>
+      <p className="text-xs leading-relaxed text-muted-foreground">Dev runs this workspace from its repo on this Mac: the dev server serves the screens with local data, Code opens in the rail, and the agent can change table shapes, run SQL by hand, add apps and deploy. Everything still asks before it changes data.</p>
       <div className="flex flex-wrap items-center gap-1.5">
         <Button size="xs" onClick={() => respond({ ok: true })}>
           Switch to Dev
         </Button>
         <Button size="xs" variant="outline" onClick={() => respond({ ok: false })}>
-          Stay in Agent
+          Stay in Live
         </Button>
       </div>
     </Shell>

@@ -93,7 +93,7 @@ function startAgent(owner: WebContents): void {
   });
 }
 
-/** The folder a workspace's agent sessions run in, until apps are cloned locally. */
+/** The folder a workspace's agent sessions run in: its repo (src/main/apps.ts), made on first open. */
 function workspaceDir(id: unknown): string {
   if (typeof id !== "string" || !/^[\w-]+$/.test(id)) throw new Error("Not a workspace id.");
   const dir = join(app.getPath("userData"), "workspaces", id);
@@ -126,8 +126,8 @@ function mcpServersFor(id: unknown, client: unknown, sender: WebContents): McpSe
 export function registerAgent(): void {
   ipcMain.handle(channels.agentMcp, (e, id: unknown, client: unknown) => mcpServersFor(id, client, e.sender));
   ipcMain.handle(channels.agentBind, (_e, client: unknown, opts: unknown) => {
-    const o = (opts ?? {}) as { sessionId?: unknown; dev?: unknown };
-    if (typeof client === "string") bridge.bindClient(client, { sessionId: typeof o.sessionId === "string" ? o.sessionId : null, dev: o.dev === true });
+    const o = (opts ?? {}) as { sessionId?: unknown };
+    if (typeof client === "string") bridge.bindClient(client, { sessionId: typeof o.sessionId === "string" ? o.sessionId : null });
   });
   ipcMain.handle(channels.agentContext, (_e, wsId: unknown, context: unknown) => {
     if (typeof wsId === "string" && context && typeof context === "object") bridge.setContext(wsId, context as AppContext);

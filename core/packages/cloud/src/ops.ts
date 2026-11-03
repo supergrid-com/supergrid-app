@@ -28,7 +28,8 @@ export function installedFrom(manifest: AppManifest, worker: string): InstalledA
 /** The ROUTES entry for an installed app: everything the summary carries, the binding, and `public` as the mount. */
 export const routeEntry = (a: InstalledApp) => { const { worker: _w, mount, ...rest } = a; return { ...rest, binding: appBinding(a.app), public: mount ?? undefined }; };
 
-function workspaceBindings(ws: WorkspaceFacts, apps: InstalledApp[], version: string, keep: Binding[] = []): Binding[] {
+/** `composed`: every app is built into the workspace Worker (WORKSPACE-REPO.md), so ROUTES lists them and no service binding points anywhere. */
+function workspaceBindings(ws: WorkspaceFacts, apps: InstalledApp[], version: string, keep: Binding[] = [], composed = false): Binding[] {
   return [
     ...keep,
     { type: "d1", name: "DB", id: ws.d1Id },
@@ -36,7 +37,7 @@ function workspaceBindings(ws: WorkspaceFacts, apps: InstalledApp[], version: st
     // The token is written once, at creation; an update inherits whatever is deployed, since the desktop may have minted its own since.
     ...(keep.some((b) => b.name === WORKSPACE_TOKEN) ? [] : [{ type: "secret_text", name: WORKSPACE_TOKEN, text: ws.token } as Binding]),
     { type: "json", name: "ROUTES", json: apps.map(routeEntry) },
-    ...apps.map((a): Binding => ({ type: "service", name: appBinding(a.app), service: a.worker })),
+    ...(composed ? [] : apps.map((a): Binding => ({ type: "service", name: appBinding(a.app), service: a.worker }))),
     ...(ws.queue ? [{ type: "queue", name: "EVENTS", queue_name: ws.queue } as Binding] : []),
     { type: "workflow", name: "HOOK_RUN", workflow_name: hooksWorkflow(ws), class_name: HOOKS_CLASS },
     // Assets: the bucket for files, and the account id the Images and Stream APIs need beside the media token the desktop sets (workspace/ASSETS.md).
@@ -186,6 +187,24 @@ export async function updateWorkspace(cf: Cf, ws: WorkspaceFacts, apps: Installe
     if (m) { kept.push({ type: "secret_text", name: MEDIA_TOKEN, text: m.text }); ws.media = m.source; }
   }
   const rollout = await rollOut(cf, ws.worker, ws.d1Id, bundle, workspaceBindings(ws, apps, bundle.version, kept), `Workspace ${bundle.version}`, () => waitForVersion(`${ws.url}/_ws/health`, bundle.version));
+  await attachQueues(cf, ws, queues);
+  return rollout;
+}
+
+/**
+ * A workspace repo's build going live as one Worker (WORKSPACE-REPO.md): every app under apps/ is in `compiled`, `apps` are their
+ * route summaries for the ROUTES binding the desktop reads, and the secrets the Worker holds stay as they are. A restore point is
+ * taken first and the version rolls back when the health check never sees it.
+ */
+export async function deployWorkspace(cf: Cf, opts: { ws: WorkspaceFacts; apps: RouteSummary[]; compiled: Compiled; version: string; message?: string }): Promise<Rollout> {
+  const { ws, compiled, version } = opts;
+  ws.accountId ??= cf.accountId;
+  const queues = ws.queue === null ? null : await ensureQueues(cf, ws);
+  ws.queue = queues?.queue ?? null;
+  const { bindings } = await getSettings(cf, ws.worker);
+  const apps: InstalledApp[] = opts.apps.map((s) => ({ ...s, worker: "", mount: s.public ?? null }));
+  const message = opts.message ?? `Deploy ${version}`;
+  const rollout = await rollOut(cf, ws.worker, ws.d1Id, compiled, workspaceBindings(ws, apps, version, keptSecrets(bindings), true), message, () => waitForVersion(`${ws.url}/_ws/health`, version));
   await attachQueues(cf, ws, queues);
   return rollout;
 }

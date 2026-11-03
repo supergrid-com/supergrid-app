@@ -17,11 +17,11 @@ everything it needs from the manifest. Start every app from the template (`sg ap
 | Manifest | `supergrid.app.json` | the build (routes), the desktop (rail, menu, install), the agent (`app_describe`) |
 | Icon | `icon.svg`, named by `icon` in the manifest | the rail; inlined into the manifest at release |
 | Data | `data` in the manifest + migrations in `workers/app.ts` | the Database pages, the agent, `locate` |
-| Operations | `operations` in `createAppWorker(...)` | `ctx.call`, `POST /api/<id>/ops/<name>`, `POST /api/<id>/mcp`, the agent's `app_call` |
+| Operations | `operations` exported from `workers/app.ts` | `ctx.call`, `POST /api/<id>/ops/<name>`, `POST /api/<id>/mcp`, the agent's `app_call` |
 | Public pages | `app/routes/public/*`, `components/site/*` | visitors, under the mount |
 | Admin screens | `app/routes/admin/*`, `components/admin/*` | staff, inside the desktop at `/admin/<id>` |
 | API | `app/routes/api/*` | anything, under `/api/<id>` |
-| Hooks | `hooks` in `createAppWorker`, `subscribes` in the manifest | the workspace, per event |
+| Hooks | `hooks` exported from `workers/app.ts`, `subscribes` in the manifest | the workspace, per event |
 | Shared packages | `packages/<name>`, `packages.exports` in the manifest | other apps in the workspace |
 
 ## Do this, in order

@@ -50,28 +50,37 @@ export type WorkspaceSummary = {
   worker: string;
   version: string | null;
   apps: InstalledApp[];
+  /** True while the desktop is in Dev mode for it: `url` is the dev server on this Mac and `apps` are the repo's folders (src/main/apps.ts). */
+  dev?: boolean;
 };
 
-// ---- Apps on this Mac: the folders under the workspace's own folder, one app each (src/main/apps.ts) ----
+// ---- The workspace's repo on this Mac: one git repo and pnpm workspace per workspace, apps as folders under apps/ (src/main/apps.ts, WORKSPACE-REPO.md) ----
 
-/** An app folder on disk, with its manifest and whether it is installed in the workspace. */
-export type LocalApp = { dir: string; manifest: AppManifest; problems: string[]; installed: boolean; /** The installed version, when it differs from the folder's. */ installedVersion?: string | null };
-export type NewAppInput = { id: string; name: string; /** The public prefix; null for admin-only; absent for `/<id>`. */ mount?: string | null; description?: string; color?: string; icon?: string };
+/** Live: the deployed Worker and the real address. Dev: the repo's dev server on this Mac, the Code section, local data. */
+export type WorkspaceMode = "live" | "dev";
+/** An app folder in the repo, with its manifest and whether the deployed Worker serves it. */
+export type LocalApp = { dir: string; manifest: AppManifest; problems: string[]; /** Listed in the workspace file's `disabled`: left out of the build. */ disabled: boolean; installed: boolean; /** The deployed version, when it differs from the folder's. */ installedVersion?: string | null };
+export type NewAppInput = { id: string; name: string; /** The public prefix; null for admin-only; absent for `/<id>`. */ mount?: string | null; /** A page under the mount also served as `/`: this app is the site. */ home?: string; description?: string; color?: string; icon?: string };
+/** The repo on disk: where it is and the apps in it. */
+export type RepoInfo = { dir: string; apps: LocalApp[] };
 export type FileEntry = { name: string; path: string; kind: "file" | "dir"; size?: number };
-export type DevServerStatus = { running: boolean; pid?: number; port?: number; url?: string; startedAt?: string };
-export type DevLogLine = { wsId: string; app: string; stream: "out" | "err" | "sys"; line: string; at: string };
+/** The workspace's dev server (`react-router dev` in the repo). `ready` once `/_ws/health` answers. */
+export type DevServerStatus = { running: boolean; ready?: boolean; pid?: number; port?: number; url?: string; startedAt?: string };
+export type DevLogLine = { wsId: string; stream: "out" | "err" | "sys"; line: string; at: string };
 export type GitCommit = { hash: string; short: string; date: string; author: string; message: string };
 export type GitStatus = { branch: string | null; changed: number; ahead: number; behind: number; remote: string | null; commits: GitCommit[] };
-/** A step of an install or deploy as it starts, then `done`; `error` when it stopped. */
-export type AppDeployProgress = { wsId: string; app: string; step: "build" | "upload" | "route" | "done"; detail?: string; error?: string };
+/** A step of a deploy as it starts, then `done`; `error` when it stopped. */
+export type DeployProgress = { wsId: string; step: "generate" | "build" | "upload" | "done"; detail?: string; error?: string };
+/** A version of the workspace Worker, as Cloudflare lists them; `active` is the one serving traffic. */
+export type DeployVersion = { id: string; number: number; createdAt: string | null; message: string | null; active: boolean };
 
-/** A provisioning step as it starts: `release` (verify and download), the steps of provisionWorkspace, then `done`. */
-export type WorkspaceProgress = { id: string; step: "release" | "database" | "queues" | "files" | "media" | "worker" | "wiring" | "url" | "health" | "done" };
+/** A provisioning step as it starts: the repo on this Mac, its build, the steps of provisionWorkspace, then `done`. */
+export type WorkspaceProgress = { id: string; step: "repo" | "build" | "database" | "queues" | "files" | "media" | "worker" | "wiring" | "url" | "health" | "done" };
 /** What creating a workspace made. `queues`, `files` and `media` are false or null when the account didn't allow them. */
-export type WorkspaceCreated = { id: string; name: string; worker: string; url: string; version: string; queues: boolean; files: boolean; media: "minted" | "shared" | null };
+export type WorkspaceCreated = { id: string; name: string; worker: string; url: string; version: string; queues: boolean; files: boolean; media: "minted" | "shared" | null; /** The repo on this Mac. */ dir: string };
 
-/** Which workspace database a D1 call is for: the account and the workspace Worker whose DB binding names it. */
-export type D1Target = { accountId: string; worker: string };
+/** Which workspace database a D1 call is for: the account and the workspace Worker whose DB binding names it. In Dev mode, `local` is the dev server, whose D1 on this Mac answers instead (src/main/d1.ts). */
+export type D1Target = { accountId: string; worker: string; local?: { ws: string; url: string } };
 export type D1Meta = { duration: number; changes: number; last_row_id: number; rows_read: number; rows_written: number; size_after: number };
 /** One statement's rows as objects, one per row, keyed by column. */
 export type D1Result = { results: Record<string, unknown>[]; meta: D1Meta };
@@ -174,6 +183,10 @@ export type Bridge = {
   };
   /** A workspace's RPC surface (`/_ws/rpc`), called with its token from the main process. */
   ws: {
+    /** The workspace as the desktop sees it in its current mode: the deployed Worker in Live, the dev server on this Mac in Dev (`dev: true`). */
+    get(wsId: string): Promise<WorkspaceSummary>;
+    /** Live or Dev for a workspace. Dev starts its dev server first and resolves once it answers; Live stops it. Returns the summary for that mode. */
+    setMode(wsId: string, mode: WorkspaceMode): Promise<WorkspaceSummary>;
     rpc(wsId: string, method: string, args: unknown[]): Promise<unknown>;
     /** The URL that opens an app's admin screen signed in: the workspace's handoff with a token minted here. `next` is relative to /admin/<app>. */
     adminUrl(wsId: string, app: string, next?: string): Promise<string>;
@@ -233,32 +246,34 @@ export type Bridge = {
       save(accountId: string, bucket: string, key: string): Promise<boolean>;
     };
   };
-  /** The apps on this Mac for a workspace: folders made from the template, run, built and installed from here. */
+  /** The workspace's repo on this Mac (WORKSPACE-REPO.md): its app folders, files and git, its dev server, and deploying it as one Worker. */
   apps: {
-    /** Every app folder under the workspace's folder, with whether it is installed. */
+    /** Finds or creates the repo (from core/templates/workspace, dependencies installed) and lists its apps. */
+    repo(wsId: string): Promise<RepoInfo>;
+    /** Every app folder in the repo, with whether the deployed Worker serves it. */
     list(wsId: string): Promise<LocalApp[]>;
-    /** The folder a workspace's apps live in. */
+    /** The repo's folder. */
     dir(wsId: string): Promise<string>;
-    /** A new app from the template, in the workspace's folder, with its dependencies installed. */
+    /** A new app folder from core/templates/app under apps/<id>, with `.sg/` regenerated. */
     create(wsId: string, input: NewAppInput): Promise<LocalApp>;
-    /** Reveals the app's folder in the Finder. */
-    reveal(wsId: string, app: string): Promise<void>;
-    /** The files of an app folder (one level), or a file's text. */
-    files(wsId: string, app: string, path?: string): Promise<FileEntry[]>;
-    read(wsId: string, app: string, path: string): Promise<{ text: string; size: number; truncated: boolean }>;
-    /** Builds the app and installs it into the workspace (or redeploys it); progress arrives through onDeploy. */
-    install(wsId: string, app: string): Promise<InstalledApp>;
-    /** Takes the app out of the workspace's routes and deletes its Worker; the folder and the tables stay. */
-    uninstall(wsId: string, app: string): Promise<void>;
-    onDeploy(cb: (p: AppDeployProgress) => void): () => void;
-    /** The app's dev server (`pnpm dev`), one per app. */
-    devStatus(wsId: string, app: string): Promise<DevServerStatus>;
-    devStart(wsId: string, app: string): Promise<DevServerStatus>;
-    devStop(wsId: string, app: string): Promise<DevServerStatus>;
-    devLog(wsId: string, app: string): Promise<DevLogLine[]>;
+    /** Reveals the repo (or a path in it) in the Finder. */
+    reveal(wsId: string, path?: string): Promise<void>;
+    /** The files of a folder in the repo (one level), or a file's text. */
+    files(wsId: string, path?: string): Promise<FileEntry[]>;
+    read(wsId: string, path: string): Promise<{ text: string; size: number; truncated: boolean }>;
+    /** Builds the repo and uploads it as the workspace Worker; progress arrives through onDeploy. */
+    deploy(wsId: string): Promise<{ version: string }>;
+    onDeploy(cb: (p: DeployProgress) => void): () => void;
+    /** The Worker's versions, newest first. */
+    deploys(wsId: string): Promise<DeployVersion[]>;
+    /** The workspace's dev server, one per workspace. devStart resolves once it answers. */
+    devStatus(wsId: string): Promise<DevServerStatus>;
+    devStart(wsId: string): Promise<DevServerStatus>;
+    devStop(wsId: string): Promise<DevServerStatus>;
+    devLog(wsId: string): Promise<DevLogLine[]>;
     onDevLog(cb: (line: DevLogLine) => void): () => void;
-    /** The app folder's git: the branch, the change count and the latest commits. */
-    git(wsId: string, app: string): Promise<GitStatus>;
+    /** The repo's git: the branch, the change count and the latest commits. */
+    git(wsId: string): Promise<GitStatus>;
     /** Which apps export packages, which use them, and which are behind (manifest `packages`). */
     packages(wsId: string): Promise<PackageGraph>;
   };
@@ -276,8 +291,8 @@ export type Bridge = {
      * questions and widgets reach the right thread; make one per session.
      */
     mcpServers(id: string, client: string): Promise<McpServerConfig[]>;
-    /** Tells the bridge which agent session a client is, and whether its thread is in Dev mode. */
-    bindClient(client: string, opts: { sessionId: string | null; dev: boolean }): Promise<void>;
+    /** Tells the bridge which agent session a client is. */
+    bindClient(client: string, opts: { sessionId: string | null }): Promise<void>;
     /** What is open in the app for this workspace, kept current for the agent's tools. */
     setContext(wsId: string, context: AppContext): Promise<void>;
     /** The user's answer to a tool's question. */
@@ -314,18 +329,21 @@ export const channels = {
   wsRpc: "sg:ws:rpc",
   wsResetToken: "sg:ws:reset-token",
   wsMediaToken: "sg:ws:media-token",
+  wsGet: "sg:ws:get",
+  wsSetMode: "sg:ws:set-mode",
   wsAdminUrl: "sg:ws:admin-url",
   wsAppManifest: "sg:ws:app-manifest",
   wsAppCall: "sg:ws:app-call",
+  appsRepo: "sg:apps:repo",
   appsList: "sg:apps:list",
   appsDir: "sg:apps:dir",
   appsCreate: "sg:apps:create",
   appsReveal: "sg:apps:reveal",
   appsFiles: "sg:apps:files",
   appsRead: "sg:apps:read",
-  appsInstall: "sg:apps:install",
-  appsUninstall: "sg:apps:uninstall",
   appsDeploy: "sg:apps:deploy",
+  appsDeployProgress: "sg:apps:deploy-progress",
+  appsDeploys: "sg:apps:deploys",
   appsDevStatus: "sg:apps:dev-status",
   appsDevStart: "sg:apps:dev-start",
   appsDevStop: "sg:apps:dev-stop",

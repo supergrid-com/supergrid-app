@@ -1,16 +1,18 @@
-import { getSettings, provisionWorkspace, type Binding, type Cf, type ProvisionStep } from "@supergrid/cloud";
+import { accountSubdomain, getSettings, provisionWorkspace, type Binding, type Bundle, type Cf, type ProvisionStep } from "@supergrid/cloud";
 import { isPrefix, isWorkspaceId, newWorkspaceId } from "@supergrid/app-kit/names";
 import type { WebContents } from "electron";
 import type { InstalledApp, WorkspaceCreated, WorkspaceProgress, WorkspaceSummary } from "../shared/bridge";
 import { channels } from "../shared/bridge";
 import { cfClient } from "./cf-api";
 import { readConfig, writeConfig } from "./config";
-import { workspaceBundle, workspaceRelease } from "./feed";
+import * as apps from "./apps";
+import { workspaceRelease } from "./feed";
 
 // Workspaces are found in the account itself: every `<prefix>-ws-<id>` Worker is one, and its
-// plain bindings say what was written there (name, URL, version, the apps it routes to). No
-// directory is needed to list them. Creating one deploys the signed workspace release with
-// provisionWorkspace from @supergrid/cloud, on cf's login.
+// plain bindings say what was written there (name, URL, version, the apps built into it). No
+// directory is needed to list them. Creating one makes its repo on this Mac from the workspace
+// template (apps.ts), builds it, and deploys that build with provisionWorkspace from
+// @supergrid/cloud, on cf's login (WORKSPACE-REPO.md).
 
 type RouteEntry = InstalledApp & { binding?: string };
 
@@ -49,7 +51,7 @@ export async function listWorkspaces(accountId: string, prefix: string): Promise
   return out.filter((w): w is WorkspaceSummary => !!w).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** The workspace release a new workspace gets, from the signed feed. */
+/** The newest workspace release on the signed feed, for the Updates page. */
 export async function nextRelease(): Promise<{ version: string; notes: string; publishedAt: string }> {
   const r = await workspaceRelease();
   return { version: r.version, notes: r.notes, publishedAt: r.publishedAt };
@@ -66,8 +68,9 @@ export async function freshId(accountId: string, prefix: string): Promise<string
 }
 
 /**
- * Creates a workspace in the account: verifies and downloads the signed release, then provisions
- * it, reporting each step to the window that asked. Keeps the workspace's RPC token in the app's
+ * Creates a workspace: its repo on this Mac from the template, the repo's build, then the account
+ * side (database, queues, bucket, the Worker from that build), reporting each step to the window
+ * that asked. The repo then learns its database id. Keeps the workspace's RPC token in the app's
  * config for later calls; the API token is cf's and is not kept.
  */
 export async function createWorkspace(sender: WebContents, opts: { accountId: string; prefix: string; id: string; name: string }): Promise<WorkspaceCreated> {
@@ -78,12 +81,19 @@ export async function createWorkspace(sender: WebContents, opts: { accountId: st
   if (!isWorkspaceId(opts.id)) throw new Error(`"${opts.id}" isn't a valid workspace id.`);
   const name = opts.name.trim();
   if (!name) throw new Error("A workspace needs a name.");
-  report({ id: opts.id, step: "release" });
   const cf = await cfClient(opts.accountId);
-  const release = await workspaceRelease();
-  const bundle = await workspaceBundle(release);
+  const worker = `${opts.prefix}-ws-${opts.id}`;
+  const url = `https://${worker}.${await accountSubdomain(cf, opts.prefix)}.workers.dev`;
+  report({ id: opts.id, step: "repo" });
+  const { dir } = await apps.ensureRepo(opts.id, { name, worker, url });
+  report({ id: opts.id, step: "build" });
+  const { compiled } = await apps.build(opts.id);
+  const version = await apps.buildVersion(opts.id);
+  const bundle: Bundle = { ...compiled, format: 1, part: "workspace", version };
   const ws = await provisionWorkspace(cf, { id: opts.id, name, prefix: opts.prefix, bundle, onStep: (step: ProvisionStep) => report({ id: opts.id, step }) });
   writeConfig({ wsTokens: { ...readConfig().wsTokens, [ws.id]: ws.token } });
+  apps.writeRepoFacts(ws.id, { d1Id: ws.d1Id, url: ws.url });
+  await apps.commitRepo(ws.id, `Connect to ${ws.worker}`);
   report({ id: opts.id, step: "done" });
-  return { id: ws.id, name: ws.name, worker: ws.worker, url: ws.url, version: bundle.version, queues: !!ws.queue, files: !!ws.files, media: ws.media ?? null };
+  return { id: ws.id, name: ws.name, worker: ws.worker, url: ws.url, version, queues: !!ws.queue, files: !!ws.files, media: ws.media ?? null, dir };
 }

@@ -1,7 +1,7 @@
 import { docGroups, findDoc } from "../../shared/docs";
 import { str, ToolError, type Tool } from "./index";
 
-// What the agent knows about the app itself: where the user is, the installed apps and the
+// What the agent knows about the app itself: where the user is, the workspace's apps and the
 // sitemap, moving the app to a page, the switch to Dev mode, and the docs.
 
 /** The pages inside a workspace the agent may open: `database/<table>`, `library/themes/<id>`, and so on. */
@@ -12,8 +12,8 @@ const PAGES: { re: RegExp; label: (m: RegExpExecArray) => string }[] = [
   { re: /^workflows(?:\/([\w-]+))?$/, label: (m) => (m[1] ? `Workflows · ${m[1]}` : "Workflows") },
   { re: /^workflows\/(reports|events|logging|hooks)(?:\/([\w-]+))?$/, label: (m) => `Workflows · ${m[1]![0]!.toUpperCase()}${m[1]!.slice(1)}${m[2] ? ` · ${m[2]}` : ""}` },
   { re: /^library(?:\/(media|files|themes|skills|sitemap)(?:\/([\w.-]+))?)?$/, label: (m) => `Library · ${m[1] ? `${m[1][0]!.toUpperCase()}${m[1].slice(1)}` : "Images"}${m[2] ? ` · ${m[2]}` : ""}` },
-  { re: /^apps\/([a-z0-9-]+)\/_dev(?:\/.*)?$/, label: (m) => `App · ${m[1]} · Dev` },
   { re: /^apps\/([a-z0-9-]+)(?:\/.*)?$/, label: (m) => `App · ${m[1]}` },
+  { re: /^code(?:\/(files|git|server|deploys))?(?:\?app=([a-z0-9-]+))?$/, label: (m) => `Code · ${m[1] ? `${m[1][0]!.toUpperCase()}${m[1].slice(1)}` : "Files"}${m[2] ? ` · ${m[2]}` : ""}` },
 ];
 
 export function pageLabel(to: string): string | null {
@@ -24,22 +24,22 @@ export function pageLabel(to: string): string | null {
   return null;
 }
 
-const DEV_MEANS = "Dev mode unlocks: changing the shape of custom tables (db_create_table, db_add_column, db_drop_table), running write SQL by hand (db_execute), and, once apps are installed, building and changing their code. In Agent mode you work through the workspace: rows, themes, library, analytics, navigation.";
+const DEV_MEANS = "Live and Dev are the desktop's two modes for a workspace. Live: the deployed Worker, its data and its real address. Dev: the workspace's repo on this Mac served by its dev server (code changes show at once, data is local), the Code section in the rail (Files, Git, Server, Deploys), and the tools that change things: the shape of custom tables (db_create_table, db_add_column, db_drop_table), write SQL by hand (db_execute), adding an app (apps_create) and deploying the workspace (ws_deploy). Both modes read rows, themes, the library and analytics and move the app around.";
 
 export const appTools: Tool[] = [
   {
     name: "app_context",
-    description: "What is open in the SuperGrid app right now: the workspace, the page and table or app the user is looking at, whether the thread is in Dev mode, and what that unlocks. The same context arrives with every prompt; call this when you need it again mid-turn.",
+    description: "What is open in the SuperGrid app right now: the workspace, whether the desktop is in Live or Dev mode for it, the page and table or app the user is looking at, and what Dev unlocks. The same context arrives with every prompt; call this when you need it again mid-turn.",
     inputSchema: { type: "object", properties: {} },
     run: async (ctx) => ({
-      mode: ctx.dev ? "dev" : "agent",
+      mode: ctx.dev ? "dev" : "live",
       devMeans: DEV_MEANS,
       context: ctx.context ?? { note: "The window has not reported where the user is yet." },
     }),
   },
   {
     name: "app_navigate",
-    description: "Open a page of the workspace in the app, so the user sees what you are talking about. Pages: '' (home), database, database/<table>, database/query|migrations|backups, workflows, workflows/reports, workflows/events, workflows/hooks, workflows/logging, library (images), library/media, library/files, library/themes, library/themes/<id>, library/skills, library/sitemap, apps/<app> (its admin, with the screen's path after it), apps/<app>/_dev (its Dev panel: files, dev server, git, deploy).",
+    description: "Open a page of the workspace in the app, so the user sees what you are talking about. Pages: '' (home), database, database/<table>, database/query|migrations|backups, workflows, workflows/reports, workflows/events, workflows/hooks, workflows/logging, library (images), library/media, library/files, library/themes, library/themes/<id>, library/skills, library/sitemap, apps/<app> (its admin, with the screen's path after it), code/files (the repo's files; ?app=<id> starts in that app's folder), code/git, code/server (the dev server's log), code/deploys.",
     inputSchema: { type: "object", required: ["to"], properties: { to: { type: "string" } } },
     run: async (ctx, { to }) => {
       const path = str(to, "to", { optional: true }).replace(/^\/+|\/+$/g, "");
@@ -52,12 +52,12 @@ export const appTools: Tool[] = [
   },
   {
     name: "apps_list",
-    description: "The apps installed in this workspace: each with its public mount (where its pages live on the site), whether it has an admin screen, an API and operations, its entities and its admin menu. apps_local lists the app folders on this Mac, installed or not.",
+    description: "The apps the workspace serves right now (the deployed Worker's in Live, the repo's folders in Dev): each with its public mount (where its pages live on the site), whether it has an admin screen, an API and operations, its entities and its admin menu. apps_local lists the repo's app folders, deployed or not.",
     inputSchema: { type: "object", properties: {} },
     run: async (ctx) => {
       const ws = await ctx.ws();
-      if (!ws.apps.length) return { apps: [], note: "No apps are installed in this workspace yet. The workspace still has its own tables (contacts, events, segments), themes, library, workflows and analytics." };
-      return { apps: ws.apps.map((a) => ({ app: a.app, name: a.name, version: a.version ?? null, public: a.public ?? null, admin: a.admin, api: a.api, operations: !!a.operations, entities: a.entities ?? [], nav: a.nav ?? [], adminPage: a.admin ? `apps/${a.app}` : null, devPage: `apps/${a.app}/_dev` })), note: "app_describe reads an app's full served manifest (operations, entities, where rows are seen)." };
+      if (!ws.apps.length) return { apps: [], mode: ctx.dev ? "dev" : "live", note: "No apps are served yet. The workspace still has its own tables (contacts, events, segments), themes, library, workflows and analytics. apps_local shows the repo's folders; a deploy puts them live." };
+      return { mode: ctx.dev ? "dev" : "live", apps: ws.apps.map((a) => ({ app: a.app, name: a.name, version: a.version ?? null, public: a.public ?? null, admin: a.admin, api: a.api, operations: !!a.operations, entities: a.entities ?? [], nav: a.nav ?? [], adminPage: a.admin ? `apps/${a.app}` : null, files: `code/files?app=${a.app}` })), note: "app_describe reads an app's full served manifest (operations, entities, where rows are seen)." };
     },
   },
   {
@@ -75,18 +75,18 @@ export const appTools: Tool[] = [
         ...(a.api ? [{ app: a.app, kind: "api", path: `/api/${a.app}`, url: `${site}/api/${a.app}` }] : []),
       ]);
       ctx.widget({ type: "rows", title: "Sitemap", columns: ["app", "kind", "path"], rows: routes.map((r) => [r.app, r.kind, r.path]), total: routes.length });
-      return { url: site, home: map?.home ?? null, mounts: map?.mounts ?? {}, redirects: map?.rules ?? [], routes, reserved: ["/_ws", "/_app", "/admin", "/api"], note: ws.apps.length ? undefined : "No apps installed, so the site serves nothing yet." };
+      return { url: site, home: map?.home ?? null, mounts: map?.mounts ?? {}, redirects: map?.rules ?? [], routes, reserved: ["/_ws", "/_app", "/admin", "/api"], note: ws.apps.length ? undefined : "No apps served, so the site serves nothing yet." };
     },
   },
   {
     name: "suggest_dev_mode",
-    description: `Put a card in the chat asking the user to switch this thread to Dev mode, with your reason. Use it when they ask to build an app or change code, or when a Dev-only tool answered that it needs Dev mode. Waits for their answer. ${DEV_MEANS}`,
+    description: `Put a card in the chat asking the user to switch the desktop to Dev mode for this workspace, with your reason. Use it when they ask to build an app or change code, or when a Dev-only tool answered that it needs Dev mode. Waits for their answer; a yes starts the workspace's dev server. ${DEV_MEANS}`,
     inputSchema: { type: "object", required: ["reason"], properties: { reason: { type: "string", description: "One sentence: what you want to do that needs Dev mode." } } },
     run: async (ctx, { reason }) => {
-      if (ctx.dev) return "This thread is already in Dev mode.";
-      const a = await ctx.ask({ kind: "dev", title: "Switch to Dev mode?", reason: str(reason, "reason", { max: 300 }) });
-      if (!a.ok) return "The user stayed in Agent mode. Do what Agent mode allows, and say what would need Dev mode.";
-      return "The user switched this thread to Dev mode. Dev tools answer now; go on.";
+      if (ctx.dev) return "The desktop is already in Dev mode for this workspace.";
+      const a = await ctx.ask({ kind: "dev", title: "Switch to Dev?", reason: str(reason, "reason", { max: 300 }) });
+      if (!a.ok) return `The user stayed in Live mode${a.note ? ` (${a.note})` : ""}. Do what Live mode allows, and say what would need Dev mode.`;
+      return "The desktop is in Dev mode now: the workspace runs from its dev server on this Mac. Dev tools answer; go on.";
     },
   },
   {

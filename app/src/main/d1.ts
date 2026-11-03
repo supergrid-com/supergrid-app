@@ -1,13 +1,16 @@
 import { CfApiError, getSettings, type Cf } from "@supergrid/cloud";
 import { shell } from "electron";
 import type { D1Database, D1ExportResult, D1RawResult, D1Result, D1Target } from "../shared/bridge";
+import { devToken } from "./apps";
 import { cfClient } from "./cf-api";
 
 // The workspace's D1, read and written straight through Cloudflare's D1 REST API on cf's login,
 // the same way the dashboard's data studio does it. The database is found from the workspace
-// Worker's DB binding and remembered per Worker. Every SQL statement the renderer runs comes
-// through here; what a table allows (read only, rows only, everything) is the renderer's rule
-// (lib/db.ts), the way a Worker's own code decides what it writes.
+// Worker's DB binding and remembered per Worker. In Dev mode the target names the dev server on
+// this Mac instead, and the same statements run on its local D1 through `/_ws/dev/sql` (a path
+// only a dev session has, core/workspace/src/compose.ts), answered in the REST API's shape. Every
+// SQL statement the renderer runs comes through here; what a table allows (read only, rows only,
+// everything) is the renderer's rule (lib/db.ts), the way a Worker's own code decides what it writes.
 
 const ids = new Map<string, Promise<string>>();
 
@@ -41,21 +44,34 @@ function unwrap(e: unknown): never {
   throw e;
 }
 
+/** The dev server's local D1: one entry per statement, as the REST API answers. */
+async function localSql<T>(local: NonNullable<D1Target["local"]>, sql: string, params: unknown[], raw: boolean): Promise<T[]> {
+  const res = await fetch(`${local.url.replace(/\/$/, "")}/_ws/dev/sql`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${devToken(local.ws)}`, "content-type": "application/json" },
+    body: JSON.stringify({ sql, params, raw }),
+  }).catch((e) => { throw new Error(`The dev server is not answering: ${(e as Error).message}`); });
+  const body = (await res.json().catch(() => null)) as T[] | { error?: string } | null;
+  if (!res.ok || !Array.isArray(body)) throw new Error((body as { error?: string } | null)?.error ?? `The dev server answered ${res.status}.`);
+  return body;
+}
+const liveOnly = (what: string) => { throw new Error(`${what} is for the live database. Switch to Live.`); };
+
 type Meta = D1Result["meta"];
 const meta = (m: Partial<Meta> | undefined): Meta => ({ duration: m?.duration ?? 0, changes: m?.changes ?? 0, last_row_id: m?.last_row_id ?? 0, rows_read: m?.rows_read ?? 0, rows_written: m?.rows_written ?? 0, size_after: m?.size_after ?? 0 });
 
 /** One statement; rows come back as objects keyed by column. */
 export async function query(target: D1Target, sql: string, params: unknown[] = []): Promise<D1Result> {
-  const { cf, base } = await open(target);
-  const out = await cf.post<{ results: Record<string, unknown>[]; meta?: Partial<Meta> }[]>(`${base}/query`, { sql, params }).catch(unwrap);
+  type Row = { results: Record<string, unknown>[]; meta?: Partial<Meta> };
+  const out = target.local ? await localSql<Row>(target.local, sql, params, false) : await (async () => { const { cf, base } = await open(target); return cf.post<Row[]>(`${base}/query`, { sql, params }).catch(unwrap); })();
   const first = out[0];
   return { results: first?.results ?? [], meta: meta(first?.meta) };
 }
 
 /** One statement; columns and rows as arrays, so a query with two columns of one name keeps both. */
 export async function raw(target: D1Target, sql: string, params: unknown[] = []): Promise<D1RawResult> {
-  const { cf, base } = await open(target);
-  const out = await cf.post<{ results: { columns: string[]; rows: unknown[][] }; meta?: Partial<Meta> }[]>(`${base}/raw`, { sql, params }).catch(unwrap);
+  type Row = { results: { columns: string[]; rows: unknown[][] }; meta?: Partial<Meta> };
+  const out = target.local ? await localSql<Row>(target.local, sql, params, true) : await (async () => { const { cf, base } = await open(target); return cf.post<Row[]>(`${base}/raw`, { sql, params }).catch(unwrap); })();
   // the API answers one entry per statement; a script of several returns the last one's rows, with the work of all of them added up
   const last = out[out.length - 1];
   const sum = out.reduce((m, o) => ({ ...m, duration: m.duration + (o.meta?.duration ?? 0), changes: m.changes + (o.meta?.changes ?? 0), rows_read: m.rows_read + (o.meta?.rows_read ?? 0), rows_written: m.rows_written + (o.meta?.rows_written ?? 0) }), meta(last?.meta));
@@ -64,6 +80,7 @@ export async function raw(target: D1Target, sql: string, params: unknown[] = [])
 
 /** The database itself: its name, size and when it was made. */
 export async function info(target: D1Target): Promise<D1Database> {
+  if (target.local) liveOnly("The database's record");
   const { cf, base } = await open(target);
   const d = await cf.get<{ uuid: string; name: string; version?: string; num_tables?: number; file_size?: number; created_at?: string }>(base);
   return { id: d.uuid, name: d.name, tables: d.num_tables ?? 0, size: d.file_size ?? 0, createdAt: d.created_at ?? null, accountId: cf.accountId };
@@ -71,6 +88,7 @@ export async function info(target: D1Target): Promise<D1Database> {
 
 /** Time Travel: the bookmark for now, or for a moment in the last thirty days. */
 export async function bookmark(target: D1Target, timestamp?: string): Promise<string> {
+  if (target.local) liveOnly("Time Travel");
   const { cf, base } = await open(target);
   const r = await cf.get<{ bookmark: string }>(`${base}/time_travel/bookmark${timestamp ? `?timestamp=${encodeURIComponent(timestamp)}` : ""}`).catch(unwrap);
   return r.bookmark;
@@ -78,6 +96,7 @@ export async function bookmark(target: D1Target, timestamp?: string): Promise<st
 
 /** Rolls the whole database back to a bookmark or a moment. Returns the bookmark of the state it restored. */
 export async function restore(target: D1Target, to: { bookmark?: string; timestamp?: string }): Promise<string> {
+  if (target.local) liveOnly("Restoring");
   const { cf, base } = await open(target);
   const q = to.bookmark ? `bookmark=${encodeURIComponent(to.bookmark)}` : to.timestamp ? `timestamp=${encodeURIComponent(to.timestamp)}` : "";
   if (!q) throw new Error("Pick a bookmark or a time to restore to.");
@@ -90,6 +109,7 @@ export async function restore(target: D1Target, to: { bookmark?: string; timesta
  * written it, then opened in the browser so it downloads. Up to a couple of minutes on a big database.
  */
 export async function exportSql(target: D1Target): Promise<D1ExportResult> {
+  if (target.local) liveOnly("Exporting");
   const { cf, base } = await open(target);
   type Poll = { at_bookmark?: string; status?: "active" | "complete" | "error"; result?: { filename?: string; signed_url?: string }; success?: boolean; error?: string; messages?: string[] };
   let current: string | undefined;

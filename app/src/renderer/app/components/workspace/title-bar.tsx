@@ -1,14 +1,21 @@
-import { ArrowLeftIcon, ArrowRightIcon, PanelLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon, LoaderCircleIcon, PanelLeftIcon } from "lucide-react";
 import * as React from "react";
 import { useNavigate } from "react-router";
+import type { WorkspaceMode } from "../../../../shared/bridge";
 import { Kbd } from "~/components/ui/kbd";
+import { SegmentedControl, SegmentedControlItem } from "~/components/ui/segmented-control";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { BarButton, BarToolbar } from "~/components/workspace/bar-toolbar";
+import { usePlatform } from "~/lib/platform";
 import { cn } from "~/lib/utils";
 
 // The title bar of the sidebar layout, after Codex: history and the sidebar toggle beside the
 // traffic lights, then a divider on the canvas's left edge, then the page's breadcrumb (see
 // WorkspaceFrame). With the agent open, its own section sits above it, with a divider on its left
 // edge in the same way.
+//
+// After the toggle sits the workspace's mode, Live or Dev (WORKSPACE-REPO.md §9, lib/mode.ts): the
+// deployed Worker and its data, or the repo's dev server on this Mac with the Code section open.
 //
 // The bar above the canvas holds the page's breadcrumb and, at its end, the page's main action
 // when it has one (New Contact over a table), so the action sits outside the page's surface. The
@@ -18,11 +25,33 @@ import { cn } from "~/lib/utils";
 const titlebarInset = (): number => (document.documentElement.dataset.platform === "darwin" ? 84 : 0);
 
 /**
- * The room back, forward and the toggle need: three 28px buttons 2px apart (88px), then a 12px
- * gap, the same as the one between the divider and the title. With the rail folded, the divider
- * sits right after the toggle; with it open, it follows the canvas edge instead.
+ * The room back, forward, the toggle and the mode need: three 28px buttons 2px apart (88px), the
+ * Live / Dev control (about 92px) after an 8px gap, then a 12px gap, the same as the one between
+ * the divider and the title. With the rail folded, the divider sits right after the mode; with it
+ * open, it follows the canvas edge instead.
  */
-const NAV_MIN_WIDTH = 100;
+const NAV_MIN_WIDTH = 200;
+
+/** Live or Dev. Dev shows a spinner while the dev server comes up; both are disabled meanwhile. */
+function ModeSwitch({ mode }: { mode: ModeProps }): React.ReactElement {
+  const { adminDark } = usePlatform();
+  const item = (m: WorkspaceMode, label: string, hint: string) => (
+    <Tooltip key={m}>
+      <TooltipTrigger render={<SegmentedControlItem aria-pressed={mode.mode === m} data-pressed={mode.mode === m || undefined} disabled={mode.switching} onClick={() => mode.onChange(m)} className="h-6 px-2 text-[12px] sm:h-6" />}>
+        {m === "dev" && mode.switching ? <LoaderCircleIcon className="size-3 animate-spin" /> : null}
+        {label}
+      </TooltipTrigger>
+      <TooltipPopup>{hint}</TooltipPopup>
+    </Tooltip>
+  );
+  return (
+    <SegmentedControl size="sm" aria-label="Live or Dev" className={cn("on-admin ms-2 h-7 shrink-0 bg-foreground/8", adminDark ? "dark" : "light")}>
+      {item("live", "Live", "The deployed workspace: its Worker, its data, its address")}
+      {item("dev", "Dev", "The workspace's repo on this Mac: its dev server, local data, the Code section")}
+    </SegmentedControl>
+  );
+}
+type ModeProps = { mode: WorkspaceMode; switching: boolean; onChange: (mode: WorkspaceMode) => void };
 
 // A divider marks where a panel starts but draws its line in the middle of the 8px gap before it.
 // It takes no width, so what follows keeps its place.
@@ -56,6 +85,7 @@ export function WorkspaceTitleBar({
   chatEnd,
   animate,
   onToggleSidebar,
+  mode,
   chatRef,
   titleRef,
   actionsRef,
@@ -69,6 +99,8 @@ export function WorkspaceTitleBar({
   /** Off during a resize drag, so the divider tracks the pointer. */
   animate: boolean;
   onToggleSidebar: () => void;
+  /** The workspace's Live / Dev mode and its switch. */
+  mode?: ModeProps;
   chatRef: (el: HTMLElement | null) => void;
   titleRef: (el: HTMLElement | null) => void;
   /** Where a page's main action lands, at the bar's end. */
@@ -102,6 +134,7 @@ export function WorkspaceTitleBar({
             <PanelLeftIcon />
           </BarButton>
         </BarToolbar>
+        {mode && <ModeSwitch mode={mode} />}
       </div>
       {chatStart !== undefined && (
         <>

@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { D1Database, D1Result, D1Target } from "../../../shared/bridge";
+import type { D1Database, D1Result, D1Target, WorkspaceSummary } from "../../../shared/bridge";
 import type { Field, FieldType, GridRow } from "~/components/data-grid/types";
 import { sg } from "~/lib/bridge";
 import { useSession } from "~/lib/session";
@@ -174,7 +174,7 @@ export async function readSchema(target: D1Target): Promise<DbTable[]> {
 type Entry = { tables: DbTable[] | null; error?: string; loading: boolean };
 const store = new Map<string, Entry>();
 const listeners = new Set<() => void>();
-const keyOf = (t: D1Target) => `${t.accountId}/${t.worker}`;
+const keyOf = (t: D1Target) => `${t.accountId}/${t.worker}${t.local ? `@${t.local.url}` : ""}`;
 
 function set(key: string, next: Entry): void {
   store.set(key, next);
@@ -195,12 +195,16 @@ export async function refreshSchema(target: D1Target): Promise<DbTable[] | null>
   }
 }
 
-/** The account and Worker whose D1 the open workspace is. Null for the local dev workspace, which has no cloud database. */
+/** The account and Worker whose D1 the open workspace is; in Dev mode, the dev server too, whose local D1 answers instead (src/main/d1.ts). */
 export function useD1Target(): D1Target | null {
   const { ws } = useShell();
   const { org } = useSession();
   const accountId = org?.cloudflare?.accountId;
-  return React.useMemo(() => (accountId && ws.worker ? { accountId, worker: ws.worker } : null), [accountId, ws.worker]);
+  return React.useMemo(() => d1TargetFor(ws, accountId), [accountId, ws.worker, ws.id, ws.url, ws.dev]);
+}
+export function d1TargetFor(ws: Pick<WorkspaceSummary, "id" | "worker" | "url" | "dev">, accountId: string | undefined): D1Target | null {
+  if (!accountId || !ws.worker) return null;
+  return { accountId, worker: ws.worker, ...(ws.dev ? { local: { ws: ws.id, url: ws.url } } : {}) };
 }
 
 const empty: Entry = { tables: null, loading: false };

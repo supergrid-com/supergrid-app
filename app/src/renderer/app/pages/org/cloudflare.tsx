@@ -146,7 +146,7 @@ function Linked({ org }: { org: Org & { cloudflare: NonNullable<Org["cloudflare"
             <p className="text-xs text-destructive-foreground">2 to 8 lowercase letters or digits.</p>
           ) : (
             <FieldDescription>
-              Workspaces: {prefix || "sg"}-ws-&lt;id&gt; · apps: {prefix || "sg"}-app-&lt;id&gt;-&lt;app&gt;
+              Workspaces: {prefix || "sg"}-ws-&lt;id&gt;, the Worker with every app built in, its database, its queues and its bucket
             </FieldDescription>
           )}
         </Field>

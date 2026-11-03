@@ -3,8 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter app-hello dev",
-    "dev:forms": "pnpm --filter app-forms dev",
+    "dev": "pnpm --dir ws dev",
     "feed": "node serve-feed.mjs",
     "smoke": "tsx smoke.ts"
   },

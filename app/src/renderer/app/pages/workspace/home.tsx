@@ -48,7 +48,7 @@ export function Home(): React.ReactElement {
             </span>
           </Row>
         </Card>
-        <Card title="Apps" description="Installed in this workspace.">
+        <Card title="Apps" description="What this workspace serves: the deployed Worker's apps, or in Dev the repo's folders.">
           {ws.apps.length ? (
             <ul className="-mx-2 flex flex-col">
               {ws.apps.map((a) => (

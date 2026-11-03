@@ -9,13 +9,15 @@ import { ResizeHandle } from "~/components/workspace/resize-handle";
 import { NAV_COLLAPSED_WIDTH, WorkspaceSidebar } from "~/components/workspace/sidebar";
 import { SubNav, type SubNavGroup, type SubNavItem } from "~/components/workspace/sub-nav";
 import { WorkspaceTitleBar } from "~/components/workspace/title-bar";
+import { toastManager } from "~/components/ui/toast";
 import { useApplyAccent, useWorkspaceAccent } from "~/lib/accent";
 import { useAgentContext } from "~/lib/agent/context";
 import { useLocalApps, type LocalApp } from "~/lib/apps";
 import { useAgent } from "~/lib/agent/provider";
 import { useChatSide } from "~/lib/chat-side";
 import { updateOrg } from "~/lib/orgs";
-import { type DbTable, groupLabels, tableLabel, useSchema } from "~/lib/db";
+import { type DbTable, d1TargetFor, groupLabels, tableLabel, useSchema } from "~/lib/db";
+import { ensureMode, useMode } from "~/lib/mode";
 import { CHAT_SIDE_DEFAULT_WIDTH, NAV_DEFAULT_WIDTH, SUB_NAV_DEFAULT_WIDTH, usePlatform } from "~/lib/platform";
 import { useSession } from "~/lib/session";
 import { cn } from "~/lib/utils";
@@ -28,11 +30,12 @@ import { SearchPalette, useSearchShortcut } from "~/shell/command-palette";
 import { ShellContext, useStoredFlag, type Shell } from "~/shell/context";
 import { DocsModal } from "~/shell/docs-modal";
 import { OrgModal } from "~/shell/org-modal";
-import { sections } from "~/shell/sections";
+import { codeSection, sections } from "~/shell/sections";
 
 // A workspace, after v1: the title bar runs the full width above a dark rail, a second panel for
 // sections with sub pages, the agent's panel, and the page in a card. The organization's own pages
-// open as a modal over it (?org=…).
+// open as a modal over it (?org=…). The workspace shown is the deployed one, or in Dev mode the
+// one its dev server on this Mac serves (lib/mode.ts), with the Code section in the rail.
 
 /** A lucide icon by the name an app's manifest gives (`list`, `settings`, `file-text`), or null. */
 function navIconFor(name: string): LucideIcon | null {
@@ -49,7 +52,7 @@ const CHAT_GAP = 8;
 function subNavFor(ws: WorkspaceSummary, rest: string, go: (to: string) => void, tables: DbTable[] | null, loading = false, lists: { workflows: Workflow[] | null; reports: Report[] | null; loading: boolean } = { workflows: null, reports: null, loading: false }, localApps: LocalApp[] | null = null): { title: string; action?: React.ReactNode; items: SubNavItem[]; groups?: SubNavGroup[]; loading?: boolean } | null {
   const base = `/w/${ws.id}`;
   const parts = rest.split("/");
-  const section = sections.find((s) => s.path === parts[0]);
+  const section = [...sections, codeSection].find((s) => s.path === parts[0]);
   if (section?.items) {
     const sub = parts.slice(1).join("/");
     const items: SubNavItem[] = section.items.map((it) => {
@@ -123,13 +126,12 @@ function subNavFor(ws: WorkspaceSummary, rest: string, go: (to: string) => void,
     return { title: section.label, action: <NewTableButton />, items: [...own, ...items.map((it) => ({ ...it, group: "Tools" })), ...sys], groups, loading: loading && !tables };
   }
   if (parts[0] === "apps" && parts[1]) {
-    // an app's own admin menu, as its manifest declares it (the workspace's ROUTES binding): nested entries become a
-    // titled group, `place: "settings"` entries sit under Settings, and the Dev panel closes the list
+    // an app's own admin menu, as its manifest declares it (the Worker's ROUTES binding, or the folder in Dev): nested
+    // entries become a titled group, `place: "settings"` entries sit under Settings, and in Dev its files close the list
     const app = ws.apps.find((a) => a.app === parts[1]);
     const name = app?.name ?? localApps?.find((l) => l.manifest.id === parts[1])?.manifest.name ?? parts[1];
-    const inDev = parts[2] === "_dev";
     const sub = `/${parts.slice(2).join("/")}`;
-    const hit = (path: string, match?: string[]) => !inDev && (path === "/" ? sub === "/" : sub === path || sub.startsWith(`${path}/`) || (match ?? []).some((m) => (m.endsWith("/*") ? sub.startsWith(m.slice(0, -1)) : sub === m)));
+    const hit = (path: string, match?: string[]) => (path === "/" ? sub === "/" : sub === path || sub.startsWith(`${path}/`) || (match ?? []).some((m) => (m.endsWith("/*") ? sub.startsWith(m.slice(0, -1)) : sub === m)));
     const openNav = (path: string) => go(`${base}/apps/${parts[1]}${path === "/" ? "" : path}`);
     const items: SubNavItem[] = [];
     const groups: SubNavGroup[] = [];
@@ -145,8 +147,10 @@ function subNavFor(ws: WorkspaceSummary, rest: string, go: (to: string) => void,
       groups.push({ label: "Settings", divider: true });
       for (const n of settings) items.push({ key: n.id ?? n.path, label: n.label, group: "Settings", active: hit(n.path, n.match), onClick: () => openNav(n.path) });
     }
-    groups.push({ label: "Developer", divider: true });
-    items.push({ key: "_dev", label: "Dev Panel", icon: <CodeIcon />, group: "Developer", active: inDev, onClick: () => go(`${base}/apps/${parts[1]}/_dev`) });
+    if (ws.dev) {
+      groups.push({ label: "Developer", divider: true });
+      items.push({ key: "_files", label: "Files", icon: <CodeIcon />, group: "Developer", active: false, onClick: () => go(`${base}/code/files?app=${parts[1]}`) });
+    }
     return { title: name, items, groups };
   }
   return null;
@@ -202,7 +206,19 @@ export function WorkspaceShell(): React.ReactElement {
   const { ws: id } = useParams();
   const { org } = useSession();
   const { list, error, refresh } = useWorkspaces(org?.cloudflare ?? null);
-  const ws = list?.find((w) => w.id === id);
+  const cloud = list?.find((w) => w.id === id);
+  // in Dev the workspace is its dev server on this Mac, once that has answered (lib/mode.ts)
+  const mode = useMode(id ?? "");
+  const ws = mode.mode === "dev" && mode.summary && cloud ? mode.summary : cloud;
+  React.useEffect(() => {
+    if (id && cloud) ensureMode(id);
+  }, [id, !!cloud]);
+  const switchMode = React.useCallback(
+    (to: "live" | "dev") => {
+      void mode.setMode(to).catch((e) => toastManager.add({ title: to === "dev" ? "Dev Did Not Start" : "Could Not Switch", description: String((e as Error)?.message ?? e).replace(/^Error invoking remote method '[^']*': (?:Error: )?/, ""), type: "error" }));
+    },
+    [mode.setMode],
+  );
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { railState, setRailState, navWidth, setNavWidth, chatWidth, setChatWidth, subNavWidth, setSubNavWidth } = usePlatform();
@@ -222,7 +238,7 @@ export function WorkspaceShell(): React.ReactElement {
   // Shopify's settings. The toggle can unfold the rail next to the panel; it folds again once the
   // user moves to another section, and their own collapse choice comes back when they leave.
   const rest = pathname.slice(`/w/${id}`.length).replace(/^\//, "");
-  const target = React.useMemo(() => (org?.cloudflare?.accountId && ws?.worker ? { accountId: org.cloudflare.accountId, worker: ws.worker } : null), [org?.cloudflare?.accountId, ws?.worker]);
+  const target = React.useMemo(() => (ws ? d1TargetFor(ws, org?.cloudflare?.accountId) : null), [org?.cloudflare?.accountId, ws?.worker, ws?.id, ws?.url, ws?.dev]);
   const { tables, loading: tablesLoading } = useSchema(rest.startsWith("database") ? target : null);
   const inWorkflows = rest.startsWith("workflows");
   const workflows = useWorkflows(inWorkflows && ws ? ws.id : null);
@@ -318,7 +334,7 @@ export function WorkspaceShell(): React.ReactElement {
     <ShellContext.Provider value={shell}>
       {/* while a panel is dragged, nothing inside animates (see [data-resizing] in app.css) */}
       <div className="flex h-full w-full flex-col overflow-hidden overscroll-none bg-admin text-foreground" data-resizing={resizing || undefined}>
-        <WorkspaceTitleBar canvasStart={canvasStart} chatStart={chatLeft ? chatStart : undefined} chatEnd={chatRight ? chatWidth : undefined} animate={!resizing} onToggleSidebar={toggleNav} chatRef={setChatSlot} titleRef={setTitleSlot} actionsRef={setActionsSlot} />
+        <WorkspaceTitleBar canvasStart={canvasStart} chatStart={chatLeft ? chatStart : undefined} chatEnd={chatRight ? chatWidth : undefined} animate={!resizing} onToggleSidebar={toggleNav} mode={{ mode: mode.mode, switching: mode.switching, onChange: switchMode }} chatRef={setChatSlot} titleRef={setTitleSlot} actionsRef={setActionsSlot} />
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <WorkspaceSidebar ws={ws} width={navWidth} animate={!resizing} collapsed={collapsed} className="max-md:hidden" />
           {/* the open rail resizes from its right edge; the handle takes no room of its own */}

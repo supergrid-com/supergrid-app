@@ -6,7 +6,7 @@ import { sg } from "~/lib/bridge";
 import { usePlatform } from "~/lib/platform";
 import { useSession } from "~/lib/session";
 import type { WorkspaceSummary } from "~/lib/workspaces";
-import { sections, settingsSections } from "~/shell/sections";
+import { codeSection, sections, settingsSections } from "~/shell/sections";
 
 // What the agent knows about where the user is. The workspace shell builds it from the address
 // and the workspace, keeps the agent store's copy current (it rides along with each prompt as a
@@ -15,11 +15,11 @@ import { sections, settingsSections } from "~/shell/sections";
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** The context for a path inside the workspace (`database/contacts`, `library/themes/dark`). */
-export function buildContext(ws: WorkspaceSummary, org: { name: string; accountId: string; prefix: string } | null, rest: string, modal: { settings: string | null; docs: string | null }, dark: boolean): AppContext {
+export function buildContext(ws: WorkspaceSummary, org: { name: string; accountId: string; prefix: string } | null, rest: string, modal: { settings: string | null; docs: string | null; /** The app the Code section's files are filtered to (?app=). */ app?: string | null }, dark: boolean): AppContext {
   const parts = rest.split("/").filter(Boolean);
   const [head, second, third] = parts;
   const location: AppContext["location"] = { path: rest, section: null, page: null, label: "Home" };
-  const section = sections.find((s) => s.path === head);
+  const section = [...sections, codeSection].find((s) => s.path === head);
   if (section) {
     location.section = section.label;
     if (section.path === "database") {
@@ -34,6 +34,10 @@ export function buildContext(ws: WorkspaceSummary, org: { name: string; accountI
       if (item) location.page = item.label + (third ? ` · ${third}` : "");
       else if (second) location.page = `Workflow ${second}`;
       else location.page = "Workflows";
+    } else if (section.path === "code") {
+      const item = section.items?.find((i) => i.path === (second ?? "files"));
+      location.page = item?.label ?? cap(second ?? "files");
+      if (modal.app) location.app = modal.app;
     } else {
       const item = section.items?.find((i) => i.path === (second ?? ""));
       location.page = item ? item.label + (third ? ` · ${third}` : "") : second ? cap(second) : null;
@@ -45,7 +49,7 @@ export function buildContext(ws: WorkspaceSummary, org: { name: string; accountI
     location.app = second;
     location.page = app?.name ?? second;
     const sub = parts.slice(2).join("/");
-    location.label = third === "_dev" ? `App · ${app?.name ?? second} · Dev panel (${parts[3] ?? "overview"})` : `App · ${app?.name ?? second}${sub ? ` · /${sub}` : ""}`;
+    location.label = `App · ${app?.name ?? second}${sub ? ` · /${sub}` : ""}`;
   }
   if (modal.settings) {
     location.settings = settingsSections.find((s) => s.id === modal.settings)?.label ?? modal.settings;
@@ -57,6 +61,7 @@ export function buildContext(ws: WorkspaceSummary, org: { name: string; accountI
   }
   return {
     at: new Date().toISOString(),
+    mode: ws.dev ? "dev" : "live",
     org,
     workspace: { id: ws.id, name: ws.name, url: ws.url, version: ws.version, apps: ws.apps.map((a) => ({ app: a.app, name: a.name, public: a.public, admin: a.admin, api: a.api })) },
     location,
@@ -73,11 +78,12 @@ export function useAgentContext(ws: WorkspaceSummary): void {
   const [params] = useSearchParams();
   const settings = params.get("org");
   const docs = params.get("docs");
+  const app = params.get("app");
   const rest = pathname.slice(`/w/${ws.id}`.length).replace(/^\//, "");
   const link = org?.cloudflare ? { name: org.name, accountId: org.cloudflare.accountId, prefix: org.cloudflare.prefix } : null;
-  const key = JSON.stringify([ws.id, ws.name, ws.apps.map((a) => a.app), link, rest, settings, docs, pageDark]);
+  const key = JSON.stringify([ws.id, ws.name, ws.url, !!ws.dev, ws.apps.map((a) => a.app), link, rest, settings, docs, app, pageDark]);
   React.useEffect(() => {
-    const ctx = buildContext(ws, link, rest, { settings, docs }, pageDark);
+    const ctx = buildContext(ws, link, rest, { settings, docs, app }, pageDark);
     agent.setContext(ws.id, ctx);
     void sg?.agent.setContext(ws.id, ctx).catch(() => undefined);
   }, [agent, key]);

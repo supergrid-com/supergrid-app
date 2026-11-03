@@ -16,10 +16,12 @@ export function ourTool(title: string | null | undefined): string | null {
 
 /**
  * What is open in the app, as the agent sees it at the start of each turn and through app_context:
- * the workspace, where the user is in it, and what Dev mode means right now.
+ * the workspace, the desktop's mode for it, and where the user is in it.
  */
 export type AppContext = {
   at: string;
+  /** Live: the deployed Worker and its data. Dev: the repo's dev server on this Mac, the Code section, local data. */
+  mode: "live" | "dev";
   org: { name: string; accountId: string; prefix: string } | null;
   workspace: { id: string; name: string; url: string; version: string | null; apps: { app: string; name: string; public?: string; admin: boolean; api: boolean }[] };
   /** Where the user is: the path inside the workspace and what it shows. */
@@ -30,7 +32,7 @@ export type AppContext = {
     page: string | null;
     /** The table open in Database, when one is. */
     table?: string;
-    /** The app open under Apps, when one is. */
+    /** The app open under Apps, or the app the Code section's files are filtered to, when one is. */
     app?: string;
     /** The organization settings section open as a modal, when one is. */
     settings?: string;
@@ -49,7 +51,7 @@ export type AgentAsk =
   | { id: string; client: string; wsId: string; tool: string; kind: "confirm"; title: string; detail?: string; preview?: { columns: string[]; rows: unknown[][]; total?: number }; danger?: boolean; confirmLabel?: string }
   /** Pick files on this Mac and upload them to the library; the answer carries what landed. */
   | { id: string; client: string; wsId: string; tool: string; kind: "upload"; title: string; accept: "image" | "media" | "file"; multiple: boolean; prefix?: string }
-  /** Switch this thread to Dev mode, because the agent needs what it unlocks. */
+  /** Switch the desktop to Dev mode for this workspace, because the agent needs what it unlocks. */
   | { id: string; client: string; wsId: string; tool: string; kind: "dev"; title: string; reason: string };
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;

@@ -3,6 +3,7 @@ import { Welcome } from "~/pages/auth/welcome";
 import { Components } from "~/pages/dev/components";
 import { Launch } from "~/pages/launch";
 import { AppScreen } from "~/pages/workspace/app";
+import { Code } from "~/pages/workspace/code";
 import { Home } from "~/pages/workspace/home";
 import { Database } from "~/pages/workspace/database";
 import { Library } from "~/pages/workspace/library";
@@ -33,6 +34,7 @@ export const routes: RouteObject[] = [
               { path: "workflows/*", Component: Workflows },
               { path: "library/*", Component: Library },
               { path: "apps/:app/*", Component: AppScreen },
+              { path: "code/*", Component: Code },
               // dev builds only, like its row in the rail (shell/sections.ts)
               ...(import.meta.env.DEV ? [{ path: "components/*", Component: Components }] : []),
             ],

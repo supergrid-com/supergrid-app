@@ -12,14 +12,15 @@ import type { CloudflareLink } from "~/lib/orgs";
 import { cn } from "~/lib/utils";
 import { clean, refreshWorkspaces } from "~/lib/workspaces";
 
-// Creating a workspace in the organization's Cloudflare account, for real: the signed workspace
-// release is verified and deployed with provisionWorkspace (src/main/workspaces.ts), on cf's login.
+// Creating a workspace, for real: its repo on this Mac from the workspace template, that repo's
+// build, then the account side with provisionWorkspace (src/main/workspaces.ts), on cf's login.
 // Used by onboarding and the organization modal. Every step looks up by name before it creates,
 // so a failed run can simply be run again.
 
 type Step = WorkspaceProgress["step"];
 const STEPS: { step: Exclude<Step, "done">; label: string }[] = [
-  { step: "release", label: "Verify and download the workspace release" },
+  { step: "repo", label: "Make the workspace repo on this Mac and install its dependencies" },
+  { step: "build", label: "Build the workspace Worker from it" },
   { step: "database", label: "Create the D1 database" },
   { step: "queues", label: "Create the event queues" },
   { step: "files", label: "Create the R2 bucket for files" },
@@ -90,7 +91,6 @@ export function CreateWorkspace({
 }): React.ReactElement {
   const [name, setName] = React.useState("");
   const [id, setId] = React.useState<string>();
-  const [release, setRelease] = React.useState<{ version: string; notes: string }>();
   const [prepError, setPrepError] = React.useState<string>();
   const [phase, setPhase] = React.useState<"form" | "running" | "failed" | "done">("form");
   const [at, setAt] = React.useState<Step | null>(null);
@@ -109,7 +109,6 @@ export function CreateWorkspace({
   React.useEffect(() => {
     if (!sg) return;
     void newId();
-    sg.workspaces.release().then(setRelease, (e) => setPrepError(clean(e)));
   }, [newId]);
 
   React.useEffect(() => (sg ? sg.workspaces.onProgress((p) => p.id === id && setAt(p.step)) : undefined), [id]);
@@ -128,7 +127,7 @@ export function CreateWorkspace({
     if (!sg || !id || !name.trim()) return;
     setPhase("running");
     setError(undefined);
-    setAt("release");
+    setAt("repo");
     try {
       const made = await sg.workspaces.create({ accountId: link.accountId, prefix: link.prefix, id, name: name.trim() });
       setCreated(made);
@@ -177,7 +176,8 @@ export function CreateWorkspace({
                   </a>,
                 ],
                 ["Worker", <code key="worker" className={code}>{created.worker}</code>],
-                ["Release", created.version],
+                ["Version", created.version],
+                ["Repo", <code key="dir" className={cn(code, "break-all")}>{created.dir}</code>],
               ]}
             />
             {(!created.queues || !created.files || !created.media) && (
@@ -237,7 +237,7 @@ export function CreateWorkspace({
             ],
             ["Worker and D1", <code key="worker" className={code}>{worker}</code>],
             ["Queues, files", <code key="queues" className={code}>{`${worker}-events, ${worker}-files`}</code>],
-            ["Release", release ? `Workspace ${release.version}: ${release.notes}` : "checking the feed…"],
+            ["Repo", "a git repo on this Mac, one Worker, apps as folders"],
           ]}
         />
         <p className="text-xs text-muted-foreground">Queues need Workers Paid and R2 must be enabled on the account; without them the workspace still works and skips those parts.</p>
@@ -248,7 +248,7 @@ export function CreateWorkspace({
             Cancel
           </Button>
         )}
-        <Button disabled={!name.trim() || !id || !release} onClick={() => void create()}>
+        <Button disabled={!name.trim() || !id} onClick={() => void create()}>
           Create workspace
         </Button>
       </div>

@@ -3,7 +3,7 @@
 Everything for trying things out. None of it ships.
 
 ```
-apps/hello, apps/forms   sample apps, for building and testing against the core
+ws/                      a workspace repo (two apps, notes and site) for building and testing against the core
 keys/                    a test signing key (git-ignored)
 releases/                test releases (git-ignored)
 feed/                    publishes releases/ as a public feed on the test account
@@ -11,14 +11,16 @@ serve-feed.mjs           serves releases/ locally on port 5310
 smoke.ts                 runs the platform's own code against the real account
 ```
 
-## An app beside the platform
+## The test workspace repo
 
 ```bash
-pnpm install
+pnpm --dir ws install
 pnpm dev
 ```
 
-This runs the workspace Worker with hello on port 5301, and the local platform's `local` workspace points at it. Use `pnpm dev:forms` for forms instead. Only one app runs at a time, because they share one local D1.
+This runs `dev/ws` (one Worker, both apps) at http://localhost:5301 on a local D1. The same repo is deployed as
+`sgdev-ws-w2nqwt` on the test account; `pnpm --dir ws deploy` sends it up again. The desktop makes repos of the same shape
+under its data folder (`workspaces/<id>`), one per workspace.
 
 ## The real flow on the test account
 

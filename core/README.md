@@ -12,8 +12,8 @@ packages/theme    the theme document, its validation and the CSS it compiles to 
 packages/ui       the base-ui design kit: the desktop app's components, copied into apps and themed by packages/theme
 packages/admin-ui the admin layer for an app's admin screens (Page, Card, DataTable, AssetField, the shell tokens), copied in beside the kit
 packages/cloud    everything that touches a Cloudflare account or a release feed
-template/         the blank app every app starts from (`sg app new`, or New App in the desktop); docs/app-system.md is the map
-cli/              sg: install a platform, cut and sign releases, start and check apps
+templates/        workspace/, the repo a workspace is (one Worker, apps as folders); app/, the folder a new app starts from (WORKSPACE-REPO.md)
+cli/              sg: install a platform, cut and sign releases, make workspace repos and app folders, check manifests
 ```
 
 The platform and the CLI share `packages/cloud`, so an install from the terminal and a click in the UI run the same code.
@@ -84,14 +84,16 @@ The platform is on <http://localhost:5300>. Copy `platform/.dev.vars.example` to
 
 After changing plugins or fields in `platform/src/auth-options.ts`, run `pnpm --filter platform auth:schema`.
 
-## Starting an app
+## Starting a workspace and an app
 
 ```bash
-pnpm sg app new ../dev/apps/bookings --id=bookings --name="Bookings" --mount=/book
+pnpm sg ws new ../dev/ws --id=w2nqwt --name="Mono test"
+pnpm sg ws add ../dev/ws --id=bookings --name="Bookings" --mount=/book
 ```
 
-Copies `template/`, copies the kits in, writes the manifest and links the packages; `pnpm sg app check <folder>` reads a
-manifest back. The desktop's New App does the same into the workspace's folder. See `docs/app-system.md`.
+`ws new` copies `templates/workspace/`, copies the kits in and links the packages; `ws add` copies `templates/app/` into
+`apps/<id>` and regenerates `.sg/`; `pnpm sg app check <folder>` reads a manifest back. The desktop's New App does the
+same into the workspace's repo. See `WORKSPACE-REPO.md`.
 
 ## Adding UI components
 

@@ -11,16 +11,16 @@ import { openExternal } from "~/components/workspace/library/shared";
 import { useMediaPicker } from "~/components/workspace/media-picker";
 import { useLocalApps } from "~/lib/apps";
 import { sg } from "~/lib/bridge";
+import { useMode } from "~/lib/mode";
 import { usePlatform } from "~/lib/platform";
 import { useSession } from "~/lib/session";
 import { clean } from "~/lib/workspaces";
-import { AppDev } from "~/pages/workspace/app-dev";
 import { useOpenNav, useShell } from "~/shell/context";
 
-// An app inside the workspace. Its admin screens render in an iframe at the workspace's admin URL, signed in through
-// the handoff the main process mints, and talk to the shell over the admin SDK: the menu and the address follow the
-// app, its title shows up here, it can open the media picker and show toasts. `_dev` after the app id opens its Dev
-// panel (app-dev.tsx) instead; an app that only exists as a folder on this Mac has nothing else to show yet.
+// An app inside the workspace. Its admin screens render in an iframe at the workspace's admin URL (the deployed Worker
+// in Live, the repo's dev server on this Mac in Dev), signed in through the handoff the main process mints, and talk to
+// the shell over the admin SDK: the menu and the address follow the app, its title shows up here, it can open the media
+// picker and show toasts. An app the mode does not serve (a folder not deployed yet, in Live) says what to do instead.
 
 /** The shell's page tokens, pushed into the iframe so the app's admin layer (admin.css) draws in the same colors. */
 function adminTokens(): Record<string, string> {
@@ -42,28 +42,39 @@ export function AppScreen(): React.ReactElement {
   const folder = local.data?.find((a) => a.manifest.id === appId) ?? null;
   const onOpenNav = useOpenNav();
   const navigate = useNavigate();
-  if (rest === "_dev" || rest.startsWith("_dev/")) return <AppDev ws={ws} appId={appId} installed={installed ?? null} folder={folder} tab={rest.slice(5).replace(/^\//, "")} />;
+  const mode = useMode(ws.id);
   if (installed?.admin) return <AdminFrame appId={appId} sub={`/${rest}`} />;
   const name = installed?.name ?? folder?.manifest.name ?? appId;
+  const why = !installed
+    ? folder
+      ? folder.disabled
+        ? `${name} is disabled in the workspace file (supergrid.workspace.json), so the build leaves it out.`
+        : folder.problems.length
+          ? `${name}'s manifest has problems; the Files page shows the folder.`
+          : ws.dev
+            ? `${name} is in the repo but the dev server has not picked it up yet.`
+            : `${name} is a folder in the repo, not deployed yet. Dev serves it from this Mac; a deploy sends it live.`
+      : `${ws.name} has no app called ${appId}.`
+    : `${name} adds public pages and an API to the workspace, and has no screens of its own.`;
   return (
-    <WorkspaceFrame icon={<AppGlyph app={{ name, icon: installed?.icon ?? null }} />} title={name} onOpenNav={onOpenNav} actions={<IconButton label="Dev Panel" onClick={() => navigate(`/w/${ws.id}/apps/${appId}/_dev`)}><CodeIcon /></IconButton>}>
+    <WorkspaceFrame icon={<AppGlyph app={{ name, icon: installed?.icon ?? null }} />} title={name} onOpenNav={onOpenNav} actions={ws.dev && folder ? <IconButton label="Files" onClick={() => navigate(`/w/${ws.id}/code/files?app=${appId}`)}><CodeIcon /></IconButton> : undefined}>
       <Empty className="py-16">
         <EmptyHeader>
           <EmptyMedia variant="icon"><PackageIcon /></EmptyMedia>
-          <EmptyTitle>{!installed ? (folder ? "Not Installed Yet" : "Not Installed") : "No Admin Screens"}</EmptyTitle>
-          <EmptyDescription>
-            {!installed
-              ? folder
-                ? `${name} is a folder on this Mac. Run it, change it and install it from its Dev panel.`
-                : `${ws.name} has no app called ${appId}.`
-              : `${name} adds public pages and an API to the workspace, and has no screens of its own.`}
-          </EmptyDescription>
+          <EmptyTitle>{!installed ? (folder ? "Not Deployed Yet" : "Not Here") : "No Admin Screens"}</EmptyTitle>
+          <EmptyDescription>{why}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent className="flex-row justify-center gap-2">
-          {(folder || installed) && (
-            <Button size="sm" variant="outline" onClick={() => navigate(`/w/${ws.id}/apps/${appId}/_dev`)}>
+          {folder && !ws.dev && !folder.disabled && !folder.problems.length && (
+            <Button size="sm" onClick={() => void mode.setMode("dev").catch((e) => toastManager.add({ title: "Dev Did Not Start", description: clean(e), type: "error" }))} disabled={mode.switching}>
+              {mode.switching ? <LoaderCircleIcon className="animate-spin" /> : <CodeIcon />}
+              Switch to Dev
+            </Button>
+          )}
+          {folder && (
+            <Button size="sm" variant="outline" onClick={() => navigate(`/w/${ws.id}/code/${ws.dev ? `files?app=${appId}` : "deploys"}`)}>
               <CodeIcon />
-              Dev Panel
+              {ws.dev ? "Files" : "Deploys"}
             </Button>
           )}
           {installed?.public && (
@@ -163,7 +174,7 @@ function AdminFrame({ appId, sub }: { appId: string; sub: string }): React.React
       actions={
         <>
           {app.public && <IconButton label="Open in Site" onClick={() => openExternal(`${ws.url.replace(/\/$/, "")}${app.public === "/" ? "" : app.public}`)}><ExternalLinkIcon /></IconButton>}
-          <IconButton label="Dev Panel" onClick={() => navigate(`/w/${ws.id}/apps/${appId}/_dev`)}><CodeIcon /></IconButton>
+          {ws.dev && <IconButton label="Files" onClick={() => navigate(`/w/${ws.id}/code/files?app=${appId}`)}><CodeIcon /></IconButton>}
         </>
       }
     >

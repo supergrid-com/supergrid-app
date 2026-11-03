@@ -1,4 +1,4 @@
-import { ActivityIcon, AppWindowIcon, ChartColumnIcon, ScrollTextIcon, WebhookIcon, BellIcon, BuildingIcon, ClapperboardIcon, ClockIcon, CloudIcon, ComponentIcon, DatabaseIcon, FolderIcon, GlobeIcon, HistoryIcon, ImageIcon, LayoutGridIcon, LibraryIcon, MapIcon, SparklesIcon, ListOrderedIcon, MousePointerClickIcon, NavigationIcon, PaletteIcon, PanelsTopLeftIcon, RectangleHorizontalIcon, SquareCheckIcon, SquareDashedIcon, TableIcon, TextCursorInputIcon, type LucideIcon, PackageIcon, RefreshCwIcon, SquareTerminalIcon, StoreIcon, SunMoonIcon, TriangleAlertIcon, TypeIcon, WorkflowIcon } from "lucide-react";
+import { ActivityIcon, AppWindowIcon, CodeIcon, GitBranchIcon, RocketIcon, ServerIcon, ChartColumnIcon, ScrollTextIcon, WebhookIcon, BellIcon, BuildingIcon, ClapperboardIcon, ClockIcon, CloudIcon, ComponentIcon, DatabaseIcon, FolderIcon, GlobeIcon, HistoryIcon, ImageIcon, LayoutGridIcon, LibraryIcon, MapIcon, SparklesIcon, ListOrderedIcon, MousePointerClickIcon, NavigationIcon, PaletteIcon, PanelsTopLeftIcon, RectangleHorizontalIcon, SquareCheckIcon, SquareDashedIcon, TableIcon, TextCursorInputIcon, type LucideIcon, PackageIcon, RefreshCwIcon, SquareTerminalIcon, StoreIcon, SunMoonIcon, TriangleAlertIcon, TypeIcon, WorkflowIcon } from "lucide-react";
 
 // The workspace's own surfaces, in the rail's order under its apps. Home is the workspace's landing
 // page and has no row. Settings is a modal, not a section. A section with sub items opens them in
@@ -27,6 +27,23 @@ export const componentsSection: Section = {
     { path: "display", label: "Data Display", icon: TableIcon, about: "Cards, tables, avatars, accordions and keys.", group: "Components" },
     { path: "shell", label: "Workspace Shell", icon: PanelsTopLeftIcon, about: "The workspace's own pieces: the sub nav, page cards, stat tiles and index headers.", group: "Shell" },
     { path: "empty", label: "Empty States", icon: RectangleHorizontalIcon, about: "What a page shows with nothing in it.", group: "Shell" },
+  ],
+};
+
+/**
+ * The Code section, in the rail only in Dev mode (WORKSPACE-REPO.md §9): the workspace's repo on this Mac. Its pages
+ * still answer in Live (pages/workspace/code.tsx); the Deploys page is how a Live workspace gets a new version.
+ */
+export const codeSection: Section = {
+  path: "code",
+  label: "Code",
+  icon: CodeIcon,
+  about: "The workspace's repo on this Mac: its files, its git, its dev server and its deploys.",
+  items: [
+    { path: "files", label: "Files", icon: FolderIcon, about: "The repo's files, app by app." },
+    { path: "git", label: "Git", icon: GitBranchIcon, about: "The repo's branch, its changes and its history." },
+    { path: "server", label: "Server", icon: ServerIcon, about: "The dev server that serves the workspace on this Mac, and its log." },
+    { path: "deploys", label: "Deploys", icon: RocketIcon, about: "Build the repo and send it live as the workspace Worker; the versions it has had." },
   ],
 };
 

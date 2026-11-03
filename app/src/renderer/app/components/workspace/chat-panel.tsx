@@ -1,6 +1,6 @@
 import { LoaderCircleIcon, SparklesIcon } from "lucide-react";
 import * as React from "react";
-import { AskCard, type ComposerChoice, Confirmation, Conversation, ConversationContent, ConversationEmptyState, ConversationScrollButton, CopyAction, Message, MessageActions, MessageContent, MessageNotice, MessageResponse, MessageTime, Plan, PromptInput, PromptInputAdd, PromptInputKind, PromptInputSelect, PromptInputSubmit, PromptInputTextarea, PromptInputToolbar, Reasoning, Tool, useComposerNarrow, WidgetContext } from "~/components/ai-elements";
+import { AskCard, type ComposerChoice, Confirmation, Conversation, ConversationContent, ConversationEmptyState, ConversationScrollButton, CopyAction, Message, MessageActions, MessageContent, MessageNotice, MessageResponse, MessageTime, Plan, PromptInput, PromptInputAdd, PromptInputSelect, PromptInputSubmit, PromptInputTextarea, PromptInputToolbar, Reasoning, Tool, useComposerNarrow, WidgetContext } from "~/components/ai-elements";
 import { Shimmer } from "~/components/shimmer";
 import { MetaMark } from "~/components/meta-mark";
 import { Button } from "~/components/ui/button";
@@ -170,7 +170,6 @@ export function ChatPanel({ ws, thread }: { ws: WorkspaceSummary; thread: Thread
   const modelChoiceRow = choiceOf(model, "Model");
   const effortChoice = choiceOf(effort, "Effort");
   const modeChoice = choiceOf(mode, "Mode");
-  const kind = thread ? { dev: thread.dev, disabled: busy, onChange: (dev: boolean) => agent.setDev(thread.id, dev) } : undefined;
   const last = messages[messages.length - 1];
   // the turn has started but nothing of the agent's has arrived yet
   const waiting = busy && last?.role === "user";
@@ -214,12 +213,7 @@ export function ChatPanel({ ws, thread }: { ws: WorkspaceSummary; thread: Thread
           <ComposerToolbar
             wide={
               <PromptInputToolbar
-                start={
-                  <>
-                    <PromptInputAdd />
-                    {kind && <PromptInputKind {...kind} />}
-                  </>
-                }
+                start={<PromptInputAdd />}
               >
                 {picker(modelChoiceRow, { icon: <MetaMark dark={adminDark} className="h-3 w-4.5 shrink-0" />, strong: true })}
                 {picker(effortChoice)}
@@ -228,7 +222,7 @@ export function ChatPanel({ ws, thread }: { ws: WorkspaceSummary; thread: Thread
               </PromptInputToolbar>
             }
             narrow={
-              <PromptInputToolbar start={<PromptInputAdd kind={kind} choices={[modelChoiceRow, effortChoice, modeChoice]} />}>
+              <PromptInputToolbar start={<PromptInputAdd choices={[modelChoiceRow, effortChoice, modeChoice]} />}>
                 <PromptInputSubmit busy={busy} disabled={!ready || !draft.trim()} onSubmit={submit} onStop={stop} />
               </PromptInputToolbar>
             }

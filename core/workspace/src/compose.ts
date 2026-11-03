@@ -16,7 +16,7 @@ import { rollupDaily } from "./analytics";
 import { WorkspaceApi } from "./api";
 import { ensureCore } from "./db";
 import { anonymousIdOf, handleQueue } from "./events";
-import { getRegistry, setRegistry, type AppModule, type ComposedApp } from "./registry";
+import { setRegistry, type AppModule, type ComposedApp } from "./registry";
 import { bearerOf, DESKTOP_USER, handleWs, isOpsPath, match, noAppPage, SPOOFABLE } from "./router";
 import { notStaffResponse, staffUser } from "./staff";
 import { activeRules } from "./sitemap";
@@ -65,7 +65,10 @@ function requestFor(request: Request, env: Env, app: ComposedApp, user: SgUser |
  *   with the app's context set.
  */
 export function createWorkspaceWorker(apps: AppModule[]) {
-  const registry = getRegistry() ?? (() => { const r = compose(apps); setRegistry(r); return r; })();
+  // composed every time the entry evaluates: once in a deployed Worker, and again in a dev session whenever a manifest or a
+  // workers/app.ts changes, so the served manifests, operations and hooks follow the edit without a restart
+  const registry = compose(apps);
+  setRegistry(registry);
   const handler = createRequestHandler(() => import("virtual:react-router/server-build"), import.meta.env.MODE);
   let prepared: Promise<void> | null = null;
   const prepare = (env: Env, exec: ExecutionContext) => (prepared ??= (async () => {
@@ -82,6 +85,8 @@ export function createWorkspaceWorker(apps: AppModule[]) {
     async fetch(request: Request, env: Env, exec: ExecutionContext): Promise<Response> {
       const url = new URL(request.url);
       await ensureCore(env.DB);
+      // Dev only: the desktop's Database pages read and write the local D1 through here while the workspace runs on this Mac.
+      if (import.meta.env.DEV && url.pathname === "/_ws/dev/sql" && request.method === "POST") return handleDevSql(request, env);
       if (url.pathname.startsWith("/_ws/")) return handleWs(request, env, exec, url.pathname.slice(5));
       await prepare(env, exec);
       const hit = matchRule(await activeRules(env), url.pathname, url.search);
@@ -135,6 +140,52 @@ export function createWorkspaceWorker(apps: AppModule[]) {
       await rollupDaily(env);
     },
   };
+}
+
+/** Statements of a script, split on the semicolons outside quotes, so the Query page can run several at once as it does on D1's API. */
+function splitSql(sql: string): string[] {
+  const out: string[] = [];
+  let cur = "", quote: string | null = null;
+  for (let i = 0; i < sql.length; i++) {
+    const c = sql[i]!;
+    if (quote) { cur += c; if (c === quote) quote = sql[i + 1] === quote ? (cur += sql[++i]!, quote) : null; continue; }
+    if (c === "'" || c === '"' || c === "`") { quote = c; cur += c; continue; }
+    if (c === "-" && sql[i + 1] === "-") { const end = sql.indexOf("\n", i); if (end === -1) break; i = end; continue; }
+    if (c === ";") { if (cur.trim()) out.push(cur.trim()); cur = ""; continue; }
+    cur += c;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
+/**
+ * `POST /_ws/dev/sql` with the workspace token: `{ sql, params?, raw? }` run on the local D1, answered in the shape of D1's REST
+ * API (one entry per statement; `raw` gives columns and rows as arrays). Only built into a dev session: `import.meta.env.DEV`
+ * is false in a build, so the deployed Worker has no such path.
+ */
+async function handleDevSql(request: Request, env: Env): Promise<Response> {
+  const token = bearerOf(request);
+  if (!env.SG_WORKSPACE_TOKEN || token !== env.SG_WORKSPACE_TOKEN) return Response.json({ error: "unauthorized" }, { status: 401 });
+  const body = (await request.json().catch(() => null)) as { sql?: string; params?: unknown[]; raw?: boolean } | null;
+  if (!body || typeof body.sql !== "string" || !body.sql.trim()) return Response.json({ error: "Nothing to run." }, { status: 400 });
+  const statements = splitSql(body.sql);
+  const params = Array.isArray(body.params) ? body.params : [];
+  const out: unknown[] = [];
+  try {
+    for (const sql of statements) {
+      const stmt = statements.length === 1 && params.length ? env.DB.prepare(sql).bind(...params) : env.DB.prepare(sql);
+      if (body.raw) {
+        const [columns = [], ...rows] = await stmt.raw({ columnNames: true });
+        out.push({ results: { columns, rows }, meta: {} });
+      } else {
+        const r = await stmt.all();
+        out.push({ results: r.results, meta: r.meta });
+      }
+    }
+  } catch (e) {
+    return Response.json({ error: String((e as Error).message ?? e).replace(/^D1_ERROR:\s*/, "").replace(/: SQLITE_[A-Z_]+$/, "") }, { status: 400 });
+  }
+  return Response.json(out);
 }
 
 function withServedBy(res: Response, app: string): Response {

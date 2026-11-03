@@ -3,6 +3,7 @@ import type { AgentAnswer, AgentAsk, AgentNavigateEvent, AgentWidget, AgentWidge
 import { CONTEXT_URI } from "../../../../shared/agent";
 import { PROTOCOL_VERSION, type ContentBlock, type InitializeResult, type NewSessionResult, type RequestPermissionOutcome, type RequestPermissionParams, type SessionConfigOption, type SessionUpdate } from "../../../../shared/acp";
 import { isDesktop, sg } from "~/lib/bridge";
+import { currentMode, setMode } from "~/lib/mode";
 import { AcpConnection, AcpError, errorMessage } from "./connection";
 import { sessionChoices, type Choice } from "./session";
 import { applyUpdate, nextId, restoreWidgets, textOf, userMessage, withNotice, withWidget, type ChatMessage } from "./transcript";
@@ -59,8 +60,6 @@ export type Thread = {
   ask: PendingAsk | null;
   usage: Usage | null;
   settings: Settings | null;
-  /** Agent (false) or Dev (true), as the composer's switch sets it: what the tools unlock, and what the context tells the agent. */
-  dev: boolean;
 };
 
 export type ThreadSummary = { id: string; title: string; updatedAt: string; status: ThreadStatus };
@@ -88,7 +87,7 @@ export function titleOf(t: Thread | undefined): string {
   return t?.title ?? (first ? textOf(first).slice(0, 80) : "New thread");
 }
 
-const blank = (id: string, wsId: string): Thread => ({ id, wsId, client: "", title: null, updatedAt: new Date().toISOString(), messages: [], live: false, loading: false, busy: false, unseen: false, error: null, permission: null, ask: null, usage: null, settings: null, dev: false });
+const blank = (id: string, wsId: string): Thread => ({ id, wsId, client: "", title: null, updatedAt: new Date().toISOString(), messages: [], live: false, loading: false, busy: false, unseen: false, error: null, permission: null, ask: null, usage: null, settings: null });
 
 // ---- the cards a tool drew, kept per session so a reopened thread shows them again ----
 
@@ -192,10 +191,10 @@ export class AgentStore {
     return sg!.agent.mcpServers(wsId, client).catch(() => []);
   }
 
-  /** Ties a session to its client id on the bridge, with the thread's Dev flag. */
-  private bind(client: string, sessionId: string, dev: boolean): void {
+  /** Ties a session to its client id on the bridge. */
+  private bind(client: string, sessionId: string): void {
     this.sessions.set(client, sessionId);
-    void sg?.agent.bindClient(client, { sessionId, dev }).catch(() => undefined);
+    void sg?.agent.bindClient(client, { sessionId }).catch(() => undefined);
   }
 
   /** The thread a tool's event is for: its session, else the thread open in that workspace. */
@@ -217,9 +216,10 @@ export class AgentStore {
       ask,
       respond: (answer) => {
         this.patch(t.id, (x) => (x.ask === pending ? { ask: null } : {}));
-        // a yes to Dev reaches the bridge before the tool's answer does, so the next tool call runs in Dev
-        if (ask.kind === "dev" && answer.ok) this.setDev(t.id, true);
-        void sg?.agent.answer({ id: ask.id, ...answer });
+        const send = (a: Omit<AgentAnswer, "id">) => void sg?.agent.answer({ id: ask.id, ...a });
+        // a yes to Dev switches the desktop first (the dev server comes up), so the tool's next call runs in Dev
+        if (ask.kind === "dev" && answer.ok) void setMode(ask.wsId, "dev").then(() => send(answer), (e: unknown) => send({ ok: false, note: `Dev could not start: ${errorMessage(e)}` }));
+        else send(answer);
       },
     };
     this.patch(t.id, () => ({ ask: pending }));
@@ -234,10 +234,10 @@ export class AgentStore {
     else this.lateWidgets.set(t.id, [...(this.lateWidgets.get(t.id) ?? []), { tool: e.tool, widget: e.widget }]);
   }
 
-  /** The prompt's context block: where the user is and which mode the thread is in. */
+  /** The prompt's context block: where the user is and which mode the desktop is in for the workspace. */
   private contextBlock(t: Thread): ContentBlock {
     const ctx = this.contexts.get(t.wsId);
-    const text = JSON.stringify({ mode: t.dev ? "dev" : "agent", ...(ctx ?? { workspace: { id: t.wsId } }) });
+    const text = JSON.stringify(ctx ?? { mode: currentMode(t.wsId), workspace: { id: t.wsId } });
     if (this.embeddedContext) return { type: "resource", resource: { uri: CONTEXT_URI, mimeType: "application/json", text } };
     return { type: "text", text: `\n\n<app_context>${text}</app_context>` };
   }
@@ -388,7 +388,7 @@ export class AgentStore {
         const [cwd, mcpServers] = await Promise.all([this.dir(wsId), this.mcpServers(wsId, client)]);
         const { sessionId, ...settings } = await this.guard(() => conn.request<NewSessionResult>("session/new", { cwd, mcpServers }));
         this.threads.set(sessionId, { ...blank(sessionId, wsId), client, live: true, settings });
-        this.bind(client, sessionId, false);
+        this.bind(client, sessionId);
         this.drafts.set(wsId, sessionId);
         this.emit();
         return sessionId;
@@ -412,7 +412,7 @@ export class AgentStore {
       const client = nextId("client");
       const [cwd, mcpServers] = await Promise.all([this.dir(wsId), this.mcpServers(wsId, client)]);
       const settings = await this.guard(() => conn.request<Settings | null>("session/load", { sessionId: id, cwd, mcpServers }));
-      this.bind(client, id, this.threads.get(id)?.dev ?? false);
+      this.bind(client, id);
       // the replay is done once the load answers: the cards the tools drew last time go back on their calls
       this.patch(id, (t) => ({ client, live: true, loading: false, settings: settings ?? null, messages: restoreWidgets(t.messages, savedWidgets(id)) }));
     } catch (err) {
@@ -448,13 +448,6 @@ export class AgentStore {
         if (this.drafts.get(t.wsId) === id) this.drafts.delete(t.wsId);
         void this.list(t.wsId).catch(() => undefined);
       });
-  }
-
-  setDev(id: string, dev: boolean): void {
-    const t = this.threads.get(id);
-    if (!t || t.dev === dev) return;
-    this.patch(id, () => ({ dev }));
-    if (t.client) this.bind(t.client, id, dev);
   }
 
   stop(id: string): void {
