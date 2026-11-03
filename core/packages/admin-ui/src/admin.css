@@ -1,7 +1,8 @@
 /* The admin layer's tokens. An app's admin screens render inside the SuperGrid shell, so they take the shell's
    page colors, not the workspace's site theme: under [data-sg-admin] the kit's variables are redefined from the
    `--sg-admin-*` values the shell pushes (admin-sdk `sg:init`), with the shell's own light and dark values as the
-   fallback so the screens look right standalone too. Import it after components/ui/tokens.css. */
+   fallback so the screens look right standalone too. Import it after components/ui/tokens.css. AdminApp puts the
+   attribute on the admin layout's element and on <html>, so what portals to the body (dialogs, sheets, menus) is themed too. */
 
 [data-sg-admin] {
   color-scheme: light;
@@ -48,6 +49,8 @@
   /* the shell's active color: active rows, focus rings, the selected item */
   --active: var(--sg-admin-accent, #e8604a);
   --active-foreground: var(--sg-admin-accent-fg, #ffffff);
+}
+[data-sg-admin]:not(html) {
   background: var(--background);
   color: var(--foreground);
 }

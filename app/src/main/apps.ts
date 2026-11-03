@@ -4,7 +4,7 @@ import { installLocalApp, readWorkspace, uninstallApp as cloudUninstall, type Co
 import { app, ipcMain, shell, type WebContents } from "electron";
 import { execFile, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { accessSync, constants, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
+import { connect, createServer } from "node:net";
 import { homedir } from "node:os";
 import { delimiter, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline";
@@ -59,11 +59,33 @@ function findBin(name: string): string | null {
 const needBin = (name: string, hint: string): string => { const bin = findBin(name); if (!bin) throw new Error(`${name} was not found on this Mac. ${hint}`); return bin; };
 const PNPM_HINT = "Install it with `npm i -g pnpm` (or `brew install pnpm`), then try again.";
 
+/** Version-sorted, newest first: `v24.20.0` before `v22.23.2`. */
+const byVersionDesc = (a: string, b: string) => { const p = (v: string) => v.replace(/^v/, "").split(".").map(Number); const [x, y] = [p(a), p(b)]; for (let i = 0; i < 3; i++) { const d = (y[i] ?? 0) - (x[i] ?? 0); if (d) return d; } return 0; };
+
+/**
+ * The Node the user's own shell would run, since a GUI app's PATH stops at /usr/local/bin and the Node there can be
+ * years behind: nvm's default alias (or its newest version), then volta and fnm. React Router needs a current one.
+ */
+function preferredNodeDir(): string | null {
+  const home = homedir();
+  const nvm = join(home, ".nvm/versions/node");
+  if (existsSync(nvm)) {
+    const versions = readdirSync(nvm).filter((v) => /^v\d/.test(v)).sort(byVersionDesc);
+    let alias = "";
+    try { alias = readFileSync(join(home, ".nvm/alias/default"), "utf8").trim(); } catch { /* no default */ }
+    const pick = (alias && versions.find((v) => v === alias || v === `v${alias}` || v.startsWith(`v${alias.replace(/^v/, "")}.`))) ?? versions[0];
+    if (pick) return join(nvm, pick, "bin");
+  }
+  for (const dir of [join(home, ".volta/bin"), join(home, ".local/share/fnm/aliases/default/bin"), join(home, "Library/Application Support/fnm/aliases/default/bin")]) if (existsSync(join(dir, "node"))) return dir;
+  return null;
+}
+
 function childEnv(): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false", FORCE_COLOR: "0" };
+  const env: NodeJS.ProcessEnv = { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false", FORCE_COLOR: "0", NO_COLOR: "1" };
   for (const key of Object.keys(env)) if (/^(ELECTRON_|CLAUDE|ANTHROPIC_)/.test(key)) delete env[key];
-  // the user's usual tool folders, so pnpm finds node and wrangler finds pnpm
-  env.PATH = [join(homedir(), ".local/bin"), join(homedir(), "Library/pnpm"), "/opt/homebrew/bin", "/usr/local/bin", env.PATH ?? ""].join(delimiter);
+  // the user's usual tool folders first, so pnpm runs the Node their shell runs and wrangler finds pnpm
+  const node = preferredNodeDir();
+  env.PATH = [...(node ? [node] : []), join(homedir(), ".local/bin"), join(homedir(), "Library/pnpm"), "/opt/homebrew/bin", "/usr/local/bin", env.PATH ?? ""].join(delimiter);
   return env;
 }
 
@@ -135,12 +157,15 @@ type Dev = { child: ChildProcessWithoutNullStreams; port: number; startedAt: str
 const devs = new Map<string, Dev>();
 const devKey = (wsId: string, appId: string) => `${wsId}/${appId}`;
 
-function freePort(from = 5310): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const srv = createServer();
-    srv.once("error", () => { if (from > 5400) reject(new Error("No free port between 5310 and 5400.")); else resolve(freePort(from + 1)); });
-    srv.listen(from, "127.0.0.1", () => srv.close(() => resolve(from)));
-  });
+/** True when something answers on the port, over IPv4 or IPv6 (a Vite server often listens on ::1 only). */
+const inUse = (port: number, host: string) => new Promise<boolean>((resolve) => { const c = connect({ port, host }); c.once("connect", () => { c.destroy(); resolve(true); }); c.once("error", () => resolve(false)); c.setTimeout(300, () => { c.destroy(); resolve(false); }); });
+async function freePort(from = 5310): Promise<number> {
+  for (let port = from; port <= 5400; port++) {
+    if (await inUse(port, "127.0.0.1") || await inUse(port, "::1")) continue;
+    const ok = await new Promise<boolean>((resolve) => { const srv = createServer(); srv.once("error", () => resolve(false)); srv.listen(port, () => srv.close(() => resolve(true))); });
+    if (ok) return port;
+  }
+  throw new Error("No free port between 5310 and 5400.");
 }
 const devStatusOf = (d: Dev | undefined): DevServerStatus => (d ? { running: true, pid: d.child.pid, port: d.port, url: `http://localhost:${d.port}`, startedAt: d.startedAt } : { running: false });
 export const devStatus = (wsId: string, appId: string): DevServerStatus => devStatusOf(devs.get(devKey(wsId, appId)));
@@ -158,7 +183,7 @@ export async function devStart(wsId: string, appId: string, owner: WebContents):
   const d: Dev = { child, port, startedAt: new Date().toISOString(), log: [], owner };
   devs.set(key, d);
   const push = (stream: DevLogLine["stream"], line: string) => {
-    const entry: DevLogLine = { wsId, app: appId, stream, line, at: new Date().toISOString() };
+    const entry: DevLogLine = { wsId, app: appId, stream, line: line.replace(/\x1b\[[0-9;]*[A-Za-z]/g, ""), at: new Date().toISOString() };
     d.log.push(entry);
     if (d.log.length > 500) d.log.splice(0, d.log.length - 500);
     if (d.owner && !d.owner.isDestroyed()) d.owner.send(channels.appsDevLogLine, entry);
@@ -188,7 +213,8 @@ export async function git(wsId: string, appId: string): Promise<GitStatus> {
   if (!bin || !existsSync(join(dir, ".git"))) return { branch: null, changed: 0, ahead: 0, behind: 0, remote: null, commits: [] };
   const branch = (await run(bin, ["rev-parse", "--abbrev-ref", "HEAD"], dir)).out.trim() || null;
   const changed = (await run(bin, ["status", "--porcelain"], dir)).out.split("\n").filter(Boolean).length;
-  const remote = (await run(bin, ["remote", "get-url", "origin"], dir)).out.trim() || null;
+  const remoteRun = await run(bin, ["remote", "get-url", "origin"], dir);
+  const remote = remoteRun.code === 0 ? remoteRun.out.trim() || null : null;
   const ab = (await run(bin, ["rev-list", "--left-right", "--count", "HEAD...@{upstream}"], dir)).out.trim().split(/\s+/);
   const log = (await run(bin, ["log", "-n", "30", "--format=%H%x1f%h%x1f%aI%x1f%an%x1f%s"], dir)).out;
   const commits = log.split("\n").filter(Boolean).map((l) => { const [hash, short, date, author, message] = l.split("\x1f"); return { hash: hash!, short: short!, date: date!, author: author!, message: message ?? "" }; });
@@ -221,7 +247,8 @@ function linkFor(wsId: string): { accountId: string; prefix: string } {
 }
 
 export async function install(wsId: string, appId: string, sender: WebContents): Promise<InstalledApp> {
-  const report = (p: Omit<AppDeployProgress, "wsId" | "app">) => { if (!sender.isDestroyed()) sender.send(channels.appsDeploy, { wsId, app: appId, ...p }); };
+  let current: AppDeployProgress["step"] = "build";
+  const report = (p: Omit<AppDeployProgress, "wsId" | "app">) => { current = p.step; if (!sender.isDestroyed()) sender.send(channels.appsDeploy, { wsId, app: appId, ...p }); };
   const dir = appDir(wsId, appId);
   const ws = await workspaceApi.workspace(wsId);
   if (!ws.worker) throw new Error("The local dev workspace runs apps from their folders (pnpm dev); installing is for cloud workspaces.");
@@ -244,7 +271,8 @@ export async function install(wsId: string, appId: string, sender: WebContents):
     const { worker: _w, mount, ...summary } = app;
     return { ...summary, public: mount ?? undefined, admin: !!app.admin, api: !!app.api };
   } catch (e) {
-    report({ step: "done", error: (e as Error).message });
+    // the error lands on the step that was running, so the list shows where it stopped
+    report({ step: current, error: (e as Error).message });
     throw e;
   }
 }

@@ -20,23 +20,27 @@ const base = (): Pick<Asset, "status" | "error" | "folder" | "tags" | "meta" | "
 
 export function useMediaPicker(ws: WorkspaceSummary, accountId: string): { pick: (req: Req) => Promise<Asset[] | null>; element: React.ReactElement } {
   const [pending, setPending] = React.useState<Pending | null>(null);
+  // the last request stays for the sheet's closing animation, so it does not flash empty on the way out
+  const last = React.useRef<Pending | null>(null);
+  if (pending) last.current = pending;
   const pick = React.useCallback((req: Req) => new Promise<Asset[] | null>((resolve) => setPending({ ...req, resolve })), []);
   const close = (assets: Asset[] | null) => { pending?.resolve(assets); setPending(null); };
-  const element = <MediaPickerSheet ws={ws} accountId={accountId} req={pending} onClose={close} />;
+  const element = <MediaPickerSheet ws={ws} accountId={accountId} req={pending} shown={pending ?? last.current} onClose={close} />;
   return { pick, element };
 }
 
-function MediaPickerSheet({ ws, accountId, req, onClose }: { ws: WorkspaceSummary; accountId: string; req: Pending | null; onClose: (a: Asset[] | null) => void }): React.ReactElement {
-  const kinds = req?.kinds.length ? req.kinds : ["image" as AssetKind];
+function MediaPickerSheet({ ws, accountId, req, shown, onClose }: { ws: WorkspaceSummary; accountId: string; req: Pending | null; /** The request to draw: the open one, or the last one while the sheet closes. */ shown: Pending | null; onClose: (a: Asset[] | null) => void }): React.ReactElement {
+  const kinds = shown?.kinds.length ? shown.kinds : ["image" as AssetKind];
   const tabs = [...(kinds.includes("image") ? [{ key: "image", label: "Images" }] : []), ...(kinds.includes("video") || kinds.includes("audio") ? [{ key: "media", label: "Media" }] : []), ...(kinds.includes("file") ? [{ key: "file", label: "Files" }] : [])] as { key: "image" | "media" | "file"; label: string }[];
   const [tab, setTab] = React.useState<"image" | "media" | "file">(tabs[0]?.key ?? "image");
   const [chosen, setChosen] = React.useState<Map<string, Asset>>(new Map());
-  React.useEffect(() => { setChosen(new Map()); setTab(tabs[0]?.key ?? "image"); }, [req]);
+  React.useEffect(() => { if (req) { setChosen(new Map()); setTab(tabs[0]?.key ?? "image"); } }, [req]);
   const open = !!req;
-  const images = useRemote(open && accountId ? `images:${accountId}` : null, () => sg!.library.images.list(accountId));
-  const stream = useRemote(open && accountId && tab === "media" ? `stream:${accountId}` : null, () => sg!.library.stream.list(accountId));
+  const active = !!shown;
+  const images = useRemote(active && accountId ? `images:${accountId}` : null, () => sg!.library.images.list(accountId));
+  const stream = useRemote(active && accountId && tab === "media" ? `stream:${accountId}` : null, () => sg!.library.stream.list(accountId));
   const bucket = `${ws.worker}-files`;
-  const files = useRemote(open && accountId && tab === "file" && ws.worker ? `files:${accountId}:${bucket}:` : null, () => sg!.library.files.list(accountId, bucket, {}));
+  const files = useRemote(active && accountId && tab === "file" && ws.worker ? `files:${accountId}:${bucket}:` : null, () => sg!.library.files.list(accountId, bucket, {}));
   const site = ws.url.replace(/\/$/, "");
   const items: Asset[] =
     tab === "image"
@@ -45,12 +49,12 @@ function MediaPickerSheet({ ws, accountId, req, onClose }: { ws: WorkspaceSummar
         ? (stream.data?.videos ?? []).filter((v) => v.readyToStream).map((v): Asset => { const customer = stream.data?.customer; const embed = customer ? `https://${customer}.cloudflarestream.com/${v.uid}/iframe` : undefined; return { ...base(), id: v.uid, kind: v.height ? "video" : "audio", provider: "stream", provider_id: v.uid, name: v.name, title: v.name, size: v.size, duration: v.duration, width: v.width, height: v.height, created_at: v.created, updated_at: v.modified, urls: { src: v.hls, thumbnail: v.thumbnail, hls: v.hls ?? undefined, dash: v.dash ?? undefined, embed } }; })
         : (files.data?.files ?? []).map((f): Asset => ({ ...base(), id: f.key, kind: "file", provider: "r2", provider_id: f.key, name: f.key.split("/").pop() ?? f.key, mime: f.contentType, size: f.size, created_at: f.modified, updated_at: f.modified, urls: { src: `${site}/_ws/files/${f.key}`, thumbnail: null } }));
   const loading = tab === "image" ? images.loading && !images.data : tab === "media" ? stream.loading && !stream.data : files.loading && !files.data;
-  const toggle = (a: Asset) => setChosen((m) => { const next = new Map(req?.multiple ? m : []); if (next.has(a.id)) next.delete(a.id); else next.set(a.id, a); return next; });
+  const toggle = (a: Asset) => setChosen((m) => { const next = new Map(shown?.multiple ? m : []); if (next.has(a.id)) next.delete(a.id); else next.set(a.id, a); return next; });
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(null); }}>
       <SheetPopup side="right" className="w-[min(40rem,90vw)]">
         <SheetHeader>
-          <SheetTitle>{req?.title ?? "Choose From the Library"}</SheetTitle>
+          <SheetTitle>{shown?.title ?? "Choose From the Library"}</SheetTitle>
         </SheetHeader>
         <SheetPanel className="flex min-h-0 flex-1 flex-col gap-3">
           {tabs.length > 1 && <FilterTabs tabs={tabs} value={tab} onChange={setTab} />}

@@ -57,12 +57,12 @@ export function NewAppDialog({ wsId, open, onOpenChange }: { wsId: string; open:
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
       <DialogPopup className="sm:max-w-lg">
-        <form onSubmit={(e) => void submit(e)}>
+        <form onSubmit={(e) => void submit(e)} className="flex min-h-0 flex-1 flex-col">
           <DialogHeader>
             <DialogTitle>New App</DialogTitle>
             <DialogDescription>A folder from the template on this Mac: a public page, an admin screen, one table and its operations. Install it into the workspace when it is ready.</DialogDescription>
           </DialogHeader>
-          <DialogPanel className="flex flex-col gap-4">
+          <DialogPanel className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
             <div className="flex items-center gap-3">
               <AppIcon app={{ name: name || "App", icon: iconOk ? icon : null, color }} size="xl" />
               <div className="flex min-w-0 flex-1 flex-col gap-3">
@@ -101,7 +101,7 @@ export function NewAppDialog({ wsId, open, onOpenChange }: { wsId: string; open:
                     <ExternalLinkIcon className="size-3" />
                   </button>
                 </FieldLabel>
-                <Textarea value={icon} onChange={(e) => setIcon(e.target.value)} placeholder='Paste the SVG: <svg xmlns="http://www.w3.org/2000/svg" …>' rows={2} className="font-mono text-xs" />
+                <Textarea value={icon} onChange={(e) => setIcon(e.target.value)} placeholder='Paste the SVG: <svg xmlns="http://www.w3.org/2000/svg" …>' rows={2} className="max-h-20 resize-none font-mono text-xs [field-sizing:fixed]" />
                 {!iconOk && <FieldDescription className="text-destructive-foreground">That is not a plain SVG (one &lt;svg&gt;, no scripts).</FieldDescription>}
               </Field>
               <Field>

@@ -30,6 +30,8 @@ function createWindow(): BrowserWindow {
     webPreferences: { preload: join(__dirname, "../preload/index.mjs"), sandbox: false, contextIsolation: true },
   });
   win.once("ready-to-show", () => win.show());
+  // in development the renderer's console lands in the terminal too, so a page problem shows up without the devtools
+  if (process.env.ELECTRON_RENDERER_URL) win.webContents.on("console-message", (e) => { if (e.level === "warning" || e.level === "error") console.log(`[renderer:${e.level}] ${e.message}`); });
   // Any link that would open a new window opens the user's browser instead (sites, docs).
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:/.test(url)) void shell.openExternal(url);

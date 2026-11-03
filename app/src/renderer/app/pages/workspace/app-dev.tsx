@@ -388,7 +388,7 @@ function Deploy({ ws, appId, installed, folder }: { ws: WorkspaceSummary; appId:
         {progress && (
           <ol className="mt-4 flex flex-col gap-1.5">
             {STEPS.map((s, i) => {
-              const state = progress.error && i === stepIndex ? "error" : i < stepIndex || (progress.step === "done" && !progress.error) ? "done" : i === stepIndex ? "now" : "todo";
+              const state = progress.error ? (i < stepIndex ? "done" : i === stepIndex ? "error" : "todo") : i < stepIndex || progress.step === "done" ? "done" : i === stepIndex ? "now" : "todo";
               return (
                 <li key={s.key} className={cn("flex items-center gap-2 text-sm", state === "todo" && "text-muted-foreground")}>
                   <span className={cn("flex size-4 items-center justify-center rounded-full border text-[10px]", state === "done" && "border-success bg-success text-white", state === "now" && "border-active", state === "error" && "border-destructive bg-destructive text-white")}>{state === "done" ? "✓" : state === "now" ? <LoaderCircleIcon className="size-2.5 animate-spin" /> : state === "error" ? "!" : ""}</span>

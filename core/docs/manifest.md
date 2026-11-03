@@ -159,6 +159,6 @@ operation decides.
 ## What is served
 
 `GET /_app/<id>/manifest.json` returns the manifest with `served: true`, `operations: [{ name, description, access,
-input, output, confirm }]`, `entities: [{ key, label, table, title, columns, admin, public }]` and `build: { mode,
-at }`. The desktop's Dev panel shows it, `app_describe` returns it, and the workspace's `/_ws/manifest` lists the route
+input, output, confirm }]`, `entities: [{ key, label, table, title, columns, admin, public }]` and `build: { mode, at }` (`at` is when it was
+served; a Worker has no clock of its own before a request). The desktop's Dev panel shows it, `app_describe` returns it, and the workspace's `/_ws/manifest` lists the route
 summaries of every installed app (`info()`).

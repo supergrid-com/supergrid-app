@@ -29,6 +29,11 @@ export function AdminApp({ manifest, children, className }: { manifest: AppManif
     void connectAdminHost(manifest.id, { nav: manifest.admin?.nav ?? [] }).then((h) => { if (live) setHost(h); });
     return () => { live = false; };
   }, [manifest.id]);
+  // dialogs, sheets and popovers portal to the body, so the admin tokens live on the document root too
+  React.useEffect(() => {
+    document.documentElement.setAttribute("data-sg-admin", "");
+    return () => document.documentElement.removeAttribute("data-sg-admin");
+  }, []);
   // where the app is, as the shell wants it: relative to basePath
   const rel = location.pathname.startsWith(basePath) ? location.pathname.slice(basePath.length) || "/" : location.pathname;
   React.useEffect(() => { host?.navigate(rel + location.search); }, [host, rel, location.search]);

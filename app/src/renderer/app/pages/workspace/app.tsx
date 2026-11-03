@@ -92,6 +92,8 @@ function AdminFrame({ appId, sub }: { appId: string; sub: string }): React.React
   const iframe = React.useRef<HTMLIFrameElement | null>(null);
   const frame = React.useRef<MountedFrame | null>(null);
   const lastPath = React.useRef(sub);
+  // a path the shell asked for before the app was listening; sent on ready, and the app's own moves wait for it
+  const pending = React.useRef<string | null>(null);
   const picker = useMediaPicker(ws, org?.cloudflare?.accountId ?? "");
   // the first address comes with a fresh handoff; after that the app moves itself and tells us
   React.useEffect(() => {
@@ -100,13 +102,19 @@ function AdminFrame({ appId, sub }: { appId: string; sub: string }): React.React
     setReady(false);
     setError(null);
     lastPath.current = sub;
+    pending.current = null;
     void sg?.ws.adminUrl(ws.id, appId, sub).then((u) => { if (live) setSrc(u); }, (e) => { if (live) setError(clean(e)); });
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ws.id, appId]);
-  // the menu in the shell: a click changes the route here, and the app follows
+  // the menu in the shell: a click changes the route here, and the app follows. The iframe exists before the app in
+  // it listens, so a click during the spinner would be lost; it waits for the app's ready instead.
   React.useEffect(() => {
-    if (sub !== lastPath.current && frame.current) { lastPath.current = sub; frame.current.go(sub); }
+    if (sub === lastPath.current) return;
+    lastPath.current = sub;
+    if (ready && frame.current) frame.current.go(sub);
+    else pending.current = sub;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sub]);
   React.useEffect(() => { frame.current?.setScheme(pageDark ? "dark" : "light"); }, [pageDark]);
   const onFrame = React.useCallback((el: HTMLIFrameElement | null) => {
@@ -118,10 +126,18 @@ function AdminFrame({ appId, sub }: { appId: string; sub: string }): React.React
       el,
       { session: { user: { id: "desktop", name: "SuperGrid", email: "", role: "owner", permissions: ["*"] }, workspace: { id: ws.id, name: ws.name, url: ws.url } }, tokens: adminTokens(), basePath: `/admin/${appId}`, scheme: pageDark ? "dark" : "light", nav: app.nav ?? [] },
       {
-        ready: () => setReady(true),
+        ready: () => {
+          setReady(true);
+          if (pending.current) frame.current?.go(pending.current);
+        },
         title: (t) => setTitle(t),
         navigate: (path) => {
           const clean = path.replace(/^\/+/, "").replace(/\/$/, "");
+          if (pending.current) {
+            // the app is still catching up with the shell; its moves count once it has arrived
+            if (`/${clean}` !== pending.current) return;
+            pending.current = null;
+          }
           if (`/${clean}` === lastPath.current || clean === lastPath.current.replace(/^\//, "")) return;
           lastPath.current = `/${clean}`;
           navigate(`/w/${ws.id}/apps/${appId}${clean ? `/${clean}` : ""}`, { replace: true });

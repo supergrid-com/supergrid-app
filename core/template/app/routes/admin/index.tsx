@@ -67,12 +67,12 @@ export default function AdminIndex() {
       </Card>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogPopup>
-          <Form method="post">
+          <Form method="post" className="flex min-h-0 flex-1 flex-col">
             <DialogHeader>
               <DialogTitle>New Item</DialogTitle>
               <DialogDescription>A title now; the rest on its page.</DialogDescription>
             </DialogHeader>
-            <DialogPanel className="flex flex-col gap-4">
+            <DialogPanel className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
               <Field>
                 <FieldLabel>Title</FieldLabel>
                 <Input name="title" required autoFocus />

@@ -12,7 +12,8 @@ shell), and the **tokens** the shell pushes into the iframe.
    and redirects to the screen. The app gets the user as `x-sg-user` (`ctx.user`).
 2. The app's admin layout mounts `<AdminApp manifest>`, which calls `connectAdminHost(id)`: it posts `sg:ready`, the
    shell answers `sg:init` with the session, the tokens, the app's nav and the scheme. The tokens land on `:root` as
-   `--sg-admin-*` and `components/admin/admin.css` maps them onto the kit under `[data-sg-admin]`.
+   `--sg-admin-*` and `components/admin/admin.css` maps them onto the kit under `[data-sg-admin]`, which `AdminApp` puts
+   on its own element and on `<html>`, so dialogs, sheets and menus that portal to the body are themed too.
 3. From then on: the app reports where it is (`sg:navigate`) and the shell's menu and address follow; the shell moves
    the app when its menu is clicked (`sg:go`); the page title shows in the title bar (`sg:title`); the app can open the
    media picker (`sg:pick` → `sg:picked`), show a toast (`sg:toast`) and open a page of the shell (`sg:open`).

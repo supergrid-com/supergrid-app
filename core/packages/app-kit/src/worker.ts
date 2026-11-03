@@ -26,13 +26,13 @@ export function createAppWorker(raw: AppManifest, opts: AppWorkerOptions = {}) {
   const manifest: Manifest = parseManifest(raw);
   const handler = createRequestHandler(() => import("virtual:react-router/server-build"), import.meta.env.MODE);
   const ops: Operations = opts.operations ?? {};
-  const startedAt = new Date().toISOString();
   let prepared: Promise<void> | null = null;
   const prepare = (env: AppEnv) => (prepared ??= (async () => {
     if (opts.migrations?.length) await env.WORKSPACE.applyMigrations(manifest.id, opts.migrations);
     for (const o of opts.objects ?? []) await env.WORKSPACE.saveObjectType(manifest.id, o);
   })().catch((e) => { prepared = null; throw e; }));
-  const served = (): ServedManifest => ({ ...raw, served: true, operations: summarize(ops), entities: describeData(manifest), build: { mode: import.meta.env.MODE, at: startedAt } });
+  // Workers have no clock before the first request, so `at` is when this copy of the manifest was served, not built
+  const served = (): ServedManifest => ({ ...raw, served: true, operations: summarize(ops), entities: describeData(manifest), build: { mode: import.meta.env.MODE, at: new Date().toISOString() } });
   return {
     async fetch(request: Request, env: AppEnv) {
       await prepare(env);
