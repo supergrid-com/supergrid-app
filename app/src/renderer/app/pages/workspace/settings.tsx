@@ -14,7 +14,7 @@ import { Card } from "~/components/workspace/frame";
 import { sg } from "~/lib/bridge";
 import { useChatSide } from "~/lib/chat-side";
 import { removeOrg, useOrgs } from "~/lib/orgs";
-import { useLatestRelease } from "~/lib/release";
+import { fromFeed, useLatestRelease } from "~/lib/release";
 import { useSession } from "~/lib/session";
 import { clean, refreshWorkspaces } from "~/lib/workspaces";
 import { useShell } from "~/shell/context";
@@ -81,7 +81,7 @@ export function WorkspaceGeneral(): React.ReactElement {
 export function WorkspaceUpdates(): React.ReactElement {
   const { ws } = useShell();
   const latest = useLatestRelease();
-  const behind = !!latest && !!ws.version && ws.version !== latest.version;
+  const behind = !!latest && fromFeed(ws.version) && ws.version !== latest.version;
   return (
     <SectionPage title="Updates" width={760}>
       <Card>

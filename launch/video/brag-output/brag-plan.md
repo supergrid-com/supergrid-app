@@ -28,21 +28,21 @@ After supergrid.com and Squarespace, with the judges in mind: plain white page, 
 
 | Time | Beat | On Screen |
 |---|---|---|
-| 0:00 | Hook | SaaS homepages drift on a tilted plane under "AI was the selling point"; then "Now AI is rebuilding the product" over a plain chat given contentblocks.com and a gmail login, "Rebuild this whole product", and the agent's stream of steps |
-| 0:07 | Four things | SaaS was four things, sold as one subscription filling to rose, over one hairline pill holding Code, Servers, Support, Vision |
-| 0:09 | Code, Servers, Support, Vision | Two columns each: the word and what it took, struck through in rose for what it takes now, beside a real editor the agent floods, a globe narrowing to one user, an inbox a machine clears, and a bento mosaic assembling for vision, whose line stays standing |
+| 0:00 | Hook | SaaS homepages drift on a tilted plane under "AI was the selling point"; then "Now AI is rebuilding the product" beside a plain chat window: the site and a gmail login handed over in the composer, "Rebuild this whole product" sent, and the agent's reply streaming in step by step |
+| 0:07 | Four things | SaaS was four things, sold as one subscription, over one pill: Code, Servers, Support, Vision with their icons, and $49 / mo landing on "subscription" |
+| 0:09 | Code, Servers, Support, Vision | Two columns each, the before line struck in rose for the after. Code: three engineers' carets typing by hand, then an agent's caret writes the whole file and opens three more. Servers: a turning globe filling with users past two million, easing to a stop on one: you. Support: an inbox filling faster than the team answers, then an agent clears it top to bottom. Vision: a mosaic built one piece at a time through the line, ringed in rose on "hasn't changed" |
 | 0:30 | Taste | "AI can't recreate taste" alone |
-| 0:32 | Buy or build | Buy or Build, for big companies, then for one person with an agent |
+| 0:32 | Buy or build | Buy or Build over a company's worth of people, for big companies; on "one person" everyone else steps away and an Agent pill joins the one left |
 | 0:37 | 100 features | 100 features to use 3, over a 10 × 10 grid where three squares light rose |
 | 0:39 | Clone | Build struck out as Clone opens up beside it, then the screens, in an afternoon |
-| 0:43 | Iceberg | A block grid: the screens solid on top, under the line four rows of outlined blocks with icons for everything a clone misses; the top row lights rose on "tip of the iceberg"; then the builder loses the business, the user gets a worse copy |
-| 0:51 | Why people clone | People clone for three reasons, then three columns arriving one by one and staying: their own code, their own AI (Muse Spark by Meta), their own way |
+| 0:43 | Iceberg | A centred block grid: the screens solid on top, the water line, then on "years of decisions underneath" four rows of outlined blocks rise under it, each an icon for what a clone misses; the top row lights rose on "tip". Then two columns: the builder loses the business (revenue climbing, then falling away) and the user gets a worse copy (a wireframe filling with bugs on "every bug is now theirs") |
+| 0:51 | Why people clone | People clone for three reasons, then three columns with icons arriving one by one and staying: their own code, their own AI (Muse Spark by Meta), their own way |
 | 0:58 | Reveal | The dark card scrolls up. The mark builds in white, SuperGrid, the desktop IDE for your site and the tools behind it, then your own repo, your Cloudflare, your own AI. The card scrolls away again |
 | 1:06 | The app | On the plain white page, the window nearly the whole frame, Midnight theme. One shot: Connect Muse Code, connect Cloudflare, create Studio and its repo, the core lighting up as it's named, apps on top, install Blog, the commit lands, the Ad Designer on Muse Image, the site's Squarespace-like pages, Muse writing a post over MCP |
 | 1:35 | Updates, in the app | Apps · Installed: Blog 1.1.0 fixes a bug for every install, your copy has 2 edited files and it conflicts. Update opens the old either-or: keep your copy or take the update, never both |
 | 1:46 | Merge, in the app | Muse's way out appears in the dialog. Muse merges around the signup form it added, checks security, fixes a break, then asks; Approve, and Blog is up to date |
 | 1:55 | CTO | The page scrolls on from the app: Muse Code by Meta, the CTO for every creator |
-| 1:57 | Every industry | Every industry has its experts, today their software gets cloned, then installed, owned, updated a word at a time, and the expert gets paid |
+| 1:57 | Every industry | A row of five expert apps (class booking by a fitness coach, client intake by a family lawyer, menu and orders by a chef, patient forms by a dentist, listings by a real estate agent): each gets a dashed copy pulled off it and a Cloned mark, then installed, owned, updated marks land on the words, and a Paid tag on "paid" |
 | 2:07 | Close | SaaS isn't dead, the code moves to the user |
 | 2:10 | End | Built by experts, Shaped by users, Powered by your AI, then the SuperGrid lockup with the white mark: made possible by Muse Code, the platform for a new kind of SaaS, built for the Meta AI Developer Hackathon |
 

@@ -63,9 +63,7 @@ thoughtful solutions, built by the people who can solve each problem best.
 
 — Dylan
 
----
-
-![The SuperGrid desktop app: Muse Code answering from the demo workspace's data beside its Spring Launch report](.github/readme/app.png)
+![supergrid.com: Introducing a new way to build, with the clickable preview of the desktop app](.github/readme/site.png)
 
 ## Try it
 
@@ -95,6 +93,8 @@ pnpm -C app dev
 
 `pnpm -C app dev` opens SuperGrid with hot reload, so you can change the app while you use it. `pnpm -C app dist` builds
 the `.dmg`.
+
+![The SuperGrid desktop app: Muse Code answering from the demo workspace's data beside its Spring Launch report](.github/readme/app.png)
 
 ### What you need
 

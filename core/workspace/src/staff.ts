@@ -44,8 +44,11 @@ export async function handoff(request: Request, secret: string, workspaceId: str
   if (!/^\/admin\/[a-z0-9-]+(\/|$)/.test(next)) return new Response("Bad next path", { status: 400 });
   const cookie = await mint(secret, { ...claims, typ: "staff", exp: Math.floor(Date.now() / 1000) + STAFF_SECONDS });
   // Partitioned + SameSite=None lets the cookie work inside the platform's iframe when the two are different sites
-  // (workers.dev). Over plain http (local dev, same site anyway) browsers refuse Secure, so fall back to Lax.
-  const attrs = url.protocol === "https:" ? "Secure; SameSite=None; Partitioned" : "SameSite=Lax";
+  // (workers.dev). A dev server on localhost is cross-site too when the frame's parent is the built desktop app
+  // (file://), where a Lax cookie is dropped; browsers count localhost as secure, so it gets the same attributes.
+  // Other plain http falls back to Lax.
+  const local = url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  const attrs = url.protocol === "https:" || local ? "Secure; SameSite=None; Partitioned" : "SameSite=Lax";
   return new Response(null, {
     status: 302,
     headers: { location: next, "set-cookie": `${COOKIE}=${cookie}; Path=/; HttpOnly; Max-Age=${STAFF_SECONDS}; ${attrs}`, "cache-control": "no-store" },

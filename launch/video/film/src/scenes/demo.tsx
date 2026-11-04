@@ -3,7 +3,7 @@ import * as React from "react";
 import { AdDesignerBody } from "../ads";
 import { CodeView, DiffView, TabStrip, Tree, type DiffLine, type TreeNode } from "../editor";
 import { AreaChart, Avatar, Person, SectionHead, Stat, Table, Tile } from "../grid";
-import { Appear, C, Cursor, MONO, Mark, MuseGlyph, Scene, Sub, Swap, Title, Typed, center, prog, useT } from "../kit";
+import { Appear, C, Cursor, MONO, Mark, MuseGlyph, Scene, Swap, Title, Typed, prog, useT } from "../kit";
 import { Cross, SCROLL, pageShift, scrollOn, scrolls } from "../look";
 import { Button, ChatPanel, Dot, PageHeader, PageTabs, Spinner, SubNav, Tag, ToolRow, Toolbar, UserMsg, WIN_H, WIN_W, Window, tint, type RailKey, type RailState, type SubItem } from "../shell";
 import { BlogPostPage, LandingPage, Photo, SitePreview, WaitlistPage } from "../site";
@@ -30,55 +30,62 @@ export function Reveal(): React.ReactElement {
   // the mark builds one diamond at a time inside its construction lines, which clear once it's whole
   const build = [0, 1, 2, 3].map((i) => prog(t, s + 0.25 + i * 0.14, 0.9));
   const lines = prog(t, s + 0.1, 1.0, "inOut") * (1 - prog(t, s + 1.6, 0.8, "inOut"));
-  const R = 150;
+  const R = 130;
   // the three reasons people clone, answered one by one under the name
   const owns = [
-    { icon: <GitBranchIcon style={{ width: 30, height: 30, color: "#fff", strokeWidth: 1.6 }} />, label: "Your own repo", at: say(28, "own repo", -0.2) },
-    { icon: <CloudIcon style={{ width: 30, height: 30, color: "#f6821f", strokeWidth: 1.6 }} />, label: "Your Cloudflare", at: say(28, "cloudflare", -0.2) },
-    { icon: <MuseGlyph size={36} />, label: "Your own AI", at: say(28, "built by", -0.2) },
+    { icon: <GitBranchIcon style={{ width: 30, height: 30, color: "#fff", strokeWidth: 1.7 }} />, tint: "rgb(255 255 255 / 10%)", label: "Your own repo", note: "Every workspace is a git repo", at: say(28, "own repo", -0.2) },
+    { icon: <CloudIcon style={{ width: 30, height: 30, color: "#f6821f", strokeWidth: 1.7 }} />, tint: "rgb(246 130 31 / 16%)", label: "Your Cloudflare", note: "Deployed to your own account", at: say(28, "cloudflare", -0.2) },
+    { icon: <MuseGlyph size={34} />, tint: "rgb(0 130 251 / 18%)", label: "Your own AI", note: "Muse Code, over ACP", at: say(28, "built by", -0.2) },
   ];
-  const lift = prog(t, owns[0]!.at - 0.35, 0.9, "inOut");
+  const lift = prog(t, owns[0]!.at - 0.5, 0.9, "inOut") * -170;
   return (
     <Scene from={s} to={scrolls.app + SCROLL} fadeOut={0.01} dark>
-      <div style={{ position: "absolute", inset: 0 }}>
-        <div style={{ ...center, gap: 36, transform: `translateY(${-lift * 130}px) scale(${1 - lift * 0.08})` }}>
-          <div style={{ position: "relative", width: 170, height: 170 }}>
-            {lines > 0 ? (
-              <div style={{ position: "absolute", left: 85, top: 85, width: 0, height: 0, opacity: lines }}>
-                <div style={{ position: "absolute", left: -R, top: -R, width: R * 2, height: R * 2, borderRadius: 999, border: "1px dashed rgb(255 255 255 / 16%)", transform: `scale(${0.85 + 0.15 * lines}) rotate(${lines * 30}deg)` }} />
-                {[45, -45, 0, 90].map((a) => (
-                  <div key={a} style={{ position: "absolute", left: -R * 1.5, top: 0, width: R * 3, height: 1, background: "linear-gradient(to right, transparent, rgb(255 255 255 / 14%) 30%, rgb(255 255 255 / 14%) 70%, transparent)", transform: `rotate(${a}deg) scaleX(${lines})` }} />
-                ))}
-                {[
-                  [0, -R],
-                  [R, 0],
-                  [0, R],
-                  [-R, 0],
-                ].map(([x, y], i) => (
-                  <Cross key={i} x={x!} y={y!} size={18} dark k={lines} />
-                ))}
-              </div>
-            ) : null}
-            <Mark size={170} color="#fff" build={build} style={{ position: "absolute", inset: 0, filter: "drop-shadow(0 0 28px rgb(155 61 255 / 35%))" }} />
-          </div>
-          <Appear at={say(28, "supergrid", -0.1)} y={24}>
-            <Title size={136} dark style={{ textShadow: "0 0 60px rgb(255 255 255 / 22%)" }}>SuperGrid</Title>
-          </Appear>
-          <Appear at={say(28, "desktop", -0.15)} y={16}>
-            <Sub size={42} dark>The desktop IDE for your site and the tools behind it</Sub>
-          </Appear>
-        </div>
-        {/* a hairline strip, like the site's tile grids, drawn on the dark */}
-        <div style={{ position: "absolute", left: 960 - 570, top: 700, width: 1140, height: 168, display: "flex", borderRadius: 24, boxShadow: `inset 0 0 0 1px rgb(255 255 255 / ${Math.round(12 * lift)}%)`, background: `rgb(255 255 255 / ${(3 * lift).toFixed(1)}%)` }}>
-          {owns.map((o, i) => (
-            <div key={o.label} style={{ flex: 1, borderLeft: i ? `1px solid rgb(255 255 255 / ${Math.round(12 * lift)}%)` : undefined }}>
-              <Appear at={o.at} y={18} style={{ height: "100%", padding: "26px 30px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", height: 36 }}>{o.icon}</div>
-                <div style={{ fontSize: 36, letterSpacing: "0.02em", color: "#fff" }}>{o.label}</div>
-              </Appear>
+      {/* the lockup: the mark, then the name beside it, then what it is, centred until the cards need the room */}
+      <div style={{ position: "absolute", inset: 0, transform: `translateY(${lift}px)` }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 420, display: "flex", justifyContent: "center", alignItems: "center", gap: 44 }}>
+        <div style={{ position: "relative", width: 140, height: 140 }}>
+          {lines > 0 ? (
+            <div style={{ position: "absolute", left: 70, top: 70, width: 0, height: 0, opacity: lines }}>
+              <div style={{ position: "absolute", left: -R, top: -R, width: R * 2, height: R * 2, borderRadius: 999, border: "1px dashed rgb(255 255 255 / 16%)", transform: `scale(${0.85 + 0.15 * lines}) rotate(${lines * 30}deg)` }} />
+              {[45, -45, 0, 90].map((a) => (
+                <div key={a} style={{ position: "absolute", left: -R * 1.5, top: 0, width: R * 3, height: 1, background: "linear-gradient(to right, transparent, rgb(255 255 255 / 14%) 30%, rgb(255 255 255 / 14%) 70%, transparent)", transform: `rotate(${a}deg) scaleX(${lines})` }} />
+              ))}
+              {[
+                [0, -R],
+                [R, 0],
+                [0, R],
+                [-R, 0],
+              ].map(([x, y], i) => (
+                <Cross key={i} x={x!} y={y!} size={18} dark k={lines} />
+              ))}
             </div>
-          ))}
+          ) : null}
+          <Mark size={140} color="#fff" build={build} style={{ position: "absolute", inset: 0, filter: "drop-shadow(0 0 28px rgb(155 61 255 / 35%))" }} />
         </div>
+        {/* the name holds its place from the start, so the mark never shifts when it arrives */}
+        <div style={{ position: "relative" }}>
+          <Title size={150} dark style={{ visibility: "hidden" }}>SuperGrid</Title>
+          <Appear at={say(28, "supergrid", -0.1)} x={-24} y={0} style={{ position: "absolute", inset: 0 }}>
+            <Title size={150} dark style={{ textShadow: "0 0 60px rgb(255 255 255 / 22%)" }}>SuperGrid</Title>
+          </Appear>
+        </div>
+      </div>
+      <Appear at={say(28, "desktop", -0.15)} y={14} style={{ position: "absolute", left: 0, right: 0, top: 618, textAlign: "center", fontSize: 40, letterSpacing: "0.025em", color: "rgb(255 255 255 / 70%)" }}>
+        The desktop IDE for your site and the tools behind it
+      </Appear>
+      </div>
+      {/* the three answers, a card each, in fixed slots so nothing shifts as they arrive */}
+      <div style={{ position: "absolute", left: 0, right: 0, top: 640, display: "flex", justifyContent: "center", gap: 28 }}>
+        {owns.map((o) => (
+          <div key={o.label} style={{ width: 400, height: 236 }}>
+          <Appear at={o.at} y={24} style={{ width: 400, height: 236, borderRadius: 26, padding: "28px 30px", background: "linear-gradient(180deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 3%))", boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 12%), 0 20px 50px rgb(0 0 0 / 30%)", display: "flex", flexDirection: "column" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: o.tint, display: "grid", placeItems: "center" }}>{o.icon}</div>
+            <div style={{ flex: 1 }} />
+            <div style={{ fontSize: 36, letterSpacing: "0.02em", color: "#fff", whiteSpace: "nowrap" }}>{o.label}</div>
+            <div style={{ marginTop: 6, fontSize: 22, letterSpacing: "0.02em", color: "rgb(255 255 255 / 55%)", whiteSpace: "nowrap" }}>{o.note}</div>
+          </Appear>
+          </div>
+        ))}
       </div>
     </Scene>
   );
@@ -108,7 +115,7 @@ function OptionRow({ icon, name, note, state, meta }: { icon: React.ReactNode; n
   const fill = state === "done" ? C.successSoft : state === "selected" ? (meta ? C.metaSoft : C.accentSoft) : C.card;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, border: `1px solid ${ring}`, background: fill }}>
-      <div style={{ width: 40, height: 40, borderRadius: 10, background: C.raised, display: "grid", placeItems: "center" }}>{icon}</div>
+      <div style={{ width: 40, height: 40, borderRadius: 10, background: state === "idle" ? C.raised : "#fff", display: "grid", placeItems: "center" }}>{icon}</div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 16, color: C.strong }}>{name}</div>
         <div style={{ fontSize: 13.5, color: C.muted, marginTop: 2 }}>{note}</div>
@@ -155,7 +162,7 @@ function Onboarding({ t }: { t: number }): React.ReactElement {
           <StepBody at={cue(30)} until={cue(31)}>
             <div style={{ fontSize: 24, color: C.strong }}>Connect Cloudflare</div>
             <div style={{ fontSize: 14.5, color: C.muted, margin: "6px 0 20px" }}>Every workspace deploys to your own account</div>
-            <OptionRow icon={<CloudIcon style={{ width: 19, height: 19, color: "#f6821f" }} />} name="Nodo" note={<span style={{ fontFamily: MONO, fontSize: 12.5 }}>fc84d234400f2316c52025fe91ed528</span>} state={cfDone ? "done" : "selected"} />
+            <OptionRow icon={<CloudIcon style={{ width: 19, height: 19, color: "#f6821f" }} />} name="Nodo" note={<span style={{ fontFamily: MONO, fontSize: 12.5 }}>nodo.workers.dev</span>} state={cfDone ? "done" : "selected"} />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16, minHeight: 30 }}>
               {["Workers", "D1", "R2", "Queues", "Workflows", "Images", "Stream"].map((r, i) => (
                 <Appear key={r} at={say(30, "everything", -0.1) + i * 0.08} y={6}>
@@ -543,7 +550,7 @@ function AdDesigner({ t }: { t: number }): React.ReactElement {
 
 /** Site · Pages: the three pages the apps put on the site, each arriving as it's named. */
 function SitePage(): React.ReactElement {
-  const at = [say(36, "blog", -0.25), say(36, "forms", -0.25), say(36, "landing", -0.25)];
+  const at = [0, 1, 2].map((i) => Math.min([say(36, "blog", -0.25), say(36, "forms", -0.25), say(36, "landing", -0.25)][i]!, cue(36, 0.25 + i * 0.16)));
   // three columns across the page card, less its padding and the gaps between them
   const width = (1408 - 48 - 36) / 3;
   const pages: [number, string, React.ReactNode][] = [
@@ -760,7 +767,7 @@ function InstalledPage({ t }: { t: number }): React.ReactElement {
             </Appear>
           </div>
         </Appear>
-        <Appear at={cue(40, -0.1)} y={20} style={{ flex: 1, display: "flex" }}>
+        <Appear at={cue(38, 0.85)} y={20} style={{ flex: 1, display: "flex" }}>
           <div style={{ flex: 1, borderRadius: 12, border: `1px solid ${conflict > 0 && merged < 1 ? tint(C.danger, 15 + conflict * (1 - merged) * 25) : C.line}`, background: C.card, padding: 20, display: "flex", flexDirection: "column" }}>
             <SectionHead title="Your copy" count={2} action="Changed since 1.0.0" />
             {["components/post-footer.tsx", "routes.ts"].map((f, i) => (
@@ -771,7 +778,7 @@ function InstalledPage({ t }: { t: number }): React.ReactElement {
                 {fileState(i)}
               </div>
             ))}
-            <Appear at={cue(40, 0.3)} y={8} style={{ marginTop: 14 }}>
+            <Appear at={cue(38, 1.3)} y={8} style={{ marginTop: 14 }}>
               <div style={{ fontSize: 12.5, color: C.dim, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>Your change · post-footer.tsx</div>
               <div style={{ borderRadius: 8, background: C.page, border: `1px solid ${C.lineSoft}`, overflow: "hidden" }}>
                 <DiffView
@@ -792,7 +799,7 @@ function InstalledPage({ t }: { t: number }): React.ReactElement {
               <Swap
                 y={8}
                 items={[
-                  { at: cue(40, 0.1), node: <span style={{ color: C.muted }}>You changed 2 files in Blog</span> },
+                  { at: cue(38, 1.0), node: <span style={{ color: C.muted }}>You changed 2 files in Blog</span> },
                   { at: say(40, "that's over", -0.1), node: <span style={{ color: C.danger }}>1.1.0 doesn't apply cleanly</span> },
                   { at: MERGED() + 0.3, node: <span style={{ color: C.success }}>Merged around your edits</span> },
                 ]}
@@ -963,15 +970,17 @@ export function Tour(): React.ReactElement {
       from: enter,
       path: [
         [cue(29, 0.2), 1040, 760],
-        [cue(29, 0.85), 840, 475],
-        [cue(29, 1.15), 840, 475],
-        [cue(29, 1.5), 1084, 692],
-        [cue(30, 0.9), 1084, 692],
-        [cue(30, 1.6), 1050, 664],
-        [cue(31, 0.15), 1050, 664],
-        [cue(31, 0.55), 1044, 630],
+        [cue(29, 0.75), 840, 475],
+        [cue(29, 1.05), 840, 475],
+        [cue(29, 1.45), 1088, 692],
+        [cue(30, 0.05), 1088, 692],
+        [cue(30, 1.5), 1055, 628],
+        [cue(30, 1.8), 1055, 628],
+        [cue(30, 2.1), 1089, 628],
+        [cue(31, 0.05), 1089, 628],
+        [cue(31, 0.5), 1047, 562],
       ],
-      clicks: [cue(29, 0.9), cue(29, 1.6), cue(30, 1.7), cue(31, 0.7)],
+      clicks: [cue(29, 0.9), cue(29, 1.6), cue(30, -0.2), cue(30, 1.7), cue(31, -0.2), cue(31, 0.7)],
       hideAt: ws - 0.05,
     },
     {
@@ -989,8 +998,14 @@ export function Tour(): React.ReactElement {
       path: [
         [cue(40, 1.0), 1300, 520],
         [UPDATE_CLICK() - 0.25, 1576, 142],
-        [cue(43, 0.1), 1576, 142],
-        [MERGE_CLICK() - 0.15, 1228, 553],
+        [UPDATE_CLICK() + 0.15, 1576, 142],
+        [say(41, "own the code", 0.05), 790, 468],
+        [say(41, "get the updates", -0.25), 790, 468],
+        [say(41, "get the updates", 0.2), 1130, 468],
+        [say(42, "never", 0.1), 1130, 468],
+        [cue(43, 0.1), 1010, 600],
+        [MERGE_CLICK() - 0.2, 1228, 553],
+        [MERGE_CLICK() + 0.12, 1228, 553],
         [MERGE_CLICK() + 0.6, 1200, 610],
       ],
       clicks: [UPDATE_CLICK(), MERGE_CLICK()],

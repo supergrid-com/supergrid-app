@@ -1,7 +1,7 @@
 import { CheckIcon, CircleAlertIcon, CircleCheckIcon, CircleMinusIcon } from "lucide-react";
 import type { DemoProgress } from "../../../../shared/bridge";
 import * as React from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { CreateWorkspace } from "~/components/create-workspace";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -14,13 +14,15 @@ import { useSession } from "~/lib/session";
 import { cn } from "~/lib/utils";
 import { clean, refreshWorkspaces } from "~/lib/workspaces";
 import { AuthFrame } from "~/pages/auth/frame";
+import { introSeen } from "~/pages/auth/intro";
 import { ConnectCloudflare } from "~/pages/org/parts";
 
-// First run, and "New organization" later: name the organization, connect its Cloudflare account
-// through cf, then create its first workspace, which then opens. The organization is saved once
-// Cloudflare is connected; `?step=workspace` resumes at the workspace for one that has none yet.
-// Beside the first step, the demo: an organization with no Cloudflare account and one workspace
-// that lives only on this Mac, filled with sample data (src/main/demo.ts).
+// First run, and "New organization" later. First the demo: an organization with no Cloudflare
+// account and one workspace that lives only on this Mac, filled with sample data (src/main/demo.ts).
+// Then your own: name the organization, connect its Cloudflare account through cf, then create its
+// first workspace, which then opens. The organization is saved once Cloudflare is connected;
+// `?step=workspace` resumes at the workspace for one that has none yet. The very first run goes
+// through the intro tour (intro.tsx) before this.
 
 const STEPS = ["Organization", "Cloudflare", "Workspace"];
 
@@ -61,7 +63,7 @@ function StepHeading({ title, children }: { title: string; children: React.React
 
 const DEMO_STEPS: { step: DemoProgress["step"]; label: string }[] = [
   { step: "repo", label: "Make the workspace's repo and install its packages" },
-  { step: "apps", label: "Add the Journal app" },
+  { step: "apps", label: "Add the Funnels, Pages and Blog apps" },
   { step: "server", label: "Start the dev server" },
   { step: "data", label: "Fill the database with sample data" },
 ];
@@ -99,8 +101,8 @@ function ExploreDemo(): React.ReactElement {
   return (
     <Card className="p-6">
       <div className="flex flex-col gap-5">
-        <StepHeading title="Or Explore a Demo">
-          A sample workspace for a small pottery studio, with contacts, 90 days of events, segments, workflows and a Journal app. It runs on this Mac, so it needs no
+        <StepHeading title="Explore the Demo">
+          Fernwood Ceramics, a small pottery studio, with contacts, 90 days of events, segments, workflows, and Funnels, Pages and Blog apps. It runs on this Mac, so it needs no
           Cloudflare account, and Muse Code works on it like on any workspace.
         </StepHeading>
         {phase !== "idle" && (
@@ -129,8 +131,8 @@ function ExploreDemo(): React.ReactElement {
         {error && <p className="whitespace-pre-wrap rounded-lg bg-destructive/8 p-3 font-mono text-xs text-destructive-foreground">{error}</p>}
         <div className="flex items-center justify-end gap-3">
           {phase === "running" && <span className="text-xs text-muted-foreground">The first start installs packages and can take a minute.</span>}
-          <Button variant="outline" disabled={!sg || phase === "running"} onClick={() => void start()}>
-            {phase === "failed" ? "Try Again" : "Explore a Demo"}
+          <Button disabled={!sg || phase === "running"} onClick={() => void start()}>
+            {phase === "failed" ? "Try Again" : "Explore the Demo"}
           </Button>
         </div>
       </div>
@@ -148,23 +150,31 @@ export function Welcome(): React.ReactElement {
   const [created, setCreated] = React.useState<Org | null>(resume ? current : null);
   const org = created;
 
+  if (!current && !introSeen()) return <Navigate to="/intro" replace />;
   return (
     <AuthFrame
       end={
-        current &&
-        !resume &&
-        !created && (
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-            Cancel
-          </Button>
-        )
+        <>
+          {step === 0 && (
+            <Button variant="ghost" size="sm" onClick={() => navigate("/intro")}>
+              Take the Tour
+            </Button>
+          )}
+          {current && !resume && !created && (
+            <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+              Cancel
+            </Button>
+          )}
+        </>
       }
     >
       <div className="mx-auto flex w-full max-w-[680px] flex-col gap-6 py-4">
         <div className="flex flex-col gap-1.5">
           <h1 className="font-heading text-3xl font-semibold tracking-tight">Set up SuperGrid</h1>
-          <p className="text-sm text-muted-foreground">An organization, the Cloudflare account it runs on, and its first workspace. Everything stays on this Mac.</p>
+          <p className="text-sm text-muted-foreground">Start with the demo, or set up your own on your Cloudflare account. Everything stays on this Mac.</p>
         </div>
+        {step === 0 && <ExploreDemo />}
+        {step === 0 && <h2 className="pt-2 font-heading text-lg font-semibold">Or Set Up Your Own</h2>}
         <Stepper active={step} />
 
         <Card className="p-6">
@@ -180,7 +190,6 @@ export function Welcome(): React.ReactElement {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="My Studio"
-                  autoFocus
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && name.trim()) setStep(1);
                   }}
@@ -229,7 +238,6 @@ export function Welcome(): React.ReactElement {
             </div>
           )}
         </Card>
-        {step === 0 && <ExploreDemo />}
       </div>
     </AuthFrame>
   );

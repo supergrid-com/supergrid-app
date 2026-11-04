@@ -5,10 +5,10 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 // "Watch the Demo": a button that opens the demo video in a modal over the page, and the same modal
-// opened by a link to supergrid.com/#demo (the repo README links there). The video is a stand-in on
-// YouTube for now; swap DEMO_VIDEO_ID for the real one when it's up.
+// opened by a link to supergrid.com/#demo (the repo README links there). The video is the launch film
+// on YouTube (youtu.be/Aq2P6M_lzBQ).
 
-const DEMO_VIDEO_ID = "MDH2WKxcY5g";
+const DEMO_VIDEO_ID = "Aq2P6M_lzBQ";
 
 export function WatchDemoButton({ className, children = "Watch the Demo" }: { className: string; children?: ReactNode }) {
   const [open, setOpen] = useState(false);

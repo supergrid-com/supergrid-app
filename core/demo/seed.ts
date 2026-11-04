@@ -9,7 +9,9 @@
 export const DEMO_NAME = "Fernwood Ceramics";
 /** The app folders the demo adds to the repo, made from core/templates/app and renamed (see demo.ts). */
 export const DEMO_APPS = [
-  { id: "blog", name: "Journal", mount: "/journal", color: "#b4673f", description: "The studio journal: process notes, glaze tests and launch news.", label: "Post", plural: "Posts" },
+  { id: "funnels", name: "Funnels", mount: "/funnels", color: "#7c5cff", description: "The paths from a first visit to a sign-up or an order.", label: "Funnel", plural: "Funnels" },
+  { id: "pages", name: "Pages", mount: "/pages", color: "#2f9e8f", description: "The site's landing pages, from the spring collection to wholesale.", label: "Page", plural: "Pages" },
+  { id: "blog", name: "Blog", mount: "/blog", color: "#b4673f", description: "Process notes, glaze tests and launch news.", label: "Post", plural: "Posts" },
 ] as const;
 
 export type DemoSeed = {
@@ -53,13 +55,13 @@ const PRODUCTS: [string, number, string][] = [
   ["Tide Pasta Bowl", 44, "spring"], ["Bone Espresso Cup", 28, "core"], ["Moss Planter", 68, "core"], ["Seconds Box", 60, "core"], ["Glaze Sampler Set", 120, "spring"],
 ];
 const PATHS: [string, number][] = [
-  ["/", 30], ["/shop", 18], ["/shop/spring", 14], ["/journal", 8], ["/journal/glaze-tests-for-tide", 5], ["/journal/how-we-fire", 4], ["/journal/spring-collection-is-here", 7],
+  ["/", 30], ["/shop", 18], ["/shop/spring", 14], ["/blog", 8], ["/blog/glaze-tests-for-tide", 5], ["/blog/how-we-fire", 4], ["/blog/spring-collection-is-here", 7],
   ["/waitlist", 6], ["/about", 3], ["/wholesale", 2], ["/shop/tide-mug", 6], ["/shop/ember-serving-bowl", 4], ["/shop/seconds-box", 3],
 ];
 const REFERRERS: [string | null, string | null, string | null, string | null, number][] = [
   // referrer, utm_source, utm_medium, utm_campaign, weight
   [null, null, null, null, 30], ["https://www.instagram.com/", "instagram", "social", "spring-launch", 24], ["https://www.google.com/", null, null, null, 18],
-  ["https://www.pinterest.com/", "pinterest", "social", null, 9], [null, "newsletter", "email", "spring-launch", 11], [null, "newsletter", "email", "journal-digest", 5],
+  ["https://www.pinterest.com/", "pinterest", "social", null, 9], [null, "newsletter", "email", "spring-launch", 11], [null, "newsletter", "email", "blog-digest", 5],
   ["https://www.tiktok.com/", "tiktok", "social", "studio-tour", 6], ["https://news.ycombinator.com/", null, null, null, 1],
 ];
 const DEVICES: [string, string, number][] = [
@@ -81,6 +83,25 @@ const POSTS: { slug: string; title: string; status: "draft" | "published"; daysA
   { slug: "summer-glazes", title: "Summer Glazes: First Tests", status: "draft", daysAgo: 3, body: "Two new glazes in testing: a warm yellow we are calling Straw and a deep red that keeps coming out brown. Notes so far." },
   { slug: "packaging", title: "New Packaging, Less Plastic", status: "draft", daysAgo: 6, body: "We moved to molded paper inserts. Breakage is down, plastic is gone, and the boxes stack better in the studio." },
   { slug: "market-days", title: "Market Days This Summer", status: "draft", daysAgo: 1, body: "Where to find us in person this summer. Dates to confirm." },
+];
+
+const FUNNELS: { slug: string; title: string; status: "draft" | "published"; daysAgo: number; body: string }[] = [
+  { slug: "spring-launch", title: "Spring Collection Launch", status: "published", daysAgo: 30, body: "Instagram and the newsletter → the Spring Collection page → the waitlist form → a launch-day email with a day's early access." },
+  { slug: "waitlist-first-order", title: "Waitlist to First Order", status: "published", daysAgo: 28, body: "Waitlist sign-up → welcome email → free-shipping code → first order. Runs on the Welcome the Waitlist workflow." },
+  { slug: "wholesale-inquiry", title: "Wholesale Inquiry", status: "published", daysAgo: 14, body: "The Wholesale page → the inquiry form → tagged wholesale → a call within two days. $400 minimum order." },
+  { slug: "seconds-sale", title: "Seconds Box Sale", status: "published", daysAgo: 70, body: "Monthly email → the Seconds Box page → checkout. It usually sells out within a day." },
+  { slug: "studio-tour", title: "Studio Tour Booking", status: "draft", daysAgo: 4, body: "TikTok studio tour → a booking page → a reminder the day before. Testing it for the summer." },
+  { slug: "summer-preorder", title: "Summer Glazes Preorder", status: "draft", daysAgo: 2, body: "A preorder page for Straw and the new red, once the tests are done." },
+];
+
+const PAGES: { slug: string; title: string; status: "draft" | "published"; daysAgo: number; body: string }[] = [
+  { slug: "home", title: "Home", status: "published", daysAgo: 120, body: "The studio's front page: the spring collection, the seconds box and the newsletter sign-up." },
+  { slug: "spring", title: "Spring Collection", status: "published", daysAgo: 22, body: "Five glazes, eleven pieces: Tide, Moss, Ember, Bone and Ink, with prices and care notes." },
+  { slug: "waitlist", title: "Join the Waitlist", status: "published", daysAgo: 31, body: "A day's head start on the spring collection, and free shipping on your first order." },
+  { slug: "wholesale", title: "Wholesale", status: "published", daysAgo: 13, body: "Carry Fernwood in your shop. $400 minimum, three-week lead time, and a call to start." },
+  { slug: "about", title: "About the Studio", status: "published", daysAgo: 90, body: "Two potters, two wheels and a kiln named Gus, in a converted garage." },
+  { slug: "seconds", title: "The Seconds Box", status: "published", daysAgo: 72, body: "Pieces with a flaw you would notice and a price you will like. Restocked monthly." },
+  { slug: "market-days", title: "Market Days", status: "draft", daysAgo: 1, body: "Where to find us in person this summer. Dates to confirm." },
 ];
 
 const SKILLS = [
@@ -148,7 +169,7 @@ export function demoSeed(now: Date = new Date(), seed = 20261103): DemoSeed {
     // a third came before the launch, half around it (the waitlist), the rest since
     const phase = r();
     const days = phase < 0.32 ? 30 + r() * 90 : phase < 0.78 ? LAUNCH + 9 - r() * 12 : r() * (LAUNCH - 2);
-    const source = days > 30 ? weighted([["instagram", 4], ["shop", 3], ["market", 2], ["referral", 1]] as const)[0] : days > LAUNCH - 3 ? "waitlist" : weighted([["shop", 4], ["instagram", 3], ["journal", 2], ["referral", 1]] as const)[0];
+    const source = days > 30 ? weighted([["instagram", 4], ["shop", 3], ["market", 2], ["referral", 1]] as const)[0] : days > LAUNCH - 3 ? "waitlist" : weighted([["shop", 4], ["instagram", 3], ["blog", 2], ["referral", 1]] as const)[0];
     const city = pick(CITIES);
     contacts.push({ id: id(), email, name: `${first} ${last}`, source, created: at(days), tags: [], props: { city: city[0] }, city });
   }
@@ -202,7 +223,7 @@ export function demoSeed(now: Date = new Date(), seed = 20261103): DemoSeed {
   const visit = (city = pick(CITIES)): Visit => ({ anon: id(21), session: id(12), ref: weighted(REFERRERS), device: weighted(DEVICES), city });
   const event = (name: string, app: string, ts: number, v: Visit, path: string | null, props: Record<string, unknown>, contact: string | null = null) =>
     events.push([id(), name, app, iso(ts), contact, v.anon, v.session, path ? `${site}${path}` : null, path, v.ref[0], v.ref[1], v.ref[2], v.ref[3], null, null, v.city[2], v.city[1], v.city[0], v.city[3], v.device[1], v.device[0], props]);
-  const appOf = (path: string) => (path.startsWith("/journal") ? "blog" : "site");
+  const appOf = (path: string) => (path.startsWith("/blog") ? "blog" : "site");
   for (let d = 89; d >= 0; d--) {
     const date = new Date(today - d * DAY);
     const weekend = date.getUTCDay() === 0 || date.getUTCDay() === 6;
@@ -215,7 +236,7 @@ export function demoSeed(now: Date = new Date(), seed = 20261103): DemoSeed {
       event("session.start", appOf("/"), ts, v, null, {});
       const pages = 1 + Math.floor(r() * r() * 5);
       for (let p = 0; p < pages; p++) {
-        const path = d > LAUNCH && r() < 0.5 ? pick(["/", "/waitlist", "/journal/glaze-tests-for-tide", "/shop", "/about"]) : weighted(PATHS)[0];
+        const path = d > LAUNCH && r() < 0.5 ? pick(["/", "/waitlist", "/blog/glaze-tests-for-tide", "/shop", "/about"]) : weighted(PATHS)[0];
         event("page.view", appOf(path), ts, v, path, { title: path === "/" ? "Fernwood Ceramics" : path.split("/").pop()!.replace(/-/g, " ") });
         ts += 20_000 + Math.floor(r() * 120_000);
       }
@@ -225,7 +246,7 @@ export function demoSeed(now: Date = new Date(), seed = 20261103): DemoSeed {
     if (c.created < today - 89 * DAY) continue;
     const v = visit(c.city);
     v.ref = c.source === "instagram" ? REFERRERS[1]! : c.source === "waitlist" ? weighted(REFERRERS.slice(0, 5)) : v.ref;
-    const path = c.source === "waitlist" ? "/waitlist" : c.source === "journal" ? "/journal/spring-collection-is-here" : c.source === "wholesale" ? "/wholesale" : "/shop";
+    const path = c.source === "waitlist" ? "/waitlist" : c.source === "blog" ? "/blog/spring-collection-is-here" : c.source === "wholesale" ? "/wholesale" : "/shop";
     event("page.view", appOf(path), c.created - 90_000, v, path, { title: path.slice(1) });
     if (c.source === "waitlist") event("waitlist.joined", "site", c.created - 5_000, v, path, { collection: "spring" }, c.id);
     event("contact.created", "core", c.created, v, null, { email: c.email, source: c.source }, c.id);
@@ -285,7 +306,7 @@ export function demoSeed(now: Date = new Date(), seed = 20261103): DemoSeed {
       block("sources", "Where Contacts Came From", "bar", "contacts", q(), { groupBy: "source", span: 1 }),
       block("devices", "Visits by Device", "bar", "events", q(rule("name", "session.start")), { groupBy: "device", span: 1 }),
     ]),
-    report("journal", "Journal", "What people read in the studio journal.", [
+    report("blog", "Blog", "What people read on the studio blog.", [
       block("published", "Published Posts", "number", "app_blog_item", q(rule("status", "published"))),
       block("drafts", "Drafts", "number", "app_blog_item", q(rule("status", "draft"))),
       block("top", "Most Read Pages", "bar", "events", q(rule("name", "page.view"), rule("app_id", "blog")), { groupBy: "path", limit: 8 }),
@@ -295,7 +316,12 @@ export function demoSeed(now: Date = new Date(), seed = 20261103): DemoSeed {
   core.push(...inserts("skills", ["id", "title", "content"], SKILLS.map((s) => [s.id, s.title, s.content]), 50, "INSERT OR REPLACE"));
 
   const apps: string[] = [];
-  apps.push(...inserts("app_blog_item", ["id", "title", "body", "status", "contact_id", "created_at", "updated_at"], POSTS.map((p) => [p.slug, p.title, p.body, p.status, null, iso(at(p.daysAgo)).replace("T", " ").slice(0, 19), iso(at(Math.max(0, p.daysAgo - 1))).replace("T", " ").slice(0, 19)])));
+  // each app's rows: the template's one entity, made into posts, funnels and pages
+  const rows = (list: typeof POSTS) => list.map((p) => [p.slug, p.title, p.body, p.status, null, iso(at(p.daysAgo)).replace("T", " ").slice(0, 19), iso(at(Math.max(0, p.daysAgo - 1))).replace("T", " ").slice(0, 19)]);
+  const ITEM_COLS = ["id", "title", "body", "status", "contact_id", "created_at", "updated_at"];
+  apps.push(...inserts("app_blog_item", ITEM_COLS, rows(POSTS)));
+  apps.push(...inserts("app_funnels_item", ITEM_COLS, rows(FUNNELS)));
+  apps.push(...inserts("app_pages_item", ITEM_COLS, rows(PAGES)));
 
   const rpc: DemoSeed["rpc"] = [
     { method: "saveWorkflow", args: [{ id: "welcome-waitlist", name: "Welcome the Waitlist", enabled: true, definition: {
@@ -320,6 +346,6 @@ export function demoSeed(now: Date = new Date(), seed = 20261103): DemoSeed {
     core,
     apps,
     rpc,
-    counts: { contacts: contacts.length, orders: orders.length, events: events.length, posts: POSTS.length, segments: 6, workflows: rpc.length },
+    counts: { contacts: contacts.length, orders: orders.length, events: events.length, posts: POSTS.length, funnels: FUNNELS.length, pages: PAGES.length, segments: 6, workflows: rpc.length },
   };
 }

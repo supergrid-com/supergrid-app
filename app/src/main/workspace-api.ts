@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { rmSync } from "node:fs";
-import { type Cf, deleteD1, deleteQueue, deleteR2Bucket, deleteToken, deleteWorker, deleteWorkflow, getSettings, hooksWorkflow, listTokens, mediaToken, readWorkspace, setSecrets, type EnvValue } from "@supergrid/cloud";
+import { type Cf, deleteD1, deleteQueue, deleteQueueConsumers, deleteR2Bucket, deleteToken, deleteWorker, deleteWorkflow, getSettings, hooksWorkflow, listTokens, mediaToken, readWorkspace, setSecrets, type EnvValue } from "@supergrid/cloud";
 import { RPC_METHOD_NAMES } from "@supergrid/app-kit/rpc";
 import type { ServedManifest, WorkspaceSummary } from "../shared/bridge";
 import { cfClient } from "./cf-api";
@@ -111,6 +111,12 @@ export async function cloudWorkspace(wsId: string): Promise<WorkspaceSummary> {
   throw new Error(`Unknown workspace ${wsId}: not among ${where}.${lastError ? ` ${String((lastError as Error).message ?? lastError)}` : ""}`);
 }
 
+/** The Cloudflare account a workspace lives in: the one its organization links to, where it was found. */
+export async function accountIdOf(wsId: string): Promise<string> {
+  await cloudWorkspace(wsId);
+  return accountOf.get(wsId) ?? (await cloudflare.client()).cf.accountId;
+}
+
 /** The client for the account a workspace was found in. */
 const clientOf = async (ws: WorkspaceSummary): Promise<Cf> => clientFor(accountOf.get(ws.id) ?? (await links())[0]?.accountId ?? (await cloudflare.client()).cf.accountId);
 
@@ -146,10 +152,12 @@ export async function deleteWorkspace(wsId: string): Promise<{ left: string[] }>
     const { facts, apps: installed } = await readWorkspace(cf, ws.worker);
     for (const a of installed) if (a.worker && a.worker !== ws.worker) await deleteWorker(cf, a.worker);
     await deleteWorkflow(cf, hooksWorkflow(ws));
-    // the queues (and their consumers) before the Worker: Cloudflare won't delete a Worker that still consumes one
-    if (facts.queue) for (const q of [facts.queue, `${facts.queue}-dlq`]) await deleteQueue(cf, q);
+    // Cloudflare won't delete a Worker that still consumes a queue, nor a queue the Worker still sends to: consumers off, the Worker, then the queues
+    const queues = facts.queue ? [facts.queue, `${facts.queue}-dlq`] : [];
+    for (const q of queues) await deleteQueueConsumers(cf, q);
     await deleteWorker(cf, ws.worker);
     // the Worker was what listed it, so from here a failure is reported rather than thrown: there'd be nothing to retry from
+    for (const q of queues) await deleteQueue(cf, q).catch(() => left.push(`Queue ${q}`));
     await deleteD1(cf, facts.d1Id).catch(() => left.push(`D1 database ${facts.d1Id}`));
     if (facts.files) await deleteR2Bucket(cf, facts.files).catch(() => left.push(`R2 bucket ${facts.files}`));
     await listTokens(cf).then((all) => Promise.all(all.filter((t) => t.name === `${ws.worker} media`).map((t) => deleteToken(cf, t.id)))).catch(() => undefined);

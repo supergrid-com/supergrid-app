@@ -1,5 +1,4 @@
 import type { AgentAnswer, AgentWidget, AppContext, AskInput, D1RawResult, D1Result, D1Target, WorkspaceSummary } from "../../shared/bridge";
-import * as cloudflare from "../cloudflare";
 import { localWorkspace } from "../local";
 import * as d1 from "../d1";
 import * as workspaceApi from "../workspace-api";
@@ -116,7 +115,7 @@ export function makeCtx(base: Pick<ToolCtx, "wsId" | "client" | "tool" | "dev" |
     ws: () => (ws ??= workspaceApi.workspace(base.wsId)),
     accountId: async () => {
       if (localWorkspace(base.wsId)) throw new Error("This workspace runs only on this Mac, so it has no Cloudflare account: Images, Media and Files aren't available in it.");
-      return (await cloudflare.client()).cf.accountId;
+      return workspaceApi.accountIdOf(base.wsId);
     },
     target: () =>
       (target ??= (async () => {

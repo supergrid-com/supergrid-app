@@ -76,9 +76,11 @@ function readAppearance(): Appearance {
         return { interface: { ...defaultAppearance.interface, ...a.interface }, sidebar: side };
       }
     }
-    // the setting before themes had knobs: light, dark or system
+    // the setting before themes had knobs: light, dark or system. applyAppearance writes the same key for index.html on
+    // every start, along with the theme's stylesheet, which the old setting never had; so it's only the old one without it
     const old = window.localStorage.getItem("sg.theme");
-    if (old === "light" || old === "dark") return { ...defaultAppearance, interface: { ...defaultAppearance.interface, preset: old } };
+    const legacy = window.localStorage.getItem("sg.theme.css") === null;
+    if (legacy && (old === "light" || old === "dark")) return { ...defaultAppearance, interface: { ...defaultAppearance.interface, preset: old } };
   } catch {}
   return defaultAppearance;
 }

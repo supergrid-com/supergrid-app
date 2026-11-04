@@ -20,7 +20,7 @@ export type InterfaceChoice = { preset: string } & Knobs;
 export type SidebarChoice = { enabled: boolean; preset: string } & Knobs;
 export type Appearance = { interface: InterfaceChoice; sidebar: SidebarChoice };
 
-// One list for both layers. The default accent is coral, as before. "system" follows the OS
+// One list for both layers. The app opens on Midnight; the other presets keep the coral accent. "system" follows the OS
 // between Light and Dark.
 export const presets: Preset[] = [
   { id: "light", name: "Light", accent: "#e8604a", background: "#ffffff", contrast: 30 },
@@ -34,7 +34,7 @@ export const SYSTEM = "system";
 export const CUSTOM = "custom";
 
 export const defaultAppearance: Appearance = {
-  interface: { preset: SYSTEM, ...pick("light") },
+  interface: { preset: "midnight", ...pick("midnight") },
   sidebar: { enabled: false, preset: "graphite", ...pick("graphite") },
 };
 

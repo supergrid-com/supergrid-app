@@ -82,7 +82,7 @@ export function CreateWorkspace({
   link,
   onOpen,
   onCancel,
-  doneLabel = "Open workspace",
+  doneLabel = "Open Workspace",
 }: {
   link: CloudflareLink;
   /** Called with the new workspace when the user moves on from the done screen. */
@@ -251,7 +251,7 @@ export function CreateWorkspace({
           </Button>
         )}
         <Button disabled={!name.trim() || !id} onClick={() => void create()}>
-          Create workspace
+          Create Workspace
         </Button>
       </div>
     </div>

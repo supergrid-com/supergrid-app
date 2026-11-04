@@ -14,3 +14,6 @@ export function useLatestRelease(): Release | null {
   }, []);
   return release;
 }
+
+/** A feed release's version (0.2.2). A workspace deployed from its own repo runs a build of that repo (2026-11-04.1e24ce8), which the feed can't be ahead of. */
+export const fromFeed = (version: string | null | undefined): version is string => !!version && /^\d+\.\d+\.\d+$/.test(version);

@@ -113,6 +113,24 @@ function saveWidget(sessionId: string, entry: SavedWidget): void {
   } catch {}
 }
 
+// The effort a new thread starts at: the one last picked in the composer, kept on this Mac.
+const DEFAULT_EFFORT = "medium";
+const EFFORT_KEY = "sg.agent.effort";
+
+function readEffort(): string | null {
+  try {
+    return localStorage.getItem(EFFORT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeEffort(value: string): void {
+  try {
+    localStorage.setItem(EFFORT_KEY, value);
+  } catch {}
+}
+
 export class AgentStore {
   state: AgentState = "idle";
   detail: string | null = null;
@@ -396,6 +414,7 @@ export class AgentStore {
         this.bind(client, sessionId);
         this.drafts.set(wsId, sessionId);
         this.emit();
+        await this.startingEffort(sessionId);
         return sessionId;
       })().finally(() => this.creating.delete(wsId));
       this.creating.set(wsId, pending);
@@ -462,9 +481,21 @@ export class AgentStore {
     if (this.conn && t?.busy) void this.conn.notify("session/cancel", { sessionId: id }).catch(() => undefined);
   }
 
-  async setChoice(id: string, choice: Choice, value: string): Promise<void> {
+  /**
+   * A new thread starts at the effort last picked here, else Medium. Muse's own default can be its deepest level, which
+   * turns a question about the workspace's data into minutes of work.
+   */
+  private async startingEffort(id: string): Promise<void> {
+    const t = this.threads.get(id);
+    const effort = sessionChoices(t?.settings ? { sessionId: id, ...t.settings } : null).find((c) => c.category === "thought_level");
+    const want = readEffort() ?? DEFAULT_EFFORT;
+    if (effort && effort.current !== want && effort.options.some((o) => o.id === want)) await this.setChoice(id, effort, want, false);
+  }
+
+  async setChoice(id: string, choice: Choice, value: string, remember = true): Promise<void> {
     const conn = this.conn;
     if (!conn) return;
+    if (remember && choice.category === "thought_level") writeEffort(value);
     try {
       if (choice.source === "config") {
         const res = await conn.request<{ configOptions?: SessionConfigOption[] }>("session/set_config_option", { sessionId: id, configId: choice.configId, value });

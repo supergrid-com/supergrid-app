@@ -60,13 +60,19 @@ export async function ensureConsumer(cf: Cf, queueId: string, script: string, se
   if (mine) await cf.put(cf.acct(`/queues/${queueId}/consumers/${mine.consumer_id}`), body);
   else await cf.post(cf.acct(`/queues/${queueId}/consumers`), body);
 }
-/** Deletes a queue and its consumers first: a Worker that still consumes a queue can't be deleted (10064), and neither can the queue. */
-export async function deleteQueue(cf: Cf, name: string) {
+/** Detaches a queue's consumers: a Worker that still consumes a queue can't be deleted (10064). Returns the queue, if there is one. */
+export async function deleteQueueConsumers(cf: Cf, name: string): Promise<QueueInfo | undefined> {
   const list = await cf.get<QueueInfo[]>(cf.acct("/queues?per_page=100"));
   const q = list.find((x) => x.queue_name === name);
   if (!q) return;
   for (const c of await cf.get<Consumer[]>(cf.acct(`/queues/${q.queue_id}/consumers`))) await cf.request("DELETE", cf.acct(`/queues/${q.queue_id}/consumers/${c.consumer_id}`));
-  await cf.request("DELETE", cf.acct(`/queues/${q.queue_id}`));
+  return q;
+}
+/** Deletes a queue and its consumers first. A queue a Worker still binds as a producer can't be deleted (11005), so a
+ * workspace's queues go after its Worker: consumers off (deleteQueueConsumers), then the Worker, then this. */
+export async function deleteQueue(cf: Cf, name: string) {
+  const q = await deleteQueueConsumers(cf, name);
+  if (q) await cf.request("DELETE", cf.acct(`/queues/${q.queue_id}`));
 }
 
 export const enableWorkersDev = (cf: Cf, script: string) => cf.post(cf.acct(`/workers/scripts/${script}/subdomain`), { enabled: true, previews_enabled: false });

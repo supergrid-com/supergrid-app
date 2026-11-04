@@ -35,3 +35,7 @@ background (the height is the page's own: hero 440, app 860, stack 600, core 600
 
 and rename the folder back to `_readme`. The app shot is a real capture of the desktop's demo workspace, kept as
 `_readme/app/window.png`.
+
+The shot of the site itself (`site.png`) is the live hero, captured by `scripts/readme-site.mjs` over the DevTools
+protocol: start `pnpm dev`, then a headless Chrome with `--remote-debugging-port=9400`, then
+`node scripts/readme-site.mjs ../../.github/readme/site.png 1536 1080`.

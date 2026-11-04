@@ -38,6 +38,11 @@
   longer has left the agent panel stuck (it's now dropped for a fresh one, and New Thread works on a failed one).
 - **Left as is**: the Database labels the Journal's table "Item" (from the table name, not the app's "Posts").
 
+- **Apps, 2026-11-04**: the Journal became **Blog** (still app id `blog`, table `app_blog_item`, mounted at `/blog`), and
+  **Funnels** (`/funnels`, `app_funnels_item`) and **Pages** (`/pages`, `app_pages_item`) joined it, all three from the
+  blank template with their one entity relabelled, seeded from `FUNNELS`, `PAGES` and `POSTS` in `core/demo/seed.ts`. A
+  demo made before this keeps its Journal until it is removed and made again (Reset only reseeds the data).
+
 The rest of this file is the original exploration.
 
 ---

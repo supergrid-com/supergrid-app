@@ -1,6 +1,7 @@
 import { LayoutGridIcon, MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
 import type * as React from "react";
 import { Link } from "react-router";
+import { SuperGridMark } from "~/components/supergrid-logo";
 import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuSeparator, MenuTrigger } from "~/components/ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { usePlatform } from "~/lib/platform";
@@ -24,13 +25,13 @@ export function BrandMark({ className }: { className?: string }): React.ReactEle
                 <button
                   type="button"
                   aria-label="SuperGrid menu"
-                  className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg bg-foreground/7 font-heading text-sm font-medium tracking-tight text-foreground outline-none transition-colors hover:bg-foreground/12 focus-visible:ring-[3px] focus-visible:ring-ring/40 data-popup-open:bg-foreground/12", className)}
+                  className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg bg-foreground/7 text-foreground outline-none transition-colors hover:bg-foreground/12 focus-visible:ring-[3px] focus-visible:ring-ring/40 data-popup-open:bg-foreground/12", className)}
                 />
               }
             />
           }
         >
-          SG
+          <SuperGridMark className="size-4.5" />
         </TooltipTrigger>
         <TooltipPopup>SuperGrid</TooltipPopup>
       </Tooltip>

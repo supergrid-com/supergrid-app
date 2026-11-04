@@ -34,7 +34,7 @@ function createWindow(): BrowserWindow {
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     // Centres the lights 28px down, the line every top bar's controls sit on.
     trafficLightPosition: { x: 16, y: 21 },
-    backgroundColor: "#171717",
+    backgroundColor: "#13151c",
     webPreferences: { preload: join(__dirname, "../preload/index.mjs"), sandbox: false, contextIsolation: true },
   });
   win.once("ready-to-show", () => win.show());

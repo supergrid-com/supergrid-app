@@ -16,7 +16,7 @@ Promise.all([
 ]).then(() => continueRender(fonts));
 
 // The film is a page, like the site: white sections, with a dark card that scrolls up over them for the
-// reveal and scrolls away again to leave the app on the plain white page, then rises once more for the end.
+// reveal and scrolls away again to leave the app on the plain white page; the end is white too.
 function Launch(): React.ReactElement {
   return (
     <AbsoluteFill style={{ background: "#ffffff" }}>
@@ -26,12 +26,10 @@ function Launch(): React.ReactElement {
       <Cto />
       <Industries />
       <Close />
-      <Stage rise={scrolls.reveal} leave={scrolls.app} moods={() => ({ violet: 1 })}>
+      <Stage rise={scrolls.reveal} leave={scrolls.app} moods={() => ({ hero: 0.42 })}>
         <Reveal />
       </Stage>
-      <Stage rise={scrolls.end} moods={() => ({ hero: 1 })} fade={() => 1}>
-        <End />
-      </Stage>
+      <End />
       <Audio src={staticFile("vo.mp3")} />
     </AbsoluteFill>
   );

@@ -1,4 +1,5 @@
 import type { RouteObject } from "react-router";
+import { Intro } from "~/pages/auth/intro";
 import { Welcome } from "~/pages/auth/welcome";
 import { Components } from "~/pages/dev/components";
 import { Launch } from "~/pages/launch";
@@ -13,13 +14,14 @@ import { WorkspaceShell } from "~/shell/workspace-shell";
 
 // Every screen. No sign-in: everything is local to this machine. The workspace is the main UI;
 // the organization's pages open as a modal over it (?org=…), and setup stands alone until an
-// organization and its first workspace exist.
+// organization and its first workspace exist, with the intro tour (/intro) before it on first run.
 export const routes: RouteObject[] = [
   {
     path: "/",
     Component: Root,
     ErrorBoundary,
     children: [
+      { path: "intro", Component: Intro },
       { path: "welcome", Component: Welcome },
       {
         Component: RequireSetup,
