@@ -4,8 +4,9 @@ import { PlayIcon, XIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-// "Watch the Demo": a button that opens the demo video in a modal over the page. The video is a
-// stand-in on YouTube for now; swap DEMO_VIDEO_ID for the real one when it's up.
+// "Watch the Demo": a button that opens the demo video in a modal over the page, and the same modal
+// opened by a link to supergrid.com/#demo (the repo README links there). The video is a stand-in on
+// YouTube for now; swap DEMO_VIDEO_ID for the real one when it's up.
 
 const DEMO_VIDEO_ID = "MDH2WKxcY5g";
 
@@ -18,6 +19,26 @@ export function WatchDemoButton({ className, children = "Watch the Demo" }: { cl
       </button>
       {open ? <VideoModal onClose={() => setOpen(false)} /> : null}
     </>
+  );
+}
+
+/** Opens the video when the address is #demo, on load or when the hash changes; closing it drops the hash. Mount once. */
+export function DemoFromHash() {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const check = () => setOpen(window.location.hash === "#demo");
+    check();
+    window.addEventListener("hashchange", check);
+    return () => window.removeEventListener("hashchange", check);
+  }, []);
+  if (!open) return null;
+  return (
+    <VideoModal
+      onClose={() => {
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+        setOpen(false);
+      }}
+    />
   );
 }
 

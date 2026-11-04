@@ -9,10 +9,10 @@ SaaS was four things bundled together. AI made three of them nearly free; the fo
 After supergrid.com and Squarespace, with the judges in mind: plain white page, big type, photography and product where they carry the story, nothing decorative
 
 - Page: plain white. The dark card (`#1B1D24`, inset 16) only for the SuperGrid reveal and the end card, with the mark in plain white
-- Type: Cal Sans 500 with a little tracking, near-black ink. Two-tone headlines like the site: the statement in ink, the rest in grey filling in to rose (`#f33869`) word by word as the voice says it. No full stops anywhere
+- Type: Cal Sans 500 with a little tracking, near-black ink. Two-tone headlines: the statement lands in ink first, then the rest arrives in rose (`#f33869`) a word at a time as the voice says it. No gradients on text. No full stops anywhere
 - Motion: text slides up and fades in quickly, no blur. Every other movement shows something: the wall drifting, the mosaic assembling, the blocks lighting, a line struck through
-- Hook: a wall of real SaaS homepages (Notion, Slack, HubSpot, Zendesk, Intercom, Figma, Asana, monday, Shopify, Zoom, Webflow, Dropbox, Atlassian, Grammarly, Miro, Airtable; headless Chrome screenshots in `film/public/wall`) drifting in four columns, each getting the same "AI assistant" badge; then a plain chat composer handed contentblocks.com and its login, asked to rebuild the whole product
-- Four parts: the word and its lines on the left, one picture card on the right: a small dark editor (the app's Midnight) writing lines, two bars for everybody scale vs yours, a ticket queue flipping to Fixed, and for vision a mosaic of pieces flying in to fit together
+- Hook: a wall of real SaaS homepages (Notion, Slack, HubSpot, Zendesk, Intercom, Figma, Asana, monday, Shopify, Zoom, Webflow, Dropbox, Atlassian, Grammarly, Miro, Airtable, Loom; headless Chrome screenshots in `film/public/wall`) drifting on a tilted plane; then, half a second before the voice turns, a plain chat composer handed contentblocks.com and bill.harper@gmail.com, asked to rebuild the whole product, and the agent's stream: opening, reading 48 screens, mapping the data model, writing a plan, building
+- Four parts: the word and its lines on the left, one picture card on the right: a Midnight editor where three lines are typed by hand and then the agent floods the file and opens three more; a globe of users counting past two million, then one user; an inbox of eight threads a machine clears in seconds, each stamped replied · fixed · 0.7s; and a bento mosaic of seventeen pieces flying in to fit together
 - Iceberg: a block grid, the top row solid (the screens), four rows outlined under a hairline, each block an icon for what a clone misses: the database, servers, security, time, decisions, taste
 - Three reasons: the headline, then three columns that arrive one by one and stay up together
 - The product: the desktop app on its Midnight theme (blue-black, periwinkle accent), polished like Attio, with the site pages it produces styled like Squarespace templates over Unsplash photography (`film/public/photos`)
@@ -28,9 +28,9 @@ After supergrid.com and Squarespace, with the judges in mind: plain white page, 
 
 | Time | Beat | On Screen |
 |---|---|---|
-| 0:00 | Hook | A wall of SaaS homepages drifts past, each getting an AI assistant badge, under "AI was the selling point"; then a plain chat composer is handed contentblocks.com and its login and asked to rebuild the whole product, under "Now AI is rebuilding the product, and taking the business with it" |
+| 0:00 | Hook | SaaS homepages drift on a tilted plane under "AI was the selling point"; then "Now AI is rebuilding the product" over a plain chat given contentblocks.com and a gmail login, "Rebuild this whole product", and the agent's stream of steps |
 | 0:07 | Four things | SaaS was four things, sold as one subscription filling to rose, over one hairline pill holding Code, Servers, Support, Vision |
-| 0:09 | Code, Servers, Support, Vision | Two columns each: the word and what it took, struck through in rose for what it takes now, beside a dark editor writing lines, two bars (everybody scale, yours), a ticket queue going Fixed, and a mosaic assembling for vision, whose line stays standing |
+| 0:09 | Code, Servers, Support, Vision | Two columns each: the word and what it took, struck through in rose for what it takes now, beside a real editor the agent floods, a globe narrowing to one user, an inbox a machine clears, and a bento mosaic assembling for vision, whose line stays standing |
 | 0:30 | Taste | "AI can't recreate taste" alone |
 | 0:32 | Buy or build | Buy or Build, for big companies, then for one person with an agent |
 | 0:37 | 100 features | 100 features to use 3, over a 10 × 10 grid where three squares light rose |

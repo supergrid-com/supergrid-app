@@ -1,9 +1,12 @@
-![SuperGrid: the IDE for creators, a new type of SaaS](.github/readme/hero.png)
+![SuperGrid: a new type of SaaS, the IDE for Creators & Marketers powered by Muse Code](.github/readme/hero.png)
 
-# SuperGrid
+<p align="center">
+  <a href="https://cerebralvalley.ai/e/meta-ai-developer-hackathon"><img alt="Built for the Meta AI Developer Hackathon" src="https://img.shields.io/badge/Built%20for-Meta%20AI%20Developer%20Hackathon-0064e0?style=flat-square&logo=meta&logoColor=white"></a>
+</p>
 
-The base for a new kind of SaaS: you get the code, it runs in your own Cloudflare account, and your own Muse Code
-agent keeps it up to date.
+<p align="center">
+  <a href="https://supergrid.com"><b>supergrid.com</b></a> &nbsp;·&nbsp; <a href="https://supergrid.com/#demo">▶ Watch the demo</a>
+</p>
 
 ## Why I built SuperGrid
 
@@ -13,17 +16,23 @@ are finding them, but some of them are getting their agents to "clone" their own
 harder. It also means they clone what they can see, without the time, the choices and the years of experience behind why
 I built it "that way".
 
+You can see it all over social media, YouTube and Twitter: people "vibe cloning" their own versions, giving them away
+for free, or even trying to resell them. Builders are losing customers, and they're getting suspicious of the customers who
+like their product, wondering if they're just getting an agent to recreate it.
+
 Cloning an app is a lose-lose: I lose revenue, and they get a worse copy. So instead of fighting this new behaviour, I'm
 building SuperGrid to make what people are already doing easier.
 
 My work is helping creators market themselves and sell their products, and I want my products to actually help people.
-About 80% of a SaaS product is the same for every product: database, auth, events, analytics and so on. SuperGrid is the
-base of this new kind of SaaS. It ships with everything an app needs (database, events, analytics, assets, hosting), so I
-can ship the core of a product, the 20%, and it plugs into the customer's own workspace and business. They aren't cloning
-it. They get the code, and they can extend it and make it their own.
+About 80% of a SaaS product is the same for every product: database, auth, events, analytics and so on.
 
-People want to own and self-host their software. They want to use their own AI subscriptions, they don't like token
-reselling, and they don't want to pay for 100 features to use 3.
+SuperGrid is the base of this new kind of SaaS. It ships with everything an app needs (database, events, analytics,
+assets, hosting), so I can ship the core of a product, the 20%, and it plugs into the customer's own workspace and
+business. They aren't cloning it. They get the code, and they can extend it and make it their own.
+
+I think people are cloning apps, and searching for "open source" clones, because they want to own their software and
+self-host it. They want to use their own AI subscription, like Muse Code. They don't like token resellers charging a
+premium for what they already pay for. And they don't want to pay for 100 features to only use 3.
 
 ## What I built this week
 
@@ -31,9 +40,13 @@ I spent the last week building and prototyping how this could work. There are a 
 everything from a hosted version to a registry to microfrontends. I settled on this: a workspace is a monorepo, apps are
 copied into it (shadcn style), and updates arrive as a merge that Muse Code resolves when it conflicts with your changes.
 
-I haven't had time to make example apps and really tell the story of how this would work, but the desktop app and the
-system work. The desktop app is the "IDE" for my users, creators and marketers. It runs Muse Code over ACP (the Agent
-Client Protocol), so people use their own subscription. It connects to their Cloudflare account and deploys everything.
+Because most of the time went into prototyping how this model could work, the demo isn't as polished as I'd like. The
+desktop app and the infrastructure behind it are there, but I didn't have time to build real apps to install, or the app
+store.
+
+The desktop app is the "IDE" for the user. They connect their own Muse Code (over ACP, the Agent Client Protocol) and
+create apps on the core system, which handles the shared parts for them. Everything is then bundled and deployed to their
+own Cloudflare account.
 
 ## My goal
 
@@ -42,6 +55,11 @@ let people self-host their own ClickFunnels, and let other builders make apps an
 
 This wouldn't have been possible a few years ago. Tools like Muse Code make it possible: every user gets a CTO who helps
 with updates and code, and that's what lets this new kind of SaaS be explored.
+
+I believe more of these kinds of "IDEs" and "harnesses" may become popular for different industries. Mine is for
+creators and marketers, but I can see ones built for productivity, small business and more: operated by agents, with a
+core that's opinionated and owned, and every app installing into that core. The apps are the highly specialized,
+thoughtful solutions, built by the people who can solve each problem best.
 
 — Dylan
 
@@ -62,6 +80,22 @@ clear the quarantine flag:
 xattr -dr com.apple.quarantine /Applications/SuperGrid.app
 ```
 
+### Or run it from source
+
+Anyone can run the desktop app in dev mode straight from this repo, on an Apple Silicon or Intel Mac. You need Node, pnpm
+and git:
+
+```bash
+git clone https://github.com/supergrid-com/supergrid-app.git
+cd supergrid-app
+pnpm -C core install
+pnpm -C app install
+pnpm -C app dev
+```
+
+`pnpm -C app dev` opens SuperGrid with hot reload, so you can change the app while you use it. `pnpm -C app dist` builds
+the `.dmg`.
+
 ### What you need
 
 | For | You need |
@@ -77,18 +111,6 @@ ceramics store called Fernwood Ceramics: about 250 contacts, 8,600 events over 9
 Journal app with posts. It's a real workspace running on its local dev server and database, filled with sample data, so
 you can ask Muse Code about it or have it change the code. The first run installs packages, so it needs the network.
 **Reset Demo Data** in the workspace's settings puts it back.
-
-### Build from source
-
-```bash
-git clone https://github.com/supergrid-com/supergrid-app.git
-cd supergrid-app
-pnpm -C core install
-pnpm -C app install
-pnpm -C app dev
-```
-
-`pnpm -C app dist` builds the `.dmg`.
 
 ## How it fits together
 
@@ -109,7 +131,7 @@ keep serving traffic.
 
 ## What every workspace ships with
 
-This is the 80%, so an app only has to bring what makes it different.
+This is the shared core every app is built on.
 
 ![The workspace core: database, contacts, events, workflows, media, themes, deploys and more around Muse Code, Core and Cloudflare](.github/readme/core.png)
 
@@ -175,13 +197,15 @@ The full design is in [core/WORKSPACE-REPO.md](core/WORKSPACE-REPO.md).
 - Muse Code in the chat over ACP, with the workspace tools
 - The local demo workspace
 
-**Not built yet**
+**Not finished yet**
 
-- Installing and updating apps from an upstream repo with the merge described above (designed, next in line)
+- Installing and updating apps from someone else's repo. It's structured, and the update path is tested on a test account
+  (signed releases, merging a new version into an app the owner changed), but it isn't polished or set up for real
+  third-party updates yet
 - The app store
 - Example apps: Blog, Forms and Landing Pages
 - Accounts for a workspace's own customers (staff sign-in only so far)
-- Windows and Linux builds, and a signed macOS build
+- Builds for Intel Macs, Windows and Linux
 
 ## In this repo
 

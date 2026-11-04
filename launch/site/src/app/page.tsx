@@ -3,7 +3,7 @@ import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import { Button, Chip, Container, Mark, Muse, MuseGlyph, Panel } from "@/components/brand";
 import { AppAnatomy } from "@/components/app-anatomy";
-import { WatchDemoButton } from "@/components/demo-video";
+import { DemoFromHash, WatchDemoButton } from "@/components/demo-video";
 import { Hero } from "@/components/hero";
 import { Nav } from "@/components/nav";
 import { ScrollFill } from "@/components/scroll-fill";
@@ -18,6 +18,7 @@ export default function Home() {
   return (
     <>
       <Nav />
+      <DemoFromHash />
       <main className="flex-1">
         <Hero />
         <Changing />

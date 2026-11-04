@@ -112,7 +112,7 @@ export function AdDesignerBody({ prompt, gen }: { prompt: React.ReactNode; gen: 
 
       <div style={{ flex: 1, minWidth: 0, borderRadius: 12, border: `1px solid ${C.line}`, background: C.panel, position: "relative", display: "flex", flexDirection: "column" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(circle, ${C.line} 1px, transparent 1.4px)`, backgroundSize: "22px 22px", borderRadius: 12, opacity: 0.5 }} />
-        <div style={{ position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 20 }}>
+        <div style={{ position: "relative", flex: 1, display: "flex", alignItems: "flex-start", justifyContent: "center", gap: 20, paddingTop: 72 }}>
           {FORMATS.map((f, i) => (
             <div key={f.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
               <div style={{ alignSelf: "stretch", display: "flex", justifyContent: "space-between", fontSize: 12, color: C.dim }}>

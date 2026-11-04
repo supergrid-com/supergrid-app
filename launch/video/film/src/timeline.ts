@@ -27,12 +27,12 @@ export function say(n: number, phrase: string, offset = 0): number {
 
 export const VO_END = cues[cues.length - 1]!.end;
 /** The end card holds a little after the last word. */
-export const DURATION = VO_END + 3.2;
+export const DURATION = VO_END + 2.6;
 
 // The beats, in order. Each runs until the next one starts.
 export const beats = {
   hook: 0,
-  fourParts: cue(3),
+  fourParts: cue(3, 0.45),
   buyBuild: cue(17),
   features: cue(19),
   clone: cue(20),
@@ -40,8 +40,8 @@ export const beats = {
   wants: cue(24),
   reveal: cue(28),
   app: cue(29, -0.3),
-  cto: cue(46, 0.35),
-  industries: cue(47),
+  cto: cue(46, 0.15),
+  industries: cue(47, 0.45),
   close: cue(50),
   end: cue(52),
 } as const;

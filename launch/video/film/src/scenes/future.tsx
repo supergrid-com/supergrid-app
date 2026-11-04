@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Appear, Fill, GradText, L, Mark, Muse, Rise, Scene, Sub, Title, center, prog, useT } from "../kit";
-import { Note, SCROLL, SPECTRUM, pageShift, scrollOn, scrolls } from "../look";
+import { Appear, Fill, L, Mark, Muse, Rise, Scene, Sub, Title, center, prog, useT } from "../kit";
+import { Note, SCROLL, pageShift, scrollOn, scrolls } from "../look";
 import { DURATION, beats, cue, say } from "../timeline";
 
 // After the app, on the white page: Muse Code as every creator's CTO, the experts in every industry and
@@ -101,7 +101,7 @@ export function End(): React.ReactElement {
         {lines.map((l, i) => (
           <Appear key={l.text} at={l.at} y={22}>
             <Title size={108} dark>
-              {i === 2 ? <GradText gradient={SPECTRUM}>{l.text}</GradText> : l.text}
+              {i === 2 ? l.text : <span style={{ color: "rgb(255 255 255 / 78%)" }}>{l.text}</span>}
             </Title>
           </Appear>
         ))}

@@ -4,8 +4,7 @@ import { FPS } from "./timeline";
 
 // The film's kit, after the sales page (launch/site): white ground, near-black type set in Cal Sans
 // at medium weight with a little air between the letters, two-tone headlines (the statement in ink,
-// the rest in grey that fills in to rose as it's said, like the site's scroll fill) and the
-// four-colour mark. The dark card, the glow, the
+// the rest arriving in rose once it's said) and the mark in plain white. The dark card, the glow, the
 // dots and the blueprint live in look.tsx. The product keeps its own dark Pitch theme (C, after
 // app/src/renderer/app/lib/theme.ts preset "pitch"). Muse, Meta's model, gets its own blue so every
 // moment it's on screen reads as Muse. Every frame is a pure function of the time, read from useT()
@@ -233,19 +232,19 @@ export function Eyebrow({ children, dark = false, color, size = 20, style }: { c
   return <div style={{ fontFamily: MONO, fontSize: size, letterSpacing: "0.22em", textTransform: "uppercase", color: color ?? (dark ? "rgb(255 255 255 / 55%)" : L.accent), textAlign: "center", ...style }}>{children}</div>;
 }
 
-/** The grey half of a two-tone headline filling in to rose a word at a time, from the first word at
- *  `from` to the last at `to`. On the site it runs on the scroll; here it runs on the voice. */
-export function Fill({ text, from, to, base = L.faint }: { text: string; from: number; to: number; base?: string }): React.ReactElement {
+/** The second half of a two-tone headline: it holds its space, then arrives in rose a word at a time,
+ *  from the first word at `from` to the last at `to`, after the black half has landed. */
+export function Fill({ text, from, to, color = L.rose }: { text: string; from: number; to: number; color?: string }): React.ReactElement {
   const t = useT();
   const words = text.split(" ");
   return (
     <>
       {words.map((w, i) => {
-        const k = prog(t, from + ((to - from) * i) / Math.max(1, words.length - 1), 0.4, "inOut");
+        const p = prog(t, from + ((to - from) * i) / Math.max(1, words.length - 1), 0.45);
         return (
           <React.Fragment key={i}>
             {i ? " " : null}
-            <span style={{ color: `color-mix(in srgb, ${L.rose} ${(k * 100).toFixed(1)}%, ${base})` }}>{w}</span>
+            <span style={{ display: "inline-block", color, opacity: p, transform: `translateY(${(1 - p) * 0.3}em)` }}>{w}</span>
           </React.Fragment>
         );
       })}
@@ -306,7 +305,7 @@ export function Cursor({ path, clicks = [], hideAt }: { path: [number, number, n
   const ring = clicks.map((c) => (t >= c && t < c + 0.5 ? (t - c) / 0.5 : -1)).find((r) => r >= 0) ?? -1;
   return (
     <div style={{ position: "absolute", left: x, top: y, zIndex: 100, opacity: appear * (1 - gone), pointerEvents: "none" }}>
-      {ring >= 0 ? <div style={{ position: "absolute", left: -20, top: -20, width: 40, height: 40, borderRadius: 999, border: `2px solid ${L.accent}`, opacity: 1 - ring, transform: `scale(${0.4 + ring})` }} /> : null}
+      {ring >= 0 ? <div style={{ position: "absolute", left: -20, top: -20, width: 40, height: 40, borderRadius: 999, border: "2px solid #fff", boxShadow: "0 0 0 1px rgb(0 0 0 / 35%), inset 0 0 0 1px rgb(0 0 0 / 35%)", opacity: 1 - ring, transform: `scale(${0.4 + ring})` }} /> : null}
       <svg width={24} height={28} viewBox="0 0 26 30" style={{ transform: `scale(${1 - press * 0.12})`, transformOrigin: "0 0", filter: "drop-shadow(0 3px 6px rgb(0 0 0 / 50%))" }}>
         <path d="M2 2 L2 23 L7.5 18 L11.5 27 L15.5 25.2 L11.6 16.5 L19 16.5 Z" fill="#fff" stroke="#111" strokeWidth="1.6" strokeLinejoin="round" />
       </svg>
@@ -315,7 +314,7 @@ export function Cursor({ path, clicks = [], hideAt }: { path: [number, number, n
 }
 
 /** A scene: shown from `from` to `to`, its content easing out over the last moment. */
-export function Scene({ from, to, children, fadeOut = 0.4, shift = 0, dark = false }: { from: number; to: number; children: React.ReactNode; fadeOut?: number; shift?: number; dark?: boolean }): React.ReactElement | null {
+export function Scene({ from, to, children, fadeOut = 0.28, shift = 0, dark = false }: { from: number; to: number; children: React.ReactNode; fadeOut?: number; shift?: number; dark?: boolean }): React.ReactElement | null {
   const t = useT();
   if (t < from || t >= to) return null;
   const q = prog(t, to - fadeOut, fadeOut, "inOut");
