@@ -6,6 +6,7 @@ import { AlertDialog, AlertDialogClose, AlertDialogDescription, AlertDialogFoote
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "~/components/ui/empty";
+import { Input } from "~/components/ui/input";
 import { SegmentedControl, SegmentedControlItem } from "~/components/ui/segmented-control";
 import { Spinner } from "~/components/ui/spinner";
 import { toastManager } from "~/components/ui/toast";
@@ -15,11 +16,11 @@ import { useChatSide } from "~/lib/chat-side";
 import { removeOrg, useOrgs } from "~/lib/orgs";
 import { useLatestRelease } from "~/lib/release";
 import { useSession } from "~/lib/session";
-import { clean } from "~/lib/workspaces";
+import { clean, refreshWorkspaces } from "~/lib/workspaces";
 import { useShell } from "~/shell/context";
 
 // The workspace's settings, as the Workspace group of the settings modal. General and Updates show
-// what the account says about the workspace; the Danger Zone resets or removes the demo; the rest
+// what the account says about the workspace; the Danger Zone deletes it (or resets or removes the demo); the rest
 // aren't built yet.
 
 function Row({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
@@ -112,11 +113,7 @@ export function WorkspaceDomain(): React.ReactElement {
 export function WorkspaceDanger(): React.ReactElement {
   const { ws } = useShell();
   if (ws.demo) return <DemoDanger />;
-  return (
-    <SectionPage title="Danger Zone">
-      <NotBuilt about="Pausing, moving or deleting the workspace." />
-    </SectionPage>
-  );
+  return <DeleteWorkspace />;
 }
 
 function DangerRow({ title, description, children }: { title: string; description: string; children: React.ReactNode }): React.ReactElement {
@@ -201,6 +198,68 @@ function DemoDanger(): React.ReactElement {
             <Button variant={confirm === "reset" ? "default" : "destructive"} disabled={busy} onClick={() => void (confirm === "reset" ? reset() : remove())}>
               {busy && <Spinner className="size-4" />}
               {confirm === "reset" ? "Reset" : "Remove"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogPopup>
+      </AlertDialog>
+    </SectionPage>
+  );
+}
+
+/** Deletes the workspace: on its Cloudflare account when it has one, and on this Mac (src/main/workspace-api.ts). */
+function DeleteWorkspace(): React.ReactElement {
+  const { ws } = useShell();
+  const { org } = useSession();
+  const navigate = useNavigate();
+  const [open, setOpen] = React.useState(false);
+  const [typed, setTyped] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const cloud = !ws.local;
+
+  const remove = async () => {
+    if (!sg) return;
+    setBusy(true);
+    try {
+      const { left } = await sg.ws.remove(ws.id);
+      if (left.length) toastManager.add({ title: "Workspace Deleted", description: `Still on the account, to delete by hand: ${left.join(", ")}.`, type: "warning" });
+      else toastManager.add({ title: "Workspace Deleted", description: `${ws.name} is gone.`, type: "success" });
+      if (org) void refreshWorkspaces(org);
+      navigate("/");
+    } catch (e) {
+      toastManager.add({ title: "Couldn't Delete the Workspace", description: clean(e), type: "error" });
+      setBusy(false);
+    }
+  };
+
+  return (
+    <SectionPage title="Danger Zone" width={760}>
+      <DangerRow
+        title="Delete Workspace"
+        description={cloud ? "Deletes its Worker, database, queues and file bucket on Cloudflare, and its repo on this Mac." : "Stops its dev server and deletes its repo from this Mac, apps and all."}
+      >
+        <Button size="sm" variant="destructive-outline" onClick={() => { setTyped(""); setOpen(true); }}>
+          Delete
+        </Button>
+      </DangerRow>
+      <AlertDialog open={open} onOpenChange={(next) => !busy && !next && setOpen(false)}>
+        <AlertDialogPopup>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {ws.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cloud ? "Its data, apps and address are gone for good, on Cloudflare and on this Mac. There is no undo." : "Its repo and database are deleted from this Mac. There is no undo."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2 px-6 pb-2 text-sm">
+            <span className="text-muted-foreground">Type {ws.name} to confirm.</span>
+            <Input value={typed} onChange={(e) => setTyped(e.target.value)} disabled={busy} autoFocus />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogClose disabled={busy} render={<Button variant="ghost" />}>
+              Cancel
+            </AlertDialogClose>
+            <Button variant="destructive" disabled={busy || typed.trim() !== ws.name} onClick={() => void remove()}>
+              {busy && <Spinner className="size-4" />}
+              Delete Workspace
             </Button>
           </AlertDialogFooter>
         </AlertDialogPopup>

@@ -96,6 +96,7 @@ ipcMain.handle(channels.wsRpc, (_e, wsId: unknown, method: unknown, args: unknow
 ipcMain.handle(channels.wsResetToken, (_e, wsId: unknown) => {
   if (typeof wsId === "string") workspaceApi.resetToken(wsId);
 });
+ipcMain.handle(channels.wsRemove, (_e, wsId: unknown) => workspaceApi.deleteWorkspace(str(wsId, "workspace id")));
 ipcMain.handle(channels.wsMediaToken, (_e, wsId: unknown, token: unknown) => {
   if (typeof wsId !== "string") throw new Error("A media token needs a workspace.");
   return workspaceApi.setMediaToken(wsId, typeof token === "string" && token.trim() ? token.trim() : undefined);

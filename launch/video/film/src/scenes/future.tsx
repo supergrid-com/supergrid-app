@@ -115,7 +115,7 @@ export function End(): React.ReactElement {
         </Appear>
         <Appear at={lockup} y={20} scale={0.94}>
           <div style={{ display: "flex", alignItems: "center", gap: 34 }}>
-            <Mark size={124} style={{ filter: "drop-shadow(0 0 30px rgb(155 61 255 / 35%))" }} />
+            <Mark size={124} color="#fff" style={{ filter: "drop-shadow(0 0 30px rgb(255 255 255 / 22%))" }} />
             <Title size={150} dark style={{ textShadow: "0 0 60px rgb(255 255 255 / 22%)" }}>
               SuperGrid
             </Title>

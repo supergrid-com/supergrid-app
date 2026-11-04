@@ -1,3 +1,5 @@
+![SuperGrid: the IDE for creators, a new type of SaaS](.github/readme/hero.png)
+
 # SuperGrid
 
 The base for a new kind of SaaS: you get the code, it runs in your own Cloudflare account, and your own Muse Code
@@ -45,6 +47,8 @@ with updates and code, and that's what lets this new kind of SaaS be explored.
 
 ---
 
+![The SuperGrid desktop app: Muse Code answering from the demo workspace's data beside its Spring Launch report](.github/readme/app.png)
+
 ## Try it
 
 ### Download
@@ -88,6 +92,8 @@ pnpm -C app dev
 
 ## How it fits together
 
+![Your Mac runs the desktop app and Muse Code, which edits the workspace repo, which deploys as one Worker to your Cloudflare account](.github/readme/stack.png)
+
 ```
 Organization        one Cloudflare account, with its members
   └─ Workspace      sg-ws-<id>: one git repo, one Worker, one D1 database, its own domain
@@ -104,6 +110,8 @@ keep serving traffic.
 ## What every workspace ships with
 
 This is the 80%, so an app only has to bring what makes it different.
+
+![The workspace core: database, contacts, events, workflows, media, themes, deploys and more around Muse Code, Core and Cloudflare](.github/readme/core.png)
 
 | | |
 |---|---|

@@ -222,6 +222,8 @@ export type Bridge = {
     /** Writes the Images/Stream/Analytics token (and the account id) as the workspace Worker's secrets, for assets. */
     /** Gives a workspace its media token: one minted for it, the app's own, or `token` when the user pastes one. */
     setMediaToken(wsId: string, token?: string): Promise<void>;
+    /** Deletes the workspace: from its Cloudflare account when it has one, and from this Mac. Resolves with what was left behind. */
+    remove(wsId: string): Promise<{ left: string[] }>;
   };
   /** The workspace's D1, through Cloudflare's D1 API on cf's login (src/main/d1.ts). */
   d1: {
@@ -359,6 +361,7 @@ export const channels = {
   wsMediaToken: "sg:ws:media-token",
   wsGet: "sg:ws:get",
   wsSetMode: "sg:ws:set-mode",
+  wsRemove: "sg:ws:remove",
   wsChanged: "sg:ws:changed",
   wsAdminUrl: "sg:ws:admin-url",
   wsAppManifest: "sg:ws:app-manifest",

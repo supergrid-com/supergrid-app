@@ -22,3 +22,16 @@ pnpm dev
 ```
 
 and rename the folder back to `_og`.
+
+## README pictures
+
+The repo README's banner, app shot and diagrams are pages in `src/app/_readme/` (hero, app, stack, core), each laid out at
+1600 px wide. To change one, rename the folder to `readme`, run `pnpm dev`, then capture it at 2x with a transparent
+background (the height is the page's own: hero 440, app 860, stack 600, core 600):
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=2 --default-background-color=00000000 --window-size=1600,440 --virtual-time-budget=8000 --screenshot=../../.github/readme/hero.png http://localhost:5320/readme/hero
+```
+
+and rename the folder back to `_readme`. The app shot is a real capture of the desktop's demo workspace, kept as
+`_readme/app/window.png`.

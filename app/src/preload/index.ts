@@ -48,6 +48,7 @@ const bridge: Bridge = {
     rpc: (wsId, method, args) => ipcRenderer.invoke(channels.wsRpc, wsId, method, args),
     resetToken: (wsId) => ipcRenderer.invoke(channels.wsResetToken, wsId),
     setMediaToken: (wsId, token) => ipcRenderer.invoke(channels.wsMediaToken, wsId, token),
+    remove: (wsId) => ipcRenderer.invoke(channels.wsRemove, wsId),
     adminUrl: (wsId, app, next) => ipcRenderer.invoke(channels.wsAdminUrl, wsId, app, next ?? "/"),
     appManifest: (wsId, app) => ipcRenderer.invoke(channels.wsAppManifest, wsId, app),
     appCall: (wsId, app, operation, input) => ipcRenderer.invoke(channels.wsAppCall, wsId, app, operation, input ?? {}),

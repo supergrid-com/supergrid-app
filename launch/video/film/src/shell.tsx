@@ -1,17 +1,23 @@
-import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, BookOpenIcon, ChevronsUpDownIcon, CodeIcon, DatabaseIcon, LibraryIcon, MessageCircleIcon, PanelLeftIcon, PanelRightIcon, PlusIcon, SquarePlusIcon, WorkflowIcon, type LucideIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, BookOpenIcon, ChevronsUpDownIcon, CodeIcon, DatabaseIcon, LibraryIcon, MessageCircleIcon, PanelLeftIcon, PanelRightIcon, PlusIcon, SearchIcon, SquarePlusIcon, WorkflowIcon, type LucideIcon } from "lucide-react";
 import * as React from "react";
 import { C, FONT, Mark, MuseGlyph } from "./kit";
 
-// The SuperGrid desktop app, rebuilt for the film after app/src/renderer/app/shell, in its dark
-// Pitch theme: the title bar with Live / Dev, the rail (Threads, Apps, Core), the second panel,
-// the agent's panel and the page in a card. Drawn at the app's own sizes and always shown whole.
-// The rail, the second panel and the agent's panel each take an "open" amount from 0 to 1, so
-// they slide in and out the way the app's own panels do.
+// The SuperGrid desktop app, rebuilt for the film after app/src/renderer/app/shell, in its Midnight
+// theme: the title bar with Live / Dev, the rail (Threads, Apps, Core), the second panel, the agent's
+// panel and the page in a card. Drawn at the app's own sizes and always shown whole. The rail, the
+// second panel and the agent's panel each take an "open" amount from 0 to 1, so they slide in and out
+// the way the app's own panels do. Every colour is a token from C; `tint` makes the soft fills from them.
 
 export const WIN_W = 1640;
 export const WIN_H = 860;
 const TITLE_H = 44;
 const RAIL_W = 224;
+
+/** `hex` at `pct` percent, as `rgb(r g b / pct%)`, so soft fills come from the theme's own colours. */
+export function tint(hex: string, pct: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgb(${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255} / ${Math.max(0, Math.min(100, pct)).toFixed(1)}%)`;
+}
 
 export type RailKey = "database" | "workflows" | "library" | "code" | `app:${string}` | `thread:${number}`;
 
@@ -21,7 +27,7 @@ export type RailState = {
   apps?: string[];
   /** how selected each row is, 0 to 1, so the selection can move smoothly */
   active?: Partial<Record<RailKey, number>>;
-  /** rows that light coral, for pointing at them while the voice names them */
+  /** rows that light in the accent, for pointing at them while the voice names them */
   lit?: Partial<Record<RailKey, number>>;
   /** rows still arriving, 0 to 1 */
   arriving?: Partial<Record<RailKey, number>>;
@@ -81,7 +87,7 @@ function RailRow({ icon: Icon, label, active = 0, lit = 0, arriving }: { icon: L
   const a = arriving ?? 1;
   return (
     <div style={{ height: 34 * a, opacity: a, overflow: "hidden" }}>
-      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, height: 34, padding: "0 10px", borderRadius: 8, background: lit > active ? `rgb(232 97 74 / ${(lit * 16).toFixed(1)}%)` : `rgb(235 235 235 / ${(active * 8).toFixed(1)}%)`, color: on > 0.5 ? C.strong : C.fg, fontSize: 14 }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, height: 34, padding: "0 10px", borderRadius: 8, background: lit > active ? tint(C.accent, lit * 16) : tint(C.strong, active * 8), color: on > 0.5 ? C.strong : C.fg, fontSize: 14 }}>
         <Icon style={{ width: 16, height: 16, color: on > 0.4 ? C.accent : C.muted, flexShrink: 0 }} />
         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
       </div>
@@ -153,7 +159,7 @@ export function SubNav({ title, items }: { title: string; items: SubItem[] }): R
         return (
           <React.Fragment key={`${it.label}${i}`}>
             {header ? <div style={{ fontSize: 11.5, letterSpacing: "0.08em", textTransform: "uppercase", color: C.dim, padding: "14px 10px 6px" }}>{header}</div> : null}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, height: 34, padding: "0 10px", borderRadius: 8, background: it.active ? C.active : lit > 0 ? `rgb(232 97 74 / ${Math.round(lit * 16)}%)` : "transparent", color: it.active || lit > 0.5 ? C.strong : C.fg, fontSize: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, height: 34, padding: "0 10px", borderRadius: 8, background: it.active ? C.active : lit > 0 ? tint(C.accent, lit * 16) : "transparent", color: it.active || lit > 0.5 ? C.strong : C.fg, fontSize: 14 }}>
               {Icon ? <Icon style={{ width: 16, height: 16, color: it.active || lit > 0.3 ? C.accent : C.muted }} /> : null}
               <span style={{ flex: 1 }}>{it.label}</span>
               {it.meta ? <span style={{ fontSize: 12.5, color: C.dim }}>{it.meta}</span> : null}
@@ -169,7 +175,7 @@ export function SubNav({ title, items }: { title: string; items: SubItem[] }): R
 export function ChatPanel({ children, draft, live }: { children?: React.ReactNode; draft?: React.ReactNode; live?: number }): React.ReactElement {
   const glow = live ?? 0;
   return (
-    <div style={{ height: "100%", background: C.panel, border: `1px solid ${glow > 0 ? `rgb(59 140 255 / ${Math.round(20 + glow * 40)}%)` : C.line}`, borderRadius: 12, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ height: "100%", background: C.panel, border: `1px solid ${glow > 0 ? tint(C.meta, 20 + glow * 40) : C.line}`, borderRadius: 12, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ height: 46, display: "flex", alignItems: "center", gap: 10, padding: "0 16px", borderBottom: `1px solid ${C.lineSoft}`, fontSize: 14.5, color: C.strong }}>
         <MuseGlyph size={22} />
         Muse Code
@@ -216,11 +222,11 @@ export function Spinner(): React.ReactElement {
   return <div style={{ width: 13, height: 13, borderRadius: 99, border: `2px solid ${C.line}`, borderTopColor: C.meta }} />;
 }
 
-/** The page's own header row inside the card. */
+/** The page's own header row inside the card: the title, anything beside it, the page's one action at the end. Always 64 high. */
 export function PageHeader({ title, action, children }: { title: React.ReactNode; action?: React.ReactNode; children?: React.ReactNode }): React.ReactElement {
   return (
-    <div style={{ padding: "20px 24px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-      <div style={{ fontSize: 22, color: C.strong }}>{title}</div>
+    <div style={{ height: 64, padding: "0 24px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+      <div style={{ fontSize: 22, color: C.strong, lineHeight: "30px" }}>{title}</div>
       {children}
       <div style={{ flex: 1 }} />
       {action}
@@ -228,17 +234,62 @@ export function PageHeader({ title, action, children }: { title: React.ReactNode
   );
 }
 
-export function Button({ children, primary, style }: { children: React.ReactNode; primary?: boolean; style?: React.CSSProperties }): React.ReactElement {
-  return <div style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 34, padding: "0 14px", borderRadius: 9, fontSize: 14, background: primary ? C.accent : C.raised, color: primary ? "#fff" : C.strong, border: primary ? "none" : `1px solid ${C.line}`, whiteSpace: "nowrap", ...style }}>{children}</div>;
+/** The row of pages inside a section, as the app's segmented tabs. */
+export function PageTabs({ items, active }: { items: string[]; active: number }): React.ReactElement {
+  return (
+    <div style={{ display: "flex", gap: 4, marginLeft: 16, fontSize: 14 }}>
+      {items.map((x, i) => (
+        <span key={x} style={{ padding: "5px 12px", borderRadius: 8, background: i === active ? C.active : "transparent", color: i === active ? C.strong : C.muted }}>{x}</span>
+      ))}
+    </div>
+  );
 }
 
-/** A small label inside the app. */
-export function Tag({ children, tone = "neutral", style }: { children: React.ReactNode; tone?: "neutral" | "accent" | "success" | "meta"; style?: React.CSSProperties }): React.ReactElement {
-  const tones = {
-    neutral: { bg: C.active, fg: C.fg, bd: C.line },
-    accent: { bg: C.accentSoft, fg: "#f4917f", bd: "rgb(232 97 74 / 30%)" },
-    success: { bg: C.successSoft, fg: C.success, bd: "rgb(52 211 153 / 25%)" },
-    meta: { bg: C.metaSoft, fg: "#7fb2ff", bd: "rgb(59 140 255 / 35%)" },
-  }[tone];
+/** The list pages' toolbar: a search box and the filter chips, with a count at the end. */
+export function Toolbar({ placeholder, chips = [], active = 0, count, style }: { placeholder: string; chips?: string[]; active?: number; count?: React.ReactNode; style?: React.CSSProperties }): React.ReactElement {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, height: 34, ...style }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, height: 32, width: 240, padding: "0 10px", borderRadius: 8, border: `1px solid ${C.line}`, background: C.card, color: C.dim, fontSize: 13.5 }}>
+        <SearchIcon style={{ width: 14, height: 14 }} />
+        {placeholder}
+      </div>
+      {chips.map((c, i) => (
+        <span key={c} style={{ height: 28, padding: "0 11px", borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: 13, background: i === active ? C.active : "transparent", border: `1px solid ${i === active ? C.line : C.lineSoft}`, color: i === active ? C.strong : C.muted, whiteSpace: "nowrap" }}>{c}</span>
+      ))}
+      <div style={{ flex: 1 }} />
+      {count !== undefined ? <span style={{ fontSize: 13, color: C.dim }}>{count}</span> : null}
+    </div>
+  );
+}
+
+export function Button({ children, primary, meta, style }: { children: React.ReactNode; primary?: boolean; meta?: boolean; style?: React.CSSProperties }): React.ReactElement {
+  const bg = meta ? C.meta : primary ? C.accent : C.raised;
+  return <div style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 34, padding: "0 14px", borderRadius: 9, fontSize: 14, background: bg, color: primary || meta ? "#fff" : C.strong, border: primary || meta ? "none" : `1px solid ${C.line}`, whiteSpace: "nowrap", ...style }}>{children}</div>;
+}
+
+const TONES = {
+  neutral: { bg: C.active, fg: C.fg, bd: C.line },
+  accent: { bg: C.accentSoft, fg: C.accent, bd: tint(C.accent, 32) },
+  success: { bg: C.successSoft, fg: C.success, bd: tint(C.success, 26) },
+  warning: { bg: tint(C.warning, 13), fg: C.warning, bd: tint(C.warning, 28) },
+  danger: { bg: tint(C.danger, 12), fg: C.danger, bd: tint(C.danger, 30) },
+  meta: { bg: C.metaSoft, fg: C.meta, bd: tint(C.meta, 36) },
+};
+export type Tone = keyof typeof TONES;
+
+/** A small label inside the app, as a pill with a soft fill. */
+export function Tag({ children, tone = "neutral", style }: { children: React.ReactNode; tone?: Tone; style?: React.CSSProperties }): React.ReactElement {
+  const tones = TONES[tone];
   return <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999, background: tones.bg, color: tones.fg, border: `1px solid ${tones.bd}`, fontSize: 13, lineHeight: 1.3, whiteSpace: "nowrap", ...style }}>{children}</span>;
+}
+
+/** A record's pill without the edge, the quieter kind a data grid uses: a dot and the word. */
+export function Dot({ children, tone = "neutral", style }: { children: React.ReactNode; tone?: Tone; style?: React.CSSProperties }): React.ReactElement {
+  const tones = TONES[tone];
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "2px 9px 2px 7px", borderRadius: 999, background: tones.bg, color: tone === "neutral" ? C.fg : tones.fg, fontSize: 13, lineHeight: 1.35, whiteSpace: "nowrap", ...style }}>
+      <span style={{ width: 6, height: 6, borderRadius: 99, background: tone === "neutral" ? C.muted : tones.fg }} />
+      {children}
+    </span>
+  );
 }

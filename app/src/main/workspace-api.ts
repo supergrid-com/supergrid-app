@@ -1,12 +1,13 @@
 import { randomBytes } from "node:crypto";
-import { type Cf, getSettings, mediaToken, setSecrets, type EnvValue } from "@supergrid/cloud";
+import { rmSync } from "node:fs";
+import { type Cf, deleteD1, deleteQueue, deleteR2Bucket, deleteToken, deleteWorker, deleteWorkflow, getSettings, hooksWorkflow, listTokens, mediaToken, readWorkspace, setSecrets, type EnvValue } from "@supergrid/cloud";
 import { RPC_METHOD_NAMES } from "@supergrid/app-kit/rpc";
 import type { ServedManifest, WorkspaceSummary } from "../shared/bridge";
 import { cfClient } from "./cf-api";
 import * as cloudflare from "./cloudflare";
 import { readConfig, readState, writeConfig } from "./config";
 import * as apps from "./apps";
-import { localWorkspace } from "./local";
+import { forgetLocalWorkspace, localWorkspace } from "./local";
 import { listWorkspaces } from "./workspaces";
 
 // The desktop's path into a workspace: POST `/_ws/rpc` on its public URL with the workspace token.
@@ -130,6 +131,39 @@ export function resetToken(wsId: string): void {
   if (!(wsId in wsTokens)) return;
   const { [wsId]: _, ...rest } = wsTokens;
   writeConfig({ wsTokens: rest });
+}
+
+/**
+ * Deletes a workspace. One that lives only on this Mac loses its dev server, its repo and its record. One in an account
+ * loses everything provisionWorkspace made there (app Workers, the hooks Workflow, its queues, the Worker, its D1, its
+ * bucket, its media token), then the same things on this Mac. Returns what couldn't be deleted (a bucket with files in it).
+ */
+export async function deleteWorkspace(wsId: string): Promise<{ left: string[] }> {
+  const left: string[] = [];
+  if (!localWorkspace(wsId)) {
+    const ws = await cloudWorkspace(wsId);
+    const cf = await clientOf(ws);
+    const { facts, apps: installed } = await readWorkspace(cf, ws.worker);
+    for (const a of installed) if (a.worker && a.worker !== ws.worker) await deleteWorker(cf, a.worker);
+    await deleteWorkflow(cf, hooksWorkflow(ws));
+    // the queues (and their consumers) before the Worker: Cloudflare won't delete a Worker that still consumes one
+    if (facts.queue) for (const q of [facts.queue, `${facts.queue}-dlq`]) await deleteQueue(cf, q);
+    await deleteWorker(cf, ws.worker);
+    // the Worker was what listed it, so from here a failure is reported rather than thrown: there'd be nothing to retry from
+    await deleteD1(cf, facts.d1Id).catch(() => left.push(`D1 database ${facts.d1Id}`));
+    if (facts.files) await deleteR2Bucket(cf, facts.files).catch(() => left.push(`R2 bucket ${facts.files}`));
+    await listTokens(cf).then((all) => Promise.all(all.filter((t) => t.name === `${ws.worker} media`).map((t) => deleteToken(cf, t.id)))).catch(() => undefined);
+    const { wsTokens = {}, wsSecretKeys = {} } = readConfig();
+    const { [wsId]: _t, ...tokens } = wsTokens;
+    const { [wsId]: _k, ...keys } = wsSecretKeys;
+    writeConfig({ wsTokens: tokens, wsSecretKeys: keys });
+    accountOf.delete(wsId);
+  }
+  apps.devStop(wsId);
+  rmSync(apps.repoDir(wsId), { recursive: true, force: true });
+  forgetLocalWorkspace(wsId);
+  apps.changed(wsId);
+  return { left };
 }
 
 /** Sets the workspace's secrets key, then waits for the Worker to run with it: a new secret lands a few seconds after the API takes it. */

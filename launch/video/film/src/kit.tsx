@@ -36,30 +36,33 @@ export const L = {
 /** Muse, by Meta. */
 export const META = { blue: "#0064E0", sky: "#0082FB", soft: "rgb(0 100 224 / 9%)" };
 
-/** The app's own dark theme, Pitch. */
+/** The app's own dark theme, Midnight: a blue-black ground with a periwinkle accent, every token from
+ *  app/src/renderer/app/lib/theme.ts (background #13151c, contrast 35, accent #7c8cf8). `bg`, `panel`
+ *  and `raised` are the admin layer (rail, sub nav, chat); `page` and `card` the page inside it. */
 export const C = {
-  bg: "#0a0a0a",
-  panel: "#0d0d0d",
-  page: "#0f0f0f",
-  card: "#141414",
-  raised: "#1f1f1f",
-  line: "rgb(235 235 235 / 10%)",
-  lineSoft: "rgb(235 235 235 / 6%)",
-  hover: "rgb(235 235 235 / 4%)",
-  active: "rgb(235 235 235 / 8%)",
-  fg: "#d6d6d6",
-  strong: "#ededed",
-  muted: "#8d8d8d",
-  dim: "#6e6e6e",
-  accent: "#E8614A",
+  bg: "#1b1d24",
+  panel: "#16171d",
+  page: "#13151c",
+  card: "#1a1c23",
+  raised: "#2d2f36",
+  line: "rgb(237 237 237 / 9%)",
+  lineSoft: "rgb(237 237 237 / 5%)",
+  hover: "rgb(237 237 237 / 4%)",
+  active: "rgb(237 237 237 / 7%)",
+  fill: "rgb(236 236 237 / 5%)",
+  fg: "#d5d6d7",
+  strong: "#e6e6e7",
+  muted: "#8f8f93",
+  dim: "#76777c",
+  accent: "#7c8cf8",
   rose: "#f33869",
-  accentSoft: "rgb(232 97 74 / 14%)",
+  accentSoft: "rgb(124 140 248 / 16%)",
   success: "#34d399",
-  successSoft: "rgb(52 211 153 / 12%)",
+  successSoft: "rgb(52 211 153 / 14%)",
   warning: "#fbbf24",
   danger: "#f87171",
-  meta: "#3b8cff",
-  metaSoft: "rgb(59 140 255 / 14%)",
+  meta: "#5b9dff",
+  metaSoft: "rgb(59 140 255 / 16%)",
 };
 
 export const FONT = "'Cal Sans', ui-sans-serif, system-ui, sans-serif";
