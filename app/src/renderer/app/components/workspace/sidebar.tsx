@@ -3,6 +3,7 @@ import * as React from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Shimmer } from "~/components/shimmer";
 import { SuperGridMark } from "~/components/supergrid-logo";
+import { Badge } from "~/components/ui/badge";
 import { PopoverPrimitive } from "~/components/ui/popover";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from "~/components/ui/menu";
@@ -362,7 +363,7 @@ const menuItemClass = "min-h-9 gap-2.5 rounded-md px-2.5 sm:min-h-8.5";
 // workspace's own settings first).
 function WorkspaceMenu({ ws }: { ws: WorkspaceSummary }): React.ReactElement {
   const { org } = useSession();
-  const { list } = useWorkspaces(org?.cloudflare ?? null);
+  const { list } = useWorkspaces(org);
   const { collapsed } = React.useContext(SidebarContext);
   const navigate = useNavigate();
   const modal = useOrgModal();
@@ -373,6 +374,13 @@ function WorkspaceMenu({ ws }: { ws: WorkspaceSummary }): React.ReactElement {
           <span aria-hidden className={headerHoverClass} />
           <span className={markClass}>{ws.name.slice(0, 1).toUpperCase()}</span>
           <Label className="relative truncate font-heading text-[15px] font-semibold tracking-wide text-admin-strong">{ws.name}</Label>
+          {ws.demo && (
+            <Label className="relative flex flex-none items-center">
+              <Badge variant="info" size="sm">
+                Demo
+              </Badge>
+            </Label>
+          )}
           <Label className="flex flex-none items-center">
             <ChevronsUpDownIcon className="relative size-4 text-admin-fg opacity-20 transition-opacity group-hover:opacity-100 group-data-[popup-open]:opacity-100" />
           </Label>
@@ -385,6 +393,11 @@ function WorkspaceMenu({ ws }: { ws: WorkspaceSummary }): React.ReactElement {
             <MenuItem key={w.id} className={menuItemClass} onClick={() => navigate(`/w/${w.id}`)}>
               <span className={smallMarkClass}>{w.name.slice(0, 1).toUpperCase()}</span>
               <span className="flex-1 truncate">{w.name}</span>
+              {w.demo && (
+                <Badge variant="info" size="sm">
+                  Demo
+                </Badge>
+              )}
               {w.id === ws.id && <CheckIcon className="size-4" />}
             </MenuItem>
           ))}

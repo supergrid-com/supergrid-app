@@ -2,12 +2,14 @@ import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { join } from "node:path";
 import { channels, type AppInfo, type D1Target, type LocalState } from "../shared/bridge";
 import { registerAgent } from "./agent";
-import { registerApps } from "./apps";
+import { localSummary, registerApps } from "./apps";
 import * as cfCli from "./cf-cli";
 import * as config from "./config";
 import * as cloudflare from "./cloudflare";
 import * as d1 from "./d1";
+import { registerDemo } from "./demo";
 import { registerLibrary } from "./library";
+import { localWorkspaces } from "./local";
 import * as workspaces from "./workspaces";
 import * as workspaceApi from "./workspace-api";
 
@@ -77,6 +79,7 @@ const str = (v: unknown, what: string) => {
   return v;
 };
 ipcMain.handle(channels.wsList, (_e, accountId: unknown, prefix: unknown) => workspaces.listWorkspaces(str(accountId, "account"), str(prefix, "prefix")));
+ipcMain.handle(channels.wsLocal, (_e, orgId: unknown) => Promise.all(localWorkspaces().filter((w) => w.org === str(orgId, "organization")).map((w) => localSummary(w, false))));
 ipcMain.handle(channels.wsRelease, () => workspaces.nextRelease());
 ipcMain.handle(channels.wsFreshId, (_e, accountId: unknown, prefix: unknown) => workspaces.freshId(str(accountId, "account"), str(prefix, "prefix")));
 ipcMain.handle(channels.wsCreate, (e, opts: { accountId?: unknown; prefix?: unknown; id?: unknown; name?: unknown }) =>
@@ -95,11 +98,13 @@ ipcMain.handle(channels.wsMediaToken, (_e, wsId: unknown, token: unknown) => {
   return workspaceApi.setMediaToken(wsId, typeof token === "string" && token.trim() ? token.trim() : undefined);
 });
 
-// the workspace's D1: the target names the account and the Worker whose DB binding is the database
+// the workspace's D1: the target names the account and the Worker whose DB binding is the database, or in Dev the dev
+// server whose local D1 answers instead (which needs no account: a workspace that lives only on this Mac has none)
 const target = (v: unknown): D1Target => {
   const t = v as Partial<D1Target> | undefined;
-  if (!t || typeof t.accountId !== "string" || !t.accountId || typeof t.worker !== "string" || !t.worker) throw new Error("A database call needs the account and the workspace Worker.");
-  return { accountId: t.accountId, worker: t.worker };
+  const local = t?.local && typeof t.local.ws === "string" && typeof t.local.url === "string" && t.local.url ? { ws: t.local.ws, url: t.local.url } : undefined;
+  if (!t || typeof t.accountId !== "string" || (!t.accountId && !local) || typeof t.worker !== "string" || !t.worker) throw new Error("A database call needs the account and the workspace Worker.");
+  return { accountId: t.accountId, worker: t.worker, ...(local ? { local } : {}) };
 };
 const sqlOf = (sql: unknown, params: unknown): [string, unknown[]] => {
   if (typeof sql !== "string" || !sql.trim()) throw new Error("Nothing to run.");
@@ -118,6 +123,7 @@ ipcMain.handle(channels.d1Export, (_e, t: unknown) => d1.exportSql(target(t)));
 registerAgent();
 registerLibrary();
 registerApps();
+registerDemo();
 
 void app.whenReady().then(() => {
   createWindow();

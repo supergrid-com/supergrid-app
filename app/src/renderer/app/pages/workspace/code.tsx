@@ -265,7 +265,7 @@ function Deploys({ ws }: { ws: WorkspaceSummary }): React.ReactElement {
     try {
       const { version } = await sg!.apps.deploy(ws.id);
       toastManager.add({ title: `Deployed ${version}`, description: apps.length ? `${apps.map((a) => a.manifest.name).join(", ")} ${apps.length === 1 ? "is" : "are"} live.` : "The workspace is live with no apps.", type: "success" });
-      if (org?.cloudflare) await refreshWorkspaces(org.cloudflare);
+      if (org) await refreshWorkspaces(org);
       refreshLocalApps(ws.id);
       loadVersions();
     } catch (e) {

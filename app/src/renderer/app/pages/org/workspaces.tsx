@@ -12,8 +12,9 @@ import { sg } from "~/lib/bridge";
 import { useSession } from "~/lib/session";
 import { useWorkspaces, type WorkspaceSummary } from "~/lib/workspaces";
 
-// The organization's workspaces, in its modal: every `<prefix>-ws-<id>` Worker in its Cloudflare
-// account, read through cf. A card opens that workspace; New workspace creates one for real.
+// The organization's workspaces, in its modal: the ones that live only on this Mac (the demo), then every
+// `<prefix>-ws-<id>` Worker in its Cloudflare account, read through cf. A card opens that workspace; New workspace
+// creates one for real.
 
 const host = (url: string) => url.replace(/^https?:\/\//, "");
 const GRID = "grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4";
@@ -29,10 +30,17 @@ function WorkspaceCard({ ws, onOpen }: { ws: WorkspaceSummary; onOpen: () => voi
       <div className="flex items-start gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-active font-heading text-base font-semibold text-active-foreground">{ws.name.slice(0, 1)}</span>
         <div className="min-w-0 flex-1">
-          <div className="truncate font-heading font-semibold">{ws.name}</div>
+          <div className="flex items-center gap-2">
+            <span className="truncate font-heading font-semibold">{ws.name}</span>
+            {ws.demo && (
+              <Badge variant="info" size="sm">
+                Demo
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-1 truncate text-xs text-muted-foreground">
             <GlobeIcon className="size-3 shrink-0" />
-            {host(ws.url)}
+            {ws.local ? "On this Mac" : host(ws.url)}
           </div>
         </div>
       </div>
@@ -48,7 +56,7 @@ function WorkspaceCard({ ws, onOpen }: { ws: WorkspaceSummary; onOpen: () => voi
         )}
       </div>
       <div className="mt-auto truncate text-xs text-muted-foreground">
-        {ws.version ? `Workspace ${ws.version}` : "Version unknown"} · {ws.worker}
+        {ws.local ? "Runs on its dev server, not deployed" : `${ws.version ? `Workspace ${ws.version}` : "Version unknown"} · ${ws.worker}`}
       </div>
     </button>
   );
@@ -58,7 +66,7 @@ export function OrgWorkspaces(): React.ReactElement {
   const { org } = useSession();
   const navigate = useNavigate();
   const link = org?.cloudflare ?? null;
-  const { list, error, loading, refresh } = useWorkspaces(link);
+  const { list, error, loading, refresh } = useWorkspaces(org);
   const [params] = useSearchParams();
   const [creating, setCreating] = React.useState(params.get("create") === "1");
   const open = (id: string) => navigate(`/w/${id}`);
@@ -80,7 +88,7 @@ export function OrgWorkspaces(): React.ReactElement {
         <AlertDescription>They're read from your Cloudflare account through the cf CLI on your Mac, which a browser can't do.</AlertDescription>
       </Alert>
     );
-  else if (!link)
+  else if (!link && !list?.length)
     body = (
       <Empty className="rounded-2xl border border-dashed">
         <EmptyHeader>
@@ -122,7 +130,7 @@ export function OrgWorkspaces(): React.ReactElement {
           </EmptyMedia>
           <EmptyTitle>No Workspaces Yet</EmptyTitle>
           <EmptyDescription>
-            None under {link.prefix}-ws-* in {link.accountName}.
+            {link ? `None under ${link.prefix}-ws-* in ${link.accountName}.` : "None yet."}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>

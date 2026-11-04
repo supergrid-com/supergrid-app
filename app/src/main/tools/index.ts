@@ -1,5 +1,6 @@
 import type { AgentAnswer, AgentWidget, AppContext, AskInput, D1RawResult, D1Result, D1Target, WorkspaceSummary } from "../../shared/bridge";
 import * as cloudflare from "../cloudflare";
+import { localWorkspace } from "../local";
 import * as d1 from "../d1";
 import * as workspaceApi from "../workspace-api";
 
@@ -113,11 +114,15 @@ export function makeCtx(base: Pick<ToolCtx, "wsId" | "client" | "tool" | "dev" |
   const ctx: ToolCtx = {
     ...base,
     ws: () => (ws ??= workspaceApi.workspace(base.wsId)),
-    accountId: async () => (await cloudflare.client()).cf.accountId,
+    accountId: async () => {
+      if (localWorkspace(base.wsId)) throw new Error("This workspace runs only on this Mac, so it has no Cloudflare account: Images, Media and Files aren't available in it.");
+      return (await cloudflare.client()).cf.accountId;
+    },
     target: () =>
       (target ??= (async () => {
         const w = await ctx.ws();
-        return { accountId: await ctx.accountId(), worker: w.worker, ...(w.dev ? { local: { ws: w.id, url: w.url } } : {}) };
+        // in Dev the dev server's local D1 answers, with no account (a workspace that lives only on this Mac has none)
+        return w.dev ? { accountId: "", worker: w.worker, local: { ws: w.id, url: w.url } } : { accountId: await ctx.accountId(), worker: w.worker };
       })()),
     query: async (sql, params = []) => d1.query(await ctx.target(), sql, params),
     raw: async (sql, params = []) => d1.raw(await ctx.target(), sql, params),

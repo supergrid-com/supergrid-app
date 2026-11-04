@@ -203,8 +203,11 @@ export function useD1Target(): D1Target | null {
   return React.useMemo(() => d1TargetFor(ws, accountId), [accountId, ws.worker, ws.id, ws.url, ws.dev]);
 }
 export function d1TargetFor(ws: Pick<WorkspaceSummary, "id" | "worker" | "url" | "dev">, accountId: string | undefined): D1Target | null {
-  if (!accountId || !ws.worker) return null;
-  return { accountId, worker: ws.worker, ...(ws.dev ? { local: { ws: ws.id, url: ws.url } } : {}) };
+  if (!ws.worker) return null;
+  // in Dev the dev server's local D1 answers, so no account is needed (a workspace that lives only on this Mac has none)
+  if (ws.dev && ws.url) return { accountId: accountId ?? "", worker: ws.worker, local: { ws: ws.id, url: ws.url } };
+  if (!accountId) return null;
+  return { accountId, worker: ws.worker };
 }
 
 const empty: Entry = { tables: null, loading: false };

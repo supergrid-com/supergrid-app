@@ -11,13 +11,14 @@ import { useWorkspaces } from "~/lib/workspaces";
 import { AuthFrame } from "~/pages/auth/frame";
 
 // Where the app opens: the workspace you had open last, or the organization's first one. With no
-// organization yet, setup; with an organization but no workspace, setup's workspace step.
+// organization yet, setup; with an organization but no workspace, setup's workspace step (or setup
+// itself for an organization with no Cloudflare account, like the demo's once its workspace is gone).
 export function Launch(): React.ReactElement | null {
   const { loaded, org } = useSession();
-  const { list, error, refresh } = useWorkspaces(org?.cloudflare ?? null);
+  const { list, error, refresh } = useWorkspaces(org);
   if (!loaded) return null;
-  if (!org?.cloudflare) return <Navigate to="/welcome" replace />;
-  if (list && !list.length) return <Navigate to="/welcome?step=workspace" replace />;
+  if (!org) return <Navigate to="/welcome" replace />;
+  if (list && !list.length) return <Navigate to={org.cloudflare ? "/welcome?step=workspace" : "/welcome"} replace />;
   if (list) {
     const target = list.find((w) => w.id === org.lastWorkspace) ?? list[0];
     return <Navigate to={`/w/${target.id}`} replace />;

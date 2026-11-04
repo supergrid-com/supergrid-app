@@ -1,0 +1,501 @@
+1
+00:00:00,080 --> 00:00:02,040
+Speaker:
+A year ago, AI was a feature
+
+2
+00:00:02,040 --> 00:00:04,160
+Speaker:
+every SaaS product had to add,
+
+3
+00:00:04,160 --> 00:00:05,900
+Speaker:
+like an assistant or an MCP
+
+4
+00:00:05,900 --> 00:00:06,759
+Speaker:
+server.
+
+5
+00:00:06,759 --> 00:00:10,119
+Speaker:
+Now it's the thing replacing
+them, and that's breaking the
+
+6
+00:00:10,119 --> 00:00:12,560
+Speaker:
+SaaS business model fast.
+
+7
+00:00:12,560 --> 00:00:14,960
+Speaker:
+Traditional SaaS has four parts.
+
+8
+00:00:14,960 --> 00:00:17,800
+Speaker:
+Building software used to be
+expensive and hard.
+
+9
+00:00:17,800 --> 00:00:20,519
+Speaker:
+Now coding agents make it nearly
+free.
+
+10
+00:00:20,519 --> 00:00:22,079
+Speaker:
+Running software at scale is
+
+11
+00:00:22,079 --> 00:00:23,839
+Speaker:
+expensive, demanding, and
+
+12
+00:00:23,839 --> 00:00:24,679
+Speaker:
+fragile.
+
+13
+00:00:24,679 --> 00:00:27,920
+Speaker:
+But most users run at a small
+scale, and that's now nearly
+
+14
+00:00:27,920 --> 00:00:31,559
+Speaker:
+free to answering users and
+fixing bugs used to take a
+
+15
+00:00:31,559 --> 00:00:33,399
+Speaker:
+support team and engineers.
+
+16
+00:00:33,399 --> 00:00:37,200
+Speaker:
+Now agents answer questions and
+fix bugs automatically.
+
+17
+00:00:37,200 --> 00:00:38,640
+Speaker:
+And the product vision.
+
+18
+00:00:38,640 --> 00:00:41,759
+Speaker:
+It comes from a founder and a
+team who obsess over a problem
+
+19
+00:00:41,759 --> 00:00:44,880
+Speaker:
+until they understand the
+solution better than anyone.
+
+20
+00:00:44,880 --> 00:00:46,600
+Speaker:
+That part hasn't changed.
+
+21
+00:00:46,600 --> 00:00:48,840
+Speaker:
+AI can't recreate taste.
+
+22
+00:00:48,840 --> 00:00:50,479
+Speaker:
+Buy versus build used to be a
+
+23
+00:00:50,479 --> 00:00:52,020
+Speaker:
+question only big companies
+
+24
+00:00:52,020 --> 00:00:52,719
+Speaker:
+asked.
+
+25
+00:00:52,719 --> 00:00:55,200
+Speaker:
+Now solo creators are asking it
+too.
+
+26
+00:00:55,200 --> 00:00:58,439
+Speaker:
+It's not only the monthly bill,
+it's paying for one hundred
+
+27
+00:00:58,439 --> 00:01:00,399
+Speaker:
+features to only use three.
+
+28
+00:01:00,399 --> 00:01:02,420
+Speaker:
+Building is becoming the default
+
+29
+00:01:02,420 --> 00:01:03,960
+Speaker:
+and building is becoming
+
+30
+00:01:03,960 --> 00:01:04,840
+Speaker:
+cloning.
+
+31
+00:01:04,840 --> 00:01:08,519
+Speaker:
+Given agent access to a product
+and it copies the whole thing.
+
+32
+00:01:08,519 --> 00:01:11,560
+Speaker:
+But a clone only captures the
+tip of the iceberg.
+
+33
+00:01:11,560 --> 00:01:13,680
+Speaker:
+The vision, taste, constraints
+
+34
+00:01:13,680 --> 00:01:15,200
+Speaker:
+and opinions of the solution are
+
+35
+00:01:15,200 --> 00:01:17,200
+Speaker:
+lost and the user ends up with a
+
+36
+00:01:17,200 --> 00:01:18,319
+Speaker:
+worse version.
+
+37
+00:01:18,319 --> 00:01:22,079
+Speaker:
+They do it because they want
+three things ownership to use
+
+38
+00:01:22,079 --> 00:01:26,239
+Speaker:
+their own AI subscription and to
+shape it to their own needs.
+
+39
+00:01:26,239 --> 00:01:28,040
+Speaker:
+Introducing Super Grid, a
+
+40
+00:01:28,040 --> 00:01:30,040
+Speaker:
+desktop IDE for creators and
+
+41
+00:01:30,040 --> 00:01:30,959
+Speaker:
+builders.
+
+42
+00:01:30,959 --> 00:01:32,239
+Speaker:
+Here's how it works.
+
+43
+00:01:32,239 --> 00:01:35,879
+Speaker:
+First, you connect muse code
+through ACP so the agent runs on
+
+44
+00:01:35,879 --> 00:01:37,439
+Speaker:
+your own subscription.
+
+45
+00:01:37,439 --> 00:01:40,200
+Speaker:
+Then you connect your own
+Cloudflare account so everything
+
+46
+00:01:40,200 --> 00:01:42,359
+Speaker:
+is deployed and owned by you.
+
+47
+00:01:42,359 --> 00:01:45,920
+Speaker:
+Each workspace you create is its
+own code repo, and it ships with
+
+48
+00:01:45,920 --> 00:01:50,560
+Speaker:
+a database, events, workflows,
+analytics, and a media library.
+
+49
+00:01:50,560 --> 00:01:53,280
+Speaker:
+Apps are the main part of a
+workspace, and they're built on
+
+50
+00:01:53,280 --> 00:01:54,560
+Speaker:
+top of that core.
+
+51
+00:01:54,560 --> 00:01:55,879
+Speaker:
+You can build your own or
+
+52
+00:01:55,879 --> 00:01:57,400
+Speaker:
+install apps from other builders
+
+53
+00:01:57,400 --> 00:01:58,480
+Speaker:
+and founders.
+
+54
+00:01:58,480 --> 00:02:01,480
+Speaker:
+The app goes straight into your
+repo so you get their complete
+
+55
+00:02:01,480 --> 00:02:03,439
+Speaker:
+solution, not a clone.
+
+56
+00:02:03,439 --> 00:02:05,379
+Speaker:
+Apps can be internal tools like
+
+57
+00:02:05,379 --> 00:02:06,879
+Speaker:
+an ad designer built on muse
+
+58
+00:02:06,879 --> 00:02:08,360
+Speaker:
+image or deployed with your
+
+59
+00:02:08,360 --> 00:02:10,120
+Speaker:
+site, like a blog forms or
+
+60
+00:02:10,120 --> 00:02:11,280
+Speaker:
+landing pages.
+
+61
+00:02:11,280 --> 00:02:14,800
+Speaker:
+Each app can have its own data
+model, components, pages,
+
+62
+00:02:14,800 --> 00:02:16,639
+Speaker:
+routes, and back end code.
+
+63
+00:02:16,639 --> 00:02:18,800
+Speaker:
+It can add admin screens for
+your team.
+
+64
+00:02:18,800 --> 00:02:22,949
+Speaker:
+Hook into the core systems and
+expose its features over MCP, so
+
+65
+00:02:22,949 --> 00:02:25,050
+Speaker:
+muse can use the app natively.
+
+66
+00:02:25,050 --> 00:02:28,569
+Speaker:
+That makes every app a small
+product with its own front end
+
+67
+00:02:28,569 --> 00:02:31,490
+Speaker:
+and back end, built to fit into
+what's already there.
+
+68
+00:02:31,490 --> 00:02:33,069
+Speaker:
+The benefit of traditional SaaS
+
+69
+00:02:33,069 --> 00:02:34,729
+Speaker:
+is that updates and fixes are
+
+70
+00:02:34,729 --> 00:02:36,610
+Speaker:
+easy to ship, and everyone gets
+
+71
+00:02:36,610 --> 00:02:37,250
+Speaker:
+them.
+
+72
+00:02:37,250 --> 00:02:40,370
+Speaker:
+But with ownership, when
+everyone has their own copy,
+
+73
+00:02:40,370 --> 00:02:42,250
+Speaker:
+that ease disappears.
+
+74
+00:02:42,250 --> 00:02:44,689
+Speaker:
+Muse code is what makes this
+possible.
+
+75
+00:02:44,689 --> 00:02:47,930
+Speaker:
+It can extend apps, make
+changes, and merge updates from
+
+76
+00:02:47,930 --> 00:02:49,569
+Speaker:
+the builder seamlessly.
+
+77
+00:02:49,569 --> 00:02:52,449
+Speaker:
+It checks every update for
+security issues and fixes
+
+78
+00:02:52,449 --> 00:02:57,050
+Speaker:
+anything that breaks Muse code
+becomes the CTO for every user.
+
+79
+00:02:57,050 --> 00:03:00,610
+Speaker:
+It's what makes owning the code
+possible in this new SaaS model.
+
+80
+00:03:00,610 --> 00:03:03,610
+Speaker:
+Platforms like this could exist
+in every industry.
+
+81
+00:03:03,610 --> 00:03:06,810
+Speaker:
+Experts and founders could build
+solutions that get installed and
+
+82
+00:03:06,810 --> 00:03:08,569
+Speaker:
+owned instead of cloned.
+
+83
+00:03:08,569 --> 00:03:09,770
+Speaker:
+They'd focus on solving the
+
+84
+00:03:09,770 --> 00:03:10,889
+Speaker:
+problem, not on the
+
+85
+00:03:10,889 --> 00:03:12,530
+Speaker:
+infrastructure, and still get
+
+86
+00:03:12,530 --> 00:03:14,009
+Speaker:
+paid and build a real business
+
+87
+00:03:14,009 --> 00:03:15,090
+Speaker:
+around it.
+
+88
+00:03:15,090 --> 00:03:18,330
+Speaker:
+SaaS isn't going away, but it is
+changing.
+
+89
+00:03:18,330 --> 00:03:21,210
+Speaker:
+The code becomes part of the
+product that's shipped and owned
+
+90
+00:03:21,210 --> 00:03:22,490
+Speaker:
+by the user.
+
+91
+00:03:22,490 --> 00:03:25,610
+Speaker:
+Products built by the people who
+understand the problem best,
+
+92
+00:03:25,610 --> 00:03:29,090
+Speaker:
+shaped by the people who use
+them, and powered by the AI they
+
+93
+00:03:29,090 --> 00:03:30,330
+Speaker:
+already pay for.

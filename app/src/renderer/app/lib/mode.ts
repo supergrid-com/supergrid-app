@@ -55,14 +55,15 @@ export async function refreshMode(wsId: string): Promise<void> {
 
 /**
  * Tells the main process the mode this window remembers for a workspace, once per open: a relaunch in Dev starts the
- * dev server again, and the repo on this Mac is found or made either way.
+ * dev server again, and the repo on this Mac is found or made either way. A local workspace always starts in Dev.
  */
 const ensured = new Set<string>();
-export function ensureMode(wsId: string): void {
+export function ensureMode(wsId: string, local = false): void {
   if (!sg || ensured.has(wsId)) return;
   ensured.add(wsId);
   const e = entry(wsId);
-  if (e.mode === "dev" && !e.summary) void setMode(wsId, "dev").catch(() => undefined);
+  // a workspace that lives only on this Mac is always in Dev, whatever was remembered
+  if ((e.mode === "dev" || local) && !e.summary) void setMode(wsId, "dev").catch(() => undefined);
   else void sg.apps.repo(wsId).catch(() => undefined);
 }
 

@@ -5,7 +5,7 @@ import { useSession } from "~/lib/session";
 import { useWorkspaces, type WorkspaceSummary } from "~/lib/workspaces";
 import { useDocsModal, useOrgModal } from "~/shell/context";
 import { docGroups } from "../../../shared/docs";
-import { sections, settingsGroups, type SettingsSectionId } from "~/shell/sections";
+import { componentsSection, sections, settingsGroups, type SettingsSectionId } from "~/shell/sections";
 
 type Item = { value: string; label: string };
 type Group = { value: string; items: Item[] };
@@ -14,7 +14,7 @@ type Group = { value: string; items: Item[] };
 export function SearchPalette({ ws, open, onOpenChange }: { ws: WorkspaceSummary; open: boolean; onOpenChange: (open: boolean) => void }): React.ReactElement {
   const navigate = useNavigate();
   const { org } = useSession();
-  const { list } = useWorkspaces(org?.cloudflare ?? null);
+  const { list } = useWorkspaces(org);
   const modal = useOrgModal();
   const docsModal = useDocsModal();
   const groups = React.useMemo<Group[]>(() => {
@@ -22,7 +22,8 @@ export function SearchPalette({ ws, open, onOpenChange }: { ws: WorkspaceSummary
       {
         value: ws.name,
         items: [
-          ...sections.map((s) => ({ value: `go:/w/${ws.id}${s.path ? `/${s.path}` : ""}`, label: s.label })),
+          // the rail's sections, then (dev builds) Components, which has no row: the palette is how it opens
+          ...[...sections, ...(import.meta.env.DEV ? [componentsSection] : [])].map((s) => ({ value: `go:/w/${ws.id}${s.path ? `/${s.path}` : ""}`, label: s.label })),
           ...ws.apps.map((a) => ({ value: `go:/w/${ws.id}/apps/${a.app}`, label: a.name })),
         ],
       },

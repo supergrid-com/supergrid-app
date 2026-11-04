@@ -3,12 +3,14 @@ import { ActivityIcon, AppWindowIcon, CodeIcon, GitBranchIcon, RocketIcon, Serve
 // The workspace's own surfaces, in the rail's order under its apps. Home is the workspace's landing
 // page and has no row. Settings is a modal, not a section. A section with sub items opens them in
 // the second panel (workspace-shell.tsx); the first one, at path "", is the section's own page.
+// `sections` is what the rail lists; `allSections` adds the ones reached another way.
 
 export type SectionItem = { path: string; label: string; icon: LucideIcon; about: string; group?: string };
 export type Section = { path: string; label: string; icon: LucideIcon; about: string; items?: SectionItem[] };
 
 // Dev builds only: every piece of the app's own kit and theme, live, for designing against
-// (pages/dev/components.tsx). Not part of a workspace; it sits under Core so it is one click away.
+// (pages/dev/components.tsx). Not part of a workspace and not in the rail: reached by its path
+// (/w/<id>/components) or the command palette, with its sub nav like any section.
 export const componentsSection: Section = {
   path: "components",
   label: "Components",
@@ -89,8 +91,10 @@ export const sections: Section[] = [
       { path: "sitemap", label: "Sitemap", icon: MapIcon, about: "The apps, their pages and routes, and the Workers behind them." },
     ],
   },
-  ...(import.meta.env.DEV ? [componentsSection] : []),
 ];
+
+/** Every section a path can land on: the rail's, plus Code and (dev builds) Components, which the rail doesn't list. */
+export const allSections: Section[] = [...sections, codeSection, ...(import.meta.env.DEV ? [componentsSection] : [])];
 
 /**
  * The settings modal (?org=<id>): the workspace's settings, then the organization's (its

@@ -1,7 +1,7 @@
 import { app, safeStorage } from "electron";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { CfAccount, LocalState, Org } from "../shared/bridge";
+import type { CfAccount, LocalState, LocalWorkspace, Org } from "../shared/bridge";
 
 // What the app remembers between runs: which Cloudflare account it manages and under which prefix,
 // the API token it holds for each account, and the RPC token it minted for each workspace. Later
@@ -23,6 +23,8 @@ export type Config = {
   /** The user's organizations and the one last open (the renderer's store, src/renderer/app/lib/orgs.ts). */
   orgs?: Org[];
   currentOrg?: string | null;
+  /** Workspaces that live only on this Mac, the demo among them (src/main/local.ts). */
+  localWorkspaces?: LocalWorkspace[];
 };
 
 const file = () => join(app.getPath("userData"), "config.json");

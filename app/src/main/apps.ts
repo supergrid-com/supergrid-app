@@ -11,9 +11,10 @@ import { connect, createServer } from "node:net";
 import { homedir } from "node:os";
 import { delimiter, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline";
-import { channels, type DeployProgress, type DeployVersion, type DevLogLine, type DevServerStatus, type FileEntry, type GitStatus, type InstalledApp, type LocalApp, type NewAppInput, type RepoInfo, type WorkspaceMode } from "../shared/bridge";
+import { channels, type DeployProgress, type DeployVersion, type DevLogLine, type DevServerStatus, type FileEntry, type GitStatus, type InstalledApp, type LocalApp, type LocalWorkspace, type NewAppInput, type RepoInfo, type WorkspaceMode, type WorkspaceSummary } from "../shared/bridge";
 import { cfClient } from "./cf-api";
 import { readState } from "./config";
+import { localWorker, localWorkspace } from "./local";
 import * as workspaceApi from "./workspace-api";
 
 // The workspace's repo on this Mac (WORKSPACE-REPO.md): `workspaces/<id>` under the app's data folder is one git repo and
@@ -172,8 +173,18 @@ export function ensureRepo(wsId: string, facts?: RepoFacts): Promise<RepoInfo> {
   return p;
 }
 
-/** The Worker's facts for a workspace that exists in the account: its name and address from the listing, its database when the account answers. */
+/** `pnpm install` in the repo again, after folders were added to it outside the New App flow (the demo's apps). */
+export async function installRepo(wsId: string): Promise<void> {
+  await must(needBin("pnpm", PNPM_HINT), ["install"], repo(wsId), "Installing the repo's dependencies");
+}
+
+/**
+ * The Worker's facts for a workspace that exists in the account: its name and address from the listing, its database
+ * when the account answers. A workspace that lives only on this Mac has its name and a Worker name for a later deploy.
+ */
 async function repoFactsFor(wsId: string): Promise<RepoFacts> {
+  const local = localWorkspace(wsId);
+  if (local) return { name: local.name, worker: localWorker(wsId), url: "" };
   const ws = await workspaceApi.cloudWorkspace(wsId);
   const facts: RepoFacts = { name: ws.name, worker: ws.worker, url: ws.url };
   try {
@@ -208,7 +219,7 @@ const generated = (wsId: string): GeneratedApp[] => { const dir = repo(wsId); re
 
 export async function list(wsId: string): Promise<LocalApp[]> {
   if (!isRepo(repoDir(wsId))) return [];
-  const deployed = await workspaceApi.cloudWorkspace(wsId).then((w) => w.apps, () => [] as InstalledApp[]);
+  const deployed = localWorkspace(wsId) ? [] : await workspaceApi.cloudWorkspace(wsId).then((w) => w.apps, () => [] as InstalledApp[]);
   return generated(wsId).map((a) => {
     const hit = deployed.find((i) => i.app === a.id);
     return { dir: a.dir, manifest: a.manifest, problems: a.problems, disabled: a.disabled, installed: !!hit, installedVersion: hit?.version ?? null };
@@ -256,6 +267,8 @@ export function read(wsId: string, path: string): { text: string; size: number; 
 // ---- the dev server: one per workspace ----
 
 type Dev = { child: ChildProcessWithoutNullStreams; port: number; startedAt: string; ready: boolean; log: DevLogLine[]; owner: WebContents | null; starting: Promise<DevServerStatus> | null };
+/** Where a dev server's log lines go: the window that started it, or nowhere when the agent's tools or the demo did. */
+type Owner = WebContents | null;
 const devs = new Map<string, Dev>();
 
 /** True when something answers on the port, over IPv4 or IPv6 (a Vite server often listens on ::1 only). */
@@ -287,9 +300,9 @@ async function waitReady(wsId: string, d: Dev, push: (stream: DevLogLine["stream
   throw new Error("The dev server did not answer within two minutes. Its log is on the Server page.");
 }
 
-export async function devStart(wsId: string, owner: WebContents): Promise<DevServerStatus> {
+export async function devStart(wsId: string, owner: Owner): Promise<DevServerStatus> {
   const have = devs.get(wsId);
-  if (have) { have.owner = owner; return have.starting ? have.starting : devStatusOf(have); }
+  if (have) { if (owner) have.owner = owner; return have.starting ? have.starting : devStatusOf(have); }
   const { dir } = await ensureRepo(wsId);
   const pnpm = needBin("pnpm", PNPM_HINT);
   const port = await freePort();
@@ -322,14 +335,26 @@ export function stopAllDev(): void {
 // ---- Live / Dev ----
 
 const modes = new Map<string, WorkspaceMode>();
-export const modeOf = (wsId: string): WorkspaceMode => modes.get(wsId) ?? "live";
+/** A workspace that lives only on this Mac is always in Dev: it has nothing deployed to be live on. */
+export const modeOf = (wsId: string): WorkspaceMode => (localWorkspace(wsId) ? "dev" : (modes.get(wsId) ?? "live"));
 /** Dev starts the dev server first, so the summary that comes back already points at it; Live stops the server. */
 export async function setMode(wsId: string, mode: WorkspaceMode, owner: WebContents) {
+  if (mode === "live" && localWorkspace(wsId)) throw new Error("This workspace lives only on this Mac, so it has no live version.");
   if (mode === "dev") await devStart(wsId, owner);
   modes.set(wsId, mode);
   if (mode === "live") devStop(wsId);
   workspaceApi.invalidate();
   return workspaceApi.workspace(wsId);
+}
+
+/**
+ * A workspace that lives only on this Mac, as the desktop sees it: its repo and its dev server. `start` starts the server
+ * when it isn't running (the shell opening it, a tool of the agent's); without it the URL is empty until something does.
+ */
+export async function localSummary(rec: LocalWorkspace, start: boolean, owner: Owner = null): Promise<WorkspaceSummary> {
+  let dev = devStatus(rec.id);
+  if (start && !(dev.running && dev.ready)) dev = await devStart(rec.id, owner);
+  return { id: rec.id, name: rec.name, url: dev.running && dev.url ? dev.url : "", worker: localWorker(rec.id), version: "dev", apps: builtApps(rec.id), dev: true, local: true, ...(rec.demo ? { demo: true } : {}) };
 }
 
 // ---- git ----

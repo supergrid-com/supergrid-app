@@ -33,6 +33,13 @@ const bridge: Bridge = {
     freshId: (accountId, prefix) => ipcRenderer.invoke(channels.wsFreshId, accountId, prefix),
     create: (opts) => ipcRenderer.invoke(channels.wsCreate, opts),
     onProgress: (cb) => listen(channels.wsProgress, cb),
+    local: (orgId) => ipcRenderer.invoke(channels.wsLocal, orgId),
+  },
+  demo: {
+    create: (orgId) => ipcRenderer.invoke(channels.demoCreate, orgId),
+    reset: (wsId) => ipcRenderer.invoke(channels.demoReset, wsId),
+    remove: (wsId) => ipcRenderer.invoke(channels.demoRemove, wsId),
+    onProgress: (cb) => listen(channels.demoProgress, cb),
   },
   ws: {
     get: (wsId) => ipcRenderer.invoke(channels.wsGet, wsId),

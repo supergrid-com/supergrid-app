@@ -1,0 +1,302 @@
+@import "tailwindcss";
+
+/* The launch film's page: white ground, near-black type, coral as the one accent, Meta blue for Muse */
+@theme {
+  --color-ink: #1d1d1f;
+  --color-ink-2: #424245;
+  --color-muted: #6e6e73;
+  --color-faint: #a1a1a6;
+  --color-soft: #f5f5f7;
+  --color-softer: #fafafa;
+  --color-line: rgb(0 0 0 / 8%);
+  --color-accent: #e8614a;
+  --color-accent-ink: #c94a34;
+  --color-accent-soft: rgb(232 97 74 / 10%);
+  --color-green: #1f8f4e;
+  --color-green-soft: rgb(52 199 89 / 12%);
+  --color-meta: #0064e0;
+  --color-meta-sky: #0082fb;
+  --color-meta-soft: rgb(0 100 224 / 9%);
+  --color-pitch: #0a0a0a;
+  --color-page: #0f1014;
+  --color-cf: #f6821f;
+  --color-rose: #f33869;
+
+  --font-sans: var(--font-cal), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --shadow-shot: 0 0 0 1px rgb(0 0 0 / 6%), 0 30px 60px rgb(0 0 0 / 10%), 0 60px 140px rgb(0 0 0 / 14%);
+  --shadow-card: 0 2px 6px rgb(0 0 0 / 4%), 0 24px 60px rgb(0 0 0 / 8%);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+/* The hero: #1B1D24 at the top, fading down into a glow of violet, magenta, orange and cyan.
+   Each colour is a soft blob drifting on its own slow loop, so the light never quite repeats. */
+.hero-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  will-change: transform;
+}
+.hero-blob-violet {
+  left: -22%;
+  bottom: -4%;
+  width: 62%;
+  height: 92%;
+  background: radial-gradient(closest-side, rgb(138 18 224 / 62%) 30%, transparent);
+  animation: hero-drift-a 26s ease-in-out infinite alternate;
+}
+.hero-blob-blue {
+  left: 24%;
+  bottom: 36%;
+  width: 52%;
+  height: 40%;
+  background: radial-gradient(closest-side, rgb(64 92 255 / 50%) 30%, transparent);
+  animation: hero-drift-b 32s ease-in-out infinite alternate;
+}
+.hero-blob-cyan {
+  right: -12%;
+  bottom: 38%;
+  width: 48%;
+  height: 48%;
+  background: radial-gradient(closest-side, rgb(38 236 240 / 55%) 30%, transparent);
+  animation: hero-drift-c 28s ease-in-out infinite alternate;
+}
+.hero-blob-magenta {
+  left: 16%;
+  bottom: -14%;
+  width: 64%;
+  height: 72%;
+  background: radial-gradient(closest-side, rgb(226 7 126 / 58%) 30%, transparent);
+  animation: hero-drift-b 24s ease-in-out infinite alternate-reverse;
+}
+.hero-blob-orange {
+  right: -20%;
+  bottom: -8%;
+  width: 62%;
+  height: 80%;
+  background: radial-gradient(closest-side, rgb(255 84 20 / 62%) 30%, transparent);
+  animation: hero-drift-a 30s ease-in-out infinite alternate-reverse;
+}
+
+/* Keeps the top of the card the flat dark ground, so the headline sits on #1B1D24 */
+.hero-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, #1b1d24 0%, #1b1d24 12%, rgb(27 29 36 / 82%) 28%, rgb(27 29 36 / 40%) 50%, rgb(27 29 36 / 10%) 70%);
+}
+
+/* The dot grid, faint over the dark and clearer over the colour, creeping one cell every 48s */
+.hero-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgb(255 255 255 / 8%) 1px, transparent 1.6px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 35%), #000 45%, #000 80%, rgb(0 0 0 / 40%));
+  animation: hero-dots-creep 48s linear infinite;
+}
+/* A soft light that wanders over the grid, brightening the dots it passes */
+.hero-dots-lit {
+  background-image: radial-gradient(circle, rgb(255 255 255 / 22%) 1px, transparent 1.7px);
+  mask-image: radial-gradient(closest-side, #000 30%, transparent);
+  mask-size: 60% 70%;
+  mask-repeat: no-repeat;
+  mask-position: 10% 30%;
+  animation:
+    hero-dots-creep 48s linear infinite,
+    hero-dots-light 22s ease-in-out infinite alternate;
+}
+
+.hero-title {
+  text-shadow: 0 0 60px rgb(255 255 255 / 22%);
+}
+
+@keyframes hero-drift-a {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(8%, -6%) scale(1.14); }
+}
+@keyframes hero-drift-b {
+  from { transform: translate(0, 0) scale(1.08); }
+  to { transform: translate(-10%, -4%) scale(0.94); }
+}
+@keyframes hero-drift-c {
+  from { transform: translate(0, 0) scale(0.95); }
+  to { transform: translate(-6%, 10%) scale(1.12); }
+}
+@keyframes hero-dots-creep {
+  from { background-position: 0 0; }
+  to { background-position: 22px 22px; }
+}
+@keyframes hero-dots-light {
+  0% { mask-position: 8% 25%; }
+  50% { mask-position: 70% 55%; }
+  100% { mask-position: 95% 20%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-blob,
+  .hero-dots {
+    animation: none;
+  }
+}
+
+/* The static dot grid the panels and cards share, quieter than the hero's */
+.dots {
+  background-image: radial-gradient(circle, rgb(255 255 255 / 7%) 1px, transparent 1.6px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 60%), #000 50%, rgb(0 0 0 / 40%));
+}
+
+/* A soft colour in one corner of a panel */
+.panel-glow {
+  position: absolute;
+  width: 70%;
+  height: 90%;
+  border-radius: 9999px;
+  filter: blur(100px);
+  opacity: 0.55;
+}
+.panel-glow-violet { left: -25%; bottom: -40%; background: radial-gradient(closest-side, rgb(138 18 224 / 60%) 30%, transparent); }
+.panel-glow-cyan { right: -25%; top: -40%; background: radial-gradient(closest-side, rgb(38 236 240 / 40%) 30%, transparent); }
+.panel-glow-orange { right: -25%; bottom: -40%; background: radial-gradient(closest-side, rgb(255 84 20 / 55%) 30%, transparent); }
+.panel-glow-magenta { left: -25%; top: -40%; background: radial-gradient(closest-side, rgb(226 7 126 / 50%) 30%, transparent); }
+
+/* Thin traces between the core's parts, like a board; light on the page, white inside a panel */
+.trace {
+  background: linear-gradient(to right, transparent, rgb(0 0 0 / 12%) 30%, rgb(0 0 0 / 12%) 70%, transparent);
+}
+.trace-dark {
+  background: linear-gradient(to right, transparent, rgb(255 255 255 / 14%) 30%, rgb(255 255 255 / 14%) 70%, transparent);
+}
+
+/* The clickable app in the hero (components/demo): pages and messages ease in, panes scroll thin */
+.demo-in {
+  animation: demo-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.demo-fade {
+  animation: demo-fade 200ms ease-out;
+}
+@keyframes demo-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes demo-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.demo-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--a-line) transparent;
+}
+
+
+/* The workspace grid fades out towards its sides and its top and bottom, like ClickUp's */
+.core-grid {
+  mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent), linear-gradient(to bottom, rgb(0 0 0 / 55%), #000 22%, #000 78%, rgb(0 0 0 / 55%));
+  mask-composite: intersect;
+}
+@media (max-width: 1023px) {
+  .core-grid {
+    mask-image: none;
+  }
+}
+
+/* The App card's colour: small blurred blobs of the hero's colours */
+.app-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(18px);
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-blob {
+    animation: none !important;
+  }
+}
+
+/* The beam that runs from the Core tile down to the App card and on into the apps: a thin line in
+   the hero's violet and magenta with a bright pulse falling down it */
+/* (positioned by the element itself: relative in the flow, absolute over the grid) */
+.beam {
+  width: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, rgb(155 61 255 / 40%), rgb(236 20 128 / 40%));
+}
+/* the pulse is a short soft glow, the same length on every stretch, so it slides in and out of
+   each one's ends instead of being cut off by them */
+.beam::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: -48px;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, rgb(236 20 128 / 90%) 55%, rgb(255 138 92 / 90%) 75%, transparent);
+  animation: beam-fall 2.4s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+/* the last stretch thins out into the headline */
+.beam-fade {
+  mask-image: linear-gradient(to bottom, #000 40%, transparent);
+}
+@keyframes beam-fall {
+  to { top: calc(100% + 4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .beam::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* The three dark tiles lift and glow in their own colour on hover */
+.tile {
+  z-index: 0;
+}
+.tile:hover {
+  z-index: 10;
+  scale: 1.04;
+  box-shadow: 0 24px 70px -12px var(--glow), 0 0 0 1px rgb(255 255 255 / 8%);
+}
+.tile:hover .tile-glow {
+  translate: 0 -12%;
+  scale: 1.1;
+}
+.tile:hover .tile-logo {
+  scale: 1.1;
+}
+
+/* The pulse running along a lit wire in the app anatomy, from the card in to the panel */
+.wire-pulse {
+  stroke-dasharray: 14 200;
+  stroke-dashoffset: 14;
+  animation: wire-pulse 1.8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+@keyframes wire-pulse {
+  to { stroke-dashoffset: -100; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wire-pulse {
+    display: none;
+  }
+}

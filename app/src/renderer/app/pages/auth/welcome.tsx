@@ -1,4 +1,5 @@
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, CircleAlertIcon, CircleCheckIcon, CircleMinusIcon } from "lucide-react";
+import type { DemoProgress } from "../../../../shared/bridge";
 import * as React from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { CreateWorkspace } from "~/components/create-workspace";
@@ -6,15 +7,20 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Field, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { addOrg, updateOrg, type Org } from "~/lib/orgs";
+import { Spinner } from "~/components/ui/spinner";
+import { sg } from "~/lib/bridge";
+import { addOrg, updateOrg, useOrgs, type Org } from "~/lib/orgs";
 import { useSession } from "~/lib/session";
 import { cn } from "~/lib/utils";
+import { clean, refreshWorkspaces } from "~/lib/workspaces";
 import { AuthFrame } from "~/pages/auth/frame";
 import { ConnectCloudflare } from "~/pages/org/parts";
 
 // First run, and "New organization" later: name the organization, connect its Cloudflare account
 // through cf, then create its first workspace, which then opens. The organization is saved once
 // Cloudflare is connected; `?step=workspace` resumes at the workspace for one that has none yet.
+// Beside the first step, the demo: an organization with no Cloudflare account and one workspace
+// that lives only on this Mac, filled with sample data (src/main/demo.ts).
 
 const STEPS = ["Organization", "Cloudflare", "Workspace"];
 
@@ -50,6 +56,85 @@ function StepHeading({ title, children }: { title: string; children: React.React
       <h2 className="font-heading text-lg font-semibold">{title}</h2>
       <p className="text-sm text-muted-foreground">{children}</p>
     </div>
+  );
+}
+
+const DEMO_STEPS: { step: DemoProgress["step"]; label: string }[] = [
+  { step: "repo", label: "Make the workspace's repo and install its packages" },
+  { step: "apps", label: "Add the Journal app" },
+  { step: "server", label: "Start the dev server" },
+  { step: "data", label: "Fill the database with sample data" },
+];
+
+/** The demo, started from setup: everything on this Mac, so it needs Node, pnpm and git but no Cloudflare account. */
+function ExploreDemo(): React.ReactElement {
+  const navigate = useNavigate();
+  const { setOrg } = useSession();
+  const orgs = useOrgs();
+  const [phase, setPhase] = React.useState<"idle" | "running" | "failed">("idle");
+  const [at, setAt] = React.useState<DemoProgress | null>(null);
+  const [error, setError] = React.useState<string>();
+  React.useEffect(() => sg?.demo.onProgress(setAt), []);
+
+  const start = async () => {
+    if (!sg) return;
+    setPhase("running");
+    setError(undefined);
+    setAt({ id: "demo", step: "repo" });
+    // one demo organization, reused if setup is opened again
+    const org = orgs.find((o) => !o.cloudflare && o.name === "Demo") ?? addOrg("Demo", null);
+    setOrg(org.id);
+    try {
+      const ws = await sg.demo.create(org.id);
+      updateOrg(org.id, { lastWorkspace: ws.id });
+      await refreshWorkspaces(org);
+      navigate(`/w/${ws.id}`);
+    } catch (e) {
+      setError(clean(e));
+      setPhase("failed");
+    }
+  };
+
+  const index = DEMO_STEPS.findIndex((s) => s.step === at?.step);
+  return (
+    <Card className="p-6">
+      <div className="flex flex-col gap-5">
+        <StepHeading title="Or Explore a Demo">
+          A sample workspace for a small pottery studio, with contacts, 90 days of events, segments, workflows and a Journal app. It runs on this Mac, so it needs no
+          Cloudflare account, and Muse Code works on it like on any workspace.
+        </StepHeading>
+        {phase !== "idle" && (
+          <ol className="flex flex-col gap-2 text-sm">
+            {DEMO_STEPS.map((s, i) => {
+              const done = i < index;
+              const current = i === index;
+              return (
+                <li key={s.step} className="flex items-center gap-2.5">
+                  {done ? (
+                    <CircleCheckIcon className="size-4 shrink-0 text-success" aria-label="Done" />
+                  ) : current && phase === "failed" ? (
+                    <CircleAlertIcon className="size-4 shrink-0 text-destructive" aria-label="Failed" />
+                  ) : current ? (
+                    <Spinner className="size-4" />
+                  ) : (
+                    <CircleMinusIcon className="size-4 shrink-0 text-muted-foreground/50" />
+                  )}
+                  <span className={cn(!done && !current && "text-muted-foreground")}>{s.label}</span>
+                  {current && at?.detail && <span className="text-muted-foreground">{at.detail}</span>}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+        {error && <p className="whitespace-pre-wrap rounded-lg bg-destructive/8 p-3 font-mono text-xs text-destructive-foreground">{error}</p>}
+        <div className="flex items-center justify-end gap-3">
+          {phase === "running" && <span className="text-xs text-muted-foreground">The first start installs packages and can take a minute.</span>}
+          <Button variant="outline" disabled={!sg || phase === "running"} onClick={() => void start()}>
+            {phase === "failed" ? "Try Again" : "Explore a Demo"}
+          </Button>
+        </div>
+      </div>
+    </Card>
   );
 }
 
@@ -144,6 +229,7 @@ export function Welcome(): React.ReactElement {
             </div>
           )}
         </Card>
+        {step === 0 && <ExploreDemo />}
       </div>
     </AuthFrame>
   );

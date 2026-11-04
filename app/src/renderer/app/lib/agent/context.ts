@@ -6,7 +6,7 @@ import { sg } from "~/lib/bridge";
 import { usePlatform } from "~/lib/platform";
 import { useSession } from "~/lib/session";
 import type { WorkspaceSummary } from "~/lib/workspaces";
-import { codeSection, sections, settingsSections } from "~/shell/sections";
+import { allSections, settingsSections } from "~/shell/sections";
 
 // What the agent knows about where the user is. The workspace shell builds it from the address
 // and the workspace, keeps the agent store's copy current (it rides along with each prompt as a
@@ -19,7 +19,7 @@ export function buildContext(ws: WorkspaceSummary, org: { name: string; accountI
   const parts = rest.split("/").filter(Boolean);
   const [head, second, third] = parts;
   const location: AppContext["location"] = { path: rest, section: null, page: null, label: "Home" };
-  const section = [...sections, codeSection].find((s) => s.path === head);
+  const section = allSections.find((s) => s.path === head);
   if (section) {
     location.section = section.label;
     if (section.path === "database") {

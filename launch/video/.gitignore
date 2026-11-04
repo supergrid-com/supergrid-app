@@ -1,0 +1,10 @@
+# The scripts, the film's source and the plan go in the repo; renders, voice takes and scratch stay local
+brag-output/*
+!brag-output/brag-plan.md
+!brag-output/share-copy.txt
+film/out/
+film/node_modules/
+*.mp4
+*.mov
+*.mp3
+*.wav

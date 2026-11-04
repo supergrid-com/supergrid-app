@@ -1,0 +1,1 @@
+AI made code, hosting and support nearly free, so people clone the SaaS they pay for and lose the part that mattered. SuperGrid is a desktop IDE where you install an expert's whole app into your own repo on your own Cloudflare, and Muse Code merges every update around your changes

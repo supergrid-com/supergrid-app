@@ -52,7 +52,16 @@ export type WorkspaceSummary = {
   apps: InstalledApp[];
   /** True while the desktop is in Dev mode for it: `url` is the dev server on this Mac and `apps` are the repo's folders (src/main/apps.ts). */
   dev?: boolean;
+  /** Lives only on this Mac: a repo and its dev server, never deployed, so always in Dev and with no Cloudflare account behind it (src/main/local.ts). */
+  local?: boolean;
+  /** The demo workspace: local, and filled with sample data from core/demo. */
+  demo?: boolean;
 };
+
+/** A workspace that lives only on this Mac, as main's config keeps it (src/main/local.ts). */
+export type LocalWorkspace = { id: string; name: string; /** The organization it shows under. */ org: string; demo?: boolean; createdAt: string };
+/** Where making (or resetting) the demo workspace is. */
+export type DemoProgress = { id: string; step: "repo" | "install" | "apps" | "server" | "data" | "done"; detail?: string };
 
 // ---- The workspace's repo on this Mac: one git repo and pnpm workspace per workspace, apps as folders under apps/ (src/main/apps.ts, WORKSPACE-REPO.md) ----
 
@@ -180,6 +189,18 @@ export type Bridge = {
     create(opts: { accountId: string; prefix: string; id: string; name: string }): Promise<WorkspaceCreated>;
     /** Returns its unsubscribe. */
     onProgress(cb: (p: WorkspaceProgress) => void): () => void;
+    /** The workspaces of an organization that live only on this Mac (the demo), as summaries; their URL is empty until their dev server runs. */
+    local(orgId: string): Promise<WorkspaceSummary[]>;
+  };
+  /** The demo workspace: local, filled with sample data (core/demo). */
+  demo: {
+    /** Makes the demo workspace for an organization, or opens the one it has; progress arrives through onProgress. */
+    create(orgId: string): Promise<WorkspaceSummary>;
+    /** Throws the demo's data away and seeds it again; its apps and code stay. */
+    reset(wsId: string): Promise<WorkspaceSummary>;
+    /** Removes the demo workspace and its repo from this Mac. */
+    remove(wsId: string): Promise<void>;
+    onProgress(cb: (p: DemoProgress) => void): () => void;
   };
   /** A workspace's RPC surface (`/_ws/rpc`), called with its token from the main process. */
   ws: {
@@ -328,6 +349,11 @@ export const channels = {
   wsFreshId: "sg:workspaces:fresh-id",
   wsCreate: "sg:workspaces:create",
   wsProgress: "sg:workspaces:progress",
+  wsLocal: "sg:workspaces:local",
+  demoCreate: "sg:demo:create",
+  demoReset: "sg:demo:reset",
+  demoRemove: "sg:demo:remove",
+  demoProgress: "sg:demo:progress",
   wsRpc: "sg:ws:rpc",
   wsResetToken: "sg:ws:reset-token",
   wsMediaToken: "sg:ws:media-token",

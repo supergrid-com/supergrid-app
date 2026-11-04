@@ -11,12 +11,13 @@ import { Dialog, DialogClose, DialogDescription, DialogFooter, DialogHeader, Dia
 import { Field, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
-import { listItems } from "../../lib/items";
+import { listItems, m } from "../../lib/items";
 import manifest from "../../../supergrid.app.json";
 import type { Route } from "./+types/index";
 
 // The list screen: every item in a table, and a dialog to add one (opened by ?new=1, which is what the shell's
-// "+ New Item" entry links to). Writes go through the app's own operation so the rule lives in one place.
+// "+ New Item" entry links to). Writes go through the app's own operation so the rule lives in one place. The words on
+// screen are the entity's label and plural from the manifest, so renaming it there renames the screens.
 export async function loader({ context }: Route.LoaderArgs) {
   const { db, user } = context.get(appContext);
   return { items: await listItems(db), canWrite: !user || can(user, "content:write") };
@@ -33,6 +34,8 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 }
 
+const { label, plural } = m.entities.item!;
+
 export default function AdminIndex() {
   const { items, canWrite } = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>();
@@ -43,12 +46,12 @@ export default function AdminIndex() {
   const setOpen = (o: boolean) => setParams((p) => { if (o) p.set("new", "1"); else p.delete("new"); return p; });
   return (
     <Page
-      title="Items"
-      description="Everything this app keeps. Published items show on the public side."
+      title={plural}
+      description={`Everything this app keeps. Published ${plural.toLowerCase()} show on the public side.`}
       actions={canWrite && (
         <Button size="sm" onClick={() => setOpen(true)}>
           <PlusIcon />
-          New Item
+          New {label}
         </Button>
       )}
     >
@@ -62,14 +65,14 @@ export default function AdminIndex() {
           rows={items}
           rowKey={(i) => i.id}
           onRowClick={(i) => navigate(adminHref(manifest, `/${i.id}`))}
-          empty={<EmptyState title="No items yet" description="Add the first one; it starts as a draft." action={canWrite ? "New Item" : undefined} onAction={() => setOpen(true)} />}
+          empty={<EmptyState title={`No ${plural.toLowerCase()} yet`} description="Add the first one; it starts as a draft." action={canWrite ? `New ${label}` : undefined} onAction={() => setOpen(true)} />}
         />
       </Card>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogPopup>
           <Form method="post" className="flex min-h-0 flex-1 flex-col">
             <DialogHeader>
-              <DialogTitle>New Item</DialogTitle>
+              <DialogTitle>New {label}</DialogTitle>
               <DialogDescription>A title now; the rest on its page.</DialogDescription>
             </DialogHeader>
             <DialogPanel className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">

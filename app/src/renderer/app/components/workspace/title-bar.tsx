@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, ArrowRightIcon, LoaderCircleIcon, PanelLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon, CodeXmlIcon, LoaderCircleIcon, MessagesCircleIcon, PanelLeftIcon, type LucideIcon } from "lucide-react";
 import * as React from "react";
 import { useNavigate } from "react-router";
 import type { WorkspaceMode } from "../../../../shared/bridge";
@@ -26,32 +26,36 @@ const titlebarInset = (): number => (document.documentElement.dataset.platform =
 
 /**
  * The room back, forward, the toggle and the mode need: three 28px buttons 2px apart (88px), the
- * Live / Dev control (about 92px) after an 8px gap, then a 12px gap, the same as the one between
+ * Work / Build control (about 70px) after an 8px gap, then a 12px gap, the same as the one between
  * the divider and the title. With the rail folded, the divider sits right after the mode; with it
  * open, it follows the canvas edge instead.
  */
 const NAV_MIN_WIDTH = 200;
 
-/** Live or Dev. Dev shows a spinner while the dev server comes up; both are disabled meanwhile. */
+/**
+ * Live or Dev, as two icons named by their tooltips: Work (Live, the chat) and Build (Dev, the
+ * code). Build shows a spinner in place of its icon while the dev server comes up; both are
+ * disabled meanwhile. A workspace that lives only on this Mac (the demo) has nothing deployed, so
+ * it stays in Build.
+ */
 function ModeSwitch({ mode }: { mode: ModeProps }): React.ReactElement {
   const { adminDark } = usePlatform();
-  const item = (m: WorkspaceMode, label: string, hint: string) => (
+  const item = (m: WorkspaceMode, label: string, Icon: LucideIcon) => (
     <Tooltip key={m}>
-      <TooltipTrigger render={<SegmentedControlItem aria-pressed={mode.mode === m} data-pressed={mode.mode === m || undefined} disabled={mode.switching} onClick={() => mode.onChange(m)} className="h-6 px-2 text-[12px] sm:h-6" />}>
-        {m === "dev" && mode.switching ? <LoaderCircleIcon className="size-3 animate-spin" /> : null}
-        {label}
+      <TooltipTrigger render={<SegmentedControlItem aria-label={label} aria-pressed={mode.mode === m} data-pressed={mode.mode === m || undefined} disabled={mode.switching || (mode.local && m === "live")} onClick={() => mode.onChange(m)} className="h-7 w-8 rounded-md px-0 sm:h-7" />}>
+        {m === "dev" && mode.switching ? <LoaderCircleIcon className="size-4 animate-spin" /> : <Icon className="size-4" />}
       </TooltipTrigger>
-      <TooltipPopup>{hint}</TooltipPopup>
+      <TooltipPopup>{label}</TooltipPopup>
     </Tooltip>
   );
   return (
-    <SegmentedControl size="sm" aria-label="Live or Dev" className={cn("on-admin ms-2 h-7 shrink-0 bg-foreground/8", adminDark ? "dark" : "light")}>
-      {item("live", "Live", "The deployed workspace: its Worker, its data, its address")}
-      {item("dev", "Dev", "The workspace's repo on this Mac: its dev server, local data, the Code section")}
+    <SegmentedControl size="sm" aria-label="Work or Build" className={cn("on-admin ms-2 h-8 shrink-0 rounded-lg bg-foreground/8", adminDark ? "dark" : "light")}>
+      {item("live", mode.local ? "Work Needs a Deployed Workspace" : "Work", MessagesCircleIcon)}
+      {item("dev", "Build", CodeXmlIcon)}
     </SegmentedControl>
   );
 }
-type ModeProps = { mode: WorkspaceMode; switching: boolean; onChange: (mode: WorkspaceMode) => void };
+type ModeProps = { mode: WorkspaceMode; switching: boolean; onChange: (mode: WorkspaceMode) => void; /** Lives only on this Mac: always Build. */ local?: boolean };
 
 // A divider marks where a panel starts but draws its line in the middle of the 8px gap before it.
 // It takes no width, so what follows keeps its place.

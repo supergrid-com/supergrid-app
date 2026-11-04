@@ -6,6 +6,7 @@ import { cfClient } from "./cf-api";
 import * as cloudflare from "./cloudflare";
 import { readConfig, readState, writeConfig } from "./config";
 import * as apps from "./apps";
+import { localWorkspace } from "./local";
 import { listWorkspaces } from "./workspaces";
 
 // The desktop's path into a workspace: POST `/_ws/rpc` on its public URL with the workspace token.
@@ -74,8 +75,11 @@ async function clientFor(accountId: string): Promise<Cf> {
 /**
  * A workspace as the desktop sees it in its current mode: the deployed Worker, or in Dev mode its dev server on this Mac
  * with the repo's apps (the deployed Worker's name stays, for the account-side things: its database, its bucket, its secrets).
+ * A workspace that lives only on this Mac is its dev server, started here when it isn't running, and never asks an account.
  */
 export async function workspace(wsId: string): Promise<WorkspaceSummary> {
+  const local = localWorkspace(wsId);
+  if (local) return apps.localSummary(local, true);
   const cloud = await cloudWorkspace(wsId);
   if (apps.modeOf(wsId) !== "dev") return cloud;
   const dev = apps.devStatus(wsId);

@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+* { box-sizing: border-box; }
+body { margin: 0; background: #ffffff; }
+.pretty { text-wrap: pretty; }
+.balance { text-wrap: balance; }
+.mono { font-family: "Geist Mono", ui-monospace, monospace; }

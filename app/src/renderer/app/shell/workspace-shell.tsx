@@ -30,7 +30,7 @@ import { SearchPalette, useSearchShortcut } from "~/shell/command-palette";
 import { ShellContext, useStoredFlag, type Shell } from "~/shell/context";
 import { DocsModal } from "~/shell/docs-modal";
 import { OrgModal } from "~/shell/org-modal";
-import { codeSection, sections } from "~/shell/sections";
+import { allSections } from "~/shell/sections";
 
 // A workspace, after v1: the title bar runs the full width above a dark rail, a second panel for
 // sections with sub pages, the agent's panel, and the page in a card. The organization's own pages
@@ -52,7 +52,7 @@ const CHAT_GAP = 8;
 function subNavFor(ws: WorkspaceSummary, rest: string, go: (to: string) => void, tables: DbTable[] | null, loading = false, lists: { workflows: Workflow[] | null; reports: Report[] | null; loading: boolean } = { workflows: null, reports: null, loading: false }, localApps: LocalApp[] | null = null): { title: string; action?: React.ReactNode; items: SubNavItem[]; groups?: SubNavGroup[]; loading?: boolean } | null {
   const base = `/w/${ws.id}`;
   const parts = rest.split("/");
-  const section = [...sections, codeSection].find((s) => s.path === parts[0]);
+  const section = allSections.find((s) => s.path === parts[0]);
   if (section?.items) {
     const sub = parts.slice(1).join("/");
     const items: SubNavItem[] = section.items.map((it) => {
@@ -205,14 +205,16 @@ function Centered({ children }: { children: React.ReactNode }): React.ReactEleme
 export function WorkspaceShell(): React.ReactElement {
   const { ws: id } = useParams();
   const { org } = useSession();
-  const { list, error, refresh } = useWorkspaces(org?.cloudflare ?? null);
+  const { list, error, refresh } = useWorkspaces(org);
   const cloud = list?.find((w) => w.id === id);
+  // a workspace that lives only on this Mac (the demo) is its dev server and nothing else, so it opens once that answers
+  const local = !!cloud?.local;
   // in Dev the workspace is its dev server on this Mac, once that has answered (lib/mode.ts)
   const mode = useMode(id ?? "");
-  const ws = mode.mode === "dev" && mode.summary && cloud ? mode.summary : cloud;
+  const ws = local ? (mode.summary ?? undefined) : mode.mode === "dev" && mode.summary && cloud ? mode.summary : cloud;
   React.useEffect(() => {
-    if (id && cloud) ensureMode(id);
-  }, [id, !!cloud]);
+    if (id && cloud) ensureMode(id, local);
+  }, [id, !!cloud, local]);
   const switchMode = React.useCallback(
     (to: "live" | "dev") => {
       void mode.setMode(to).catch((e) => toastManager.add({ title: to === "dev" ? "Dev Did Not Start" : "Could Not Switch", description: String((e as Error)?.message ?? e).replace(/^Error invoking remote method '[^']*': (?:Error: )?/, ""), type: "error" }));
@@ -300,14 +302,32 @@ export function WorkspaceShell(): React.ReactElement {
     [ws, agentOpen, setAgentOpen, threadId, openThread],
   );
 
-  if (!org?.cloudflare) return <Navigate to="/" replace />;
+  if (!org) return <Navigate to="/" replace />;
+  if (local && cloud && (!shell || !ws)) {
+    return (
+      <Centered>
+        {mode.error ? (
+          <>
+            <h1 className="font-heading text-xl font-semibold text-admin-strong">{cloud.name} Didn't Start</h1>
+            <p className="max-w-md whitespace-pre-wrap text-sm text-admin-muted">{mode.error}</p>
+            <Button size="sm" onClick={() => switchMode("dev")}>Try Again</Button>
+          </>
+        ) : (
+          <>
+            <Loader2Icon className="size-6 animate-spin text-admin-muted" />
+            <p className="max-w-md text-sm text-admin-muted">Starting {cloud.name} on this Mac</p>
+          </>
+        )}
+      </Centered>
+    );
+  }
   if (!shell || !ws) {
     return (
       <Centered>
         {list || error ? (
           <>
             <h1 className="font-heading text-xl font-semibold text-admin-strong">{error ? "Couldn't read the workspaces" : "This workspace isn't in the account"}</h1>
-            <p className="max-w-md text-sm text-admin-muted">{error ?? `There is no ${org.cloudflare.prefix}-ws-${id} in ${org.cloudflare.accountName}.`}</p>
+            <p className="max-w-md text-sm text-admin-muted">{error ?? (org.cloudflare ? `There is no ${org.cloudflare.prefix}-ws-${id} in ${org.cloudflare.accountName}.` : `There is no workspace ${id} on this Mac.`)}</p>
             {error ? <Button size="sm" onClick={() => void refresh()}>Try Again</Button> : <Button size="sm" onClick={() => navigate("/")}>Open Another Workspace</Button>}
           </>
         ) : (
@@ -334,7 +354,7 @@ export function WorkspaceShell(): React.ReactElement {
     <ShellContext.Provider value={shell}>
       {/* while a panel is dragged, nothing inside animates (see [data-resizing] in app.css) */}
       <div className="flex h-full w-full flex-col overflow-hidden overscroll-none bg-admin text-foreground" data-resizing={resizing || undefined}>
-        <WorkspaceTitleBar canvasStart={canvasStart} chatStart={chatLeft ? chatStart : undefined} chatEnd={chatRight ? chatWidth : undefined} animate={!resizing} onToggleSidebar={toggleNav} mode={{ mode: mode.mode, switching: mode.switching, onChange: switchMode }} chatRef={setChatSlot} titleRef={setTitleSlot} actionsRef={setActionsSlot} />
+        <WorkspaceTitleBar canvasStart={canvasStart} chatStart={chatLeft ? chatStart : undefined} chatEnd={chatRight ? chatWidth : undefined} animate={!resizing} onToggleSidebar={toggleNav} mode={{ mode: local ? "dev" : mode.mode, switching: mode.switching, onChange: switchMode, local }} chatRef={setChatSlot} titleRef={setTitleSlot} actionsRef={setActionsSlot} />
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <WorkspaceSidebar ws={ws} width={navWidth} animate={!resizing} collapsed={collapsed} className="max-md:hidden" />
           {/* the open rail resizes from its right edge; the handle takes no room of its own */}

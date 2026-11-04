@@ -9,6 +9,7 @@ import { Progress, ProgressIndicator, ProgressTrack } from "~/components/ui/prog
 import { Spinner } from "~/components/ui/spinner";
 import { sg } from "~/lib/bridge";
 import type { CloudflareLink } from "~/lib/orgs";
+import { useSession } from "~/lib/session";
 import { cn } from "~/lib/utils";
 import { clean, refreshWorkspaces } from "~/lib/workspaces";
 
@@ -89,6 +90,7 @@ export function CreateWorkspace({
   onCancel?: () => void;
   doneLabel?: string;
 }): React.ReactElement {
+  const { org } = useSession();
   const [name, setName] = React.useState("");
   const [id, setId] = React.useState<string>();
   const [prepError, setPrepError] = React.useState<string>();
@@ -132,7 +134,7 @@ export function CreateWorkspace({
       const made = await sg.workspaces.create({ accountId: link.accountId, prefix: link.prefix, id, name: name.trim() });
       setCreated(made);
       setPhase("done");
-      void refreshWorkspaces(link);
+      if (org) void refreshWorkspaces(org);
     } catch (e) {
       setError(clean(e));
       setPhase("failed");

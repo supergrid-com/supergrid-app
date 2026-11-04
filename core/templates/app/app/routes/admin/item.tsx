@@ -9,7 +9,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
-import { getItem } from "../../lib/items";
+import { getItem, m } from "../../lib/items";
 import manifest from "../../../supergrid.app.json";
 import type { Route } from "./+types/item";
 
@@ -61,7 +61,7 @@ export default function AdminItem() {
     >
       <Link to={adminHref(manifest, "/")} className="-mt-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeftIcon className="size-3.5" />
-        Items
+        {m.entities.item!.plural}
       </Link>
       <Form id="item" method="post">
         <Card>

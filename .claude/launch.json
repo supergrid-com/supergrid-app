@@ -80,6 +80,20 @@
         "5302"
       ],
       "port": 5302
+    },
+    {
+      "name": "site",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "launch/site",
+        "exec",
+        "next",
+        "dev",
+        "--port",
+        "5320"
+      ],
+      "port": 5320
     }
   ]
 }
