@@ -2,6 +2,7 @@ import { CloudIcon, GlobeIcon, InfoIcon, LayoutGridIcon, PlusIcon, RefreshCwIcon
 import * as React from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { CreateWorkspace } from "~/components/create-workspace";
+import { ExploreDemo } from "~/components/explore-demo";
 import { SectionPage } from "~/components/section-page";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Badge } from "~/components/ui/badge";
@@ -13,8 +14,8 @@ import { useSession } from "~/lib/session";
 import { useWorkspaces, type WorkspaceSummary } from "~/lib/workspaces";
 
 // The organization's workspaces, in its modal: the ones that live only on this Mac (the demo), then every
-// `<prefix>-ws-<id>` Worker in its Cloudflare account, read through cf. A card opens that workspace; New workspace
-// creates one for real.
+// `<prefix>-ws-<id>` Worker in its Cloudflare account, read through cf. A card opens that workspace; New Workspace
+// offers the demo (sample data, on this Mac) when this organization hasn't got it, then creates an empty one for real.
 
 const host = (url: string) => url.replace(/^https?:\/\//, "");
 const GRID = "grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4";
@@ -71,10 +72,17 @@ export function OrgWorkspaces(): React.ReactElement {
   const [creating, setCreating] = React.useState(params.get("create") === "1");
   const open = (id: string) => navigate(`/w/${id}`);
 
-  if (creating && link) {
+  if (creating && link && org) {
+    const hasDemo = !!list?.some((w) => w.demo);
     return (
       <SectionPage title="New Workspace" width={720}>
-        <CreateWorkspace link={link} onOpen={(c) => open(c.id)} onCancel={() => setCreating(false)} />
+        <div className="flex flex-col gap-8">
+          {!hasDemo && <ExploreDemo org={org} title="Start From the Demo" action="Add the Demo" />}
+          <div className="flex flex-col gap-5">
+            {!hasDemo && <h2 className="font-heading text-lg font-semibold">Or an Empty Workspace</h2>}
+            <CreateWorkspace link={link} onOpen={(c) => open(c.id)} onCancel={() => setCreating(false)} />
+          </div>
+        </div>
       </SectionPage>
     );
   }
@@ -136,7 +144,7 @@ export function OrgWorkspaces(): React.ReactElement {
         <EmptyContent>
           <Button size="sm" onClick={() => setCreating(true)}>
             <PlusIcon />
-            New workspace
+            New Workspace
           </Button>
         </EmptyContent>
       </Empty>
@@ -161,7 +169,7 @@ export function OrgWorkspaces(): React.ReactElement {
             </Button>
             <Button size="sm" onClick={() => setCreating(true)}>
               <PlusIcon />
-              New workspace
+              New Workspace
             </Button>
           </>
         ) : undefined

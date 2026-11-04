@@ -403,7 +403,7 @@ function WorkspaceMenu({ ws }: { ws: WorkspaceSummary }): React.ReactElement {
           ))}
           <MenuItem className={menuItemClass} onClick={() => modal.open("workspaces", { create: true })}>
             <PlusIcon />
-            New workspace
+            New Workspace
           </MenuItem>
         </MenuGroup>
         <MenuSeparator className="my-1.5" />

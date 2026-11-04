@@ -73,6 +73,9 @@ export function Muse({ product, byMeta, className }: { product?: string; byMeta?
 }
 
 /** The page column. */
+/** Where "Try the Beta" goes: the app's repo, with the download and the run-from-source steps in its README. */
+export const BETA_URL = "https://github.com/supergrid-com/supergrid-app";
+
 export function Container({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={`mx-auto w-full max-w-[1200px] px-4 sm:px-6 ${className ?? ""}`}>{children}</div>;
 }

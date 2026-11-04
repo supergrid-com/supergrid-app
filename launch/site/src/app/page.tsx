@@ -1,7 +1,7 @@
 import { ActivityIcon, ArrowRightIcon, BarChart3Icon, BookOpenIcon, BuildingIcon, ChartLineIcon, CheckIcon, CloudIcon, CodeIcon, CodeXmlIcon, CreditCardIcon, DatabaseIcon, FileTextIcon, FolderGitIcon, FolderIcon, GiftIcon, GitBranchIcon, GitMergeIcon, GlobeIcon, HistoryIcon, ImageIcon, KeyRoundIcon, LayersIcon, LayoutDashboardIcon, LayoutTemplateIcon, ListOrderedIcon, MailIcon, MapIcon, MessageCircleIcon, MessageSquareIcon, PaletteIcon, PlugIcon, RocketIcon, RouteIcon, ScrollTextIcon, ServerIcon, ShieldCheckIcon, ShoppingCartIcon, SlidersHorizontalIcon, SparklesIcon, SquareTerminalIcon, StoreIcon, SwatchBookIcon, ToggleRightIcon, UsersIcon, VideoIcon, WebhookIcon, WorkflowIcon, TextCursorInputIcon, NewspaperIcon, CalendarCheckIcon, MegaphoneIcon, StarIcon, HandshakeIcon, CircleHelpIcon, ClipboardListIcon, BadgeCheckIcon, MicIcon, CalendarDaysIcon, LinkIcon, ContactRoundIcon, ReceiptIcon, TicketIcon, Share2Icon, MessagesSquareIcon, SearchIcon, AppWindowIcon, FlaskConicalIcon, SendIcon, DownloadIcon, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
-import { Button, Chip, Container, Mark, Muse, MuseGlyph, Panel } from "@/components/brand";
+import { BETA_URL, Button, Chip, Container, Mark, Muse, MuseGlyph, Panel } from "@/components/brand";
 import { AppAnatomy } from "@/components/app-anatomy";
 import { DemoFromHash, WatchDemoButton } from "@/components/demo-video";
 import { Hero } from "@/components/hero";
@@ -668,9 +668,6 @@ function AppTypes() {
 
 // 10. Muse Code as your CTO
 
-// Where the beta download lives. A placeholder until there's a build to share.
-const DOWNLOAD_URL = "#beta";
-
 function Cto() {
   return (
     <section id="beta" className="scroll-mt-20 p-2 md:p-3">
@@ -692,9 +689,8 @@ function Cto() {
           <p className="mt-6 max-w-2xl text-center text-lg leading-relaxed tracking-wide text-pretty text-white/65 md:text-xl">
             Try the beta. Download the app for macOS, connect Muse Code and your Cloudflare account, and start building apps you own
           </p>
-          {/* TODO: point at the real download once there's a build to share */}
           <div className="mt-10 flex flex-wrap justify-center gap-3">
-            <a href={DOWNLOAD_URL} className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[17px] text-ink shadow-[0_0_40px_rgb(255_255_255/18%)] transition-colors hover:bg-white/90">
+            <a href={BETA_URL} target="_blank" rel="noopener" className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[17px] text-ink shadow-[0_0_40px_rgb(255_255_255/18%)] transition-colors hover:bg-white/90">
               <DownloadIcon className="size-4" /> Try the Beta App
             </a>
             <WatchDemoButton className="inline-flex h-12 items-center gap-2 rounded-full border border-white/25 bg-white/[0.04] px-6 text-[17px] text-white backdrop-blur-md transition-colors hover:bg-white/10" />
@@ -715,7 +711,7 @@ function Platform() {
     { icon: StoreIcon, title: "Expert-built.", body: "Apps by the people who understand the problem best, installed instead of cloned" },
   ];
   return (
-    <Section id="beta" className="pb-28 md:pb-40">
+    <Section className="pb-28 md:pb-40">
       <Container className="flex flex-col items-center text-center">
         <Mark size={44} />
         <H center size="xl" rest="The code moves to the user" className="mt-8 max-w-4xl">
@@ -731,13 +727,7 @@ function Platform() {
             </Point>
           ))}
         </div>
-        <form className="mt-16 flex w-full max-w-md flex-col gap-3 sm:flex-row" action="#beta">
-          <input type="email" required placeholder="you@example.com" className="h-12 flex-1 rounded-full bg-soft px-5 text-[17px] outline-none placeholder:text-faint focus:ring-2 focus:ring-accent" />
-          <button type="submit" className="h-12 rounded-full bg-ink px-6 text-[17px] text-white transition-colors hover:bg-ink-2">
-            Join the Beta
-          </button>
-        </form>
-        <p className="mt-4 text-[15px] text-faint">Desktop app for macOS, with your own Cloudflare account and Muse Code</p>
+        <p className="mt-14 text-[15px] text-faint">Desktop app for macOS, with your own Cloudflare account and Muse Code</p>
       </Container>
     </Section>
   );

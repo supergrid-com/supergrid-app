@@ -1,6 +1,6 @@
 import { ArrowDownIcon, ArrowRightIcon, CodeIcon, DownloadIcon, ServerIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { Container, Muse, MuseGlyph } from "@/components/brand";
+import { BETA_URL, Container, Muse, MuseGlyph } from "@/components/brand";
 import { DemoApp } from "@/components/demo/demo-app";
 import { WatchDemoButton } from "@/components/demo-video";
 
@@ -27,7 +27,7 @@ export function Hero() {
           <p className="mt-6 max-w-[60ch] text-xl leading-relaxed tracking-wide text-balance text-white md:text-2xl">SuperGrid is a platform to build, own and extend your own marketing stack</p>
           <p className="mt-3 max-w-[50ch] text-lg leading-relaxed tracking-wide text-balance text-white/70 md:text-xl">Install apps, build your own and own every part of it</p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
-            <a href="#beta" className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[17px] text-ink shadow-[0_0_40px_rgb(255_255_255/18%)] transition-colors hover:bg-white/90">
+            <a href={BETA_URL} target="_blank" rel="noopener" className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[17px] text-ink shadow-[0_0_40px_rgb(255_255_255/18%)] transition-colors hover:bg-white/90">
               <DownloadIcon className="size-4" /> Try the Beta App
             </a>
             <WatchDemoButton className="inline-flex h-12 items-center gap-2 rounded-full border border-white/25 bg-white/[0.04] px-6 text-[17px] text-white backdrop-blur-md transition-colors hover:bg-white/10" />

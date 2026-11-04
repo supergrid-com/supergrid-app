@@ -6,7 +6,7 @@ import { isDesktop, sg } from "~/lib/bridge";
 import { currentMode, setMode } from "~/lib/mode";
 import { AcpConnection, AcpError, errorMessage } from "./connection";
 import { sessionChoices, type Choice } from "./session";
-import { applyUpdate, nextId, restoreWidgets, textOf, userMessage, withNotice, withWidget, type ChatMessage } from "./transcript";
+import { applyUpdate, nextId, restoreWidgets, textOf, userMessage, withNotice, withoutContext, withWidget, type ChatMessage } from "./transcript";
 
 // The coding agent and its threads. One Muse Code process for the whole app, speaking ACP; each
 // thread is one of its sessions, run in the workspace's folder (main's workspaceDir), so Muse's own
@@ -82,6 +82,12 @@ export function statusOf(t: Pick<Thread, "permission" | "ask" | "busy" | "error"
 }
 
 /** The agent's name for the thread, else its first question. */
+/** A title as Muse makes it, from the whole prompt: without the context block the app adds to each one (contextBlock). */
+export function cleanTitle(title: string | null | undefined): string | null {
+  const t = title && withoutContext(title).replace(/\s*```resource\b[\s\S]*$/, "").trim();
+  return t || null;
+}
+
 export function titleOf(t: Thread | undefined): string {
   const first = t?.messages.find((m) => m.role === "user");
   return t?.title ?? (first ? textOf(first).slice(0, 80) : "New thread");
@@ -357,7 +363,7 @@ export class AgentStore {
       case "usage_update":
         return this.patch(sessionId, () => ({ usage: { used: update.used, size: update.size, cost: update.cost?.amount ?? null } }));
       case "session_info_update":
-        if (update.title) this.patch(sessionId, () => ({ title: update.title ?? null }));
+        if (update.title) this.patch(sessionId, () => ({ title: cleanTitle(update.title) }));
         return;
       case "config_option_update":
         return this.patch(sessionId, (t) => ({ settings: t.settings ? { ...t.settings, configOptions: update.configOptions } : t.settings }));
@@ -429,7 +435,7 @@ export class AgentStore {
     if (existing?.unseen) this.patch(id, () => ({ unseen: false }));
     if (existing?.live || existing?.loading) return;
     const listed = this.listed.get(wsId)?.find((s) => s.sessionId === id);
-    this.threads.set(id, { ...(existing ?? blank(id, wsId)), title: existing?.title ?? listed?.title ?? null, updatedAt: listed?.updatedAt ?? existing?.updatedAt ?? new Date().toISOString(), messages: [], loading: true, error: null });
+    this.threads.set(id, { ...(existing ?? blank(id, wsId)), title: existing?.title ?? cleanTitle(listed?.title), updatedAt: listed?.updatedAt ?? existing?.updatedAt ?? new Date().toISOString(), messages: [], loading: true, error: null });
     this.emit();
     try {
       const conn = await this.connection();
@@ -538,7 +544,7 @@ export class AgentStore {
     for (const s of this.listed.get(wsId) ?? []) {
       // an empty session (a New thread never written in) has no title, and isn't a thread yet
       if (!s.title) continue;
-      out.set(s.sessionId, { id: s.sessionId, title: s.title, updatedAt: s.updatedAt ?? "", status: "idle" });
+      out.set(s.sessionId, { id: s.sessionId, title: cleanTitle(s.title) ?? "New thread", updatedAt: s.updatedAt ?? "", status: "idle" });
     }
     for (const t of this.threads.values()) {
       if (t.wsId !== wsId) continue;

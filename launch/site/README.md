@@ -10,6 +10,7 @@ pnpm dev
 - `src/app/page.tsx`: the page, one component per section, in the film's beat order (`../video/beats.md`)
 - `src/components/brand.tsx`: the mark, Muse glyph, chips, buttons and product shots, after the film's kit
 - `public/shots/`: frames of the app cropped from the launch film (`../video/film`)
+- `public/demo/`: the photos in the hero's clickable app, small WebPs listed with their sources in `src/components/demo/photos.ts`
 
 ## Icons and share card
 

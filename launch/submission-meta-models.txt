@@ -1,0 +1,7 @@
+SuperGrid only works if every user has a capable coding agent of their own. When an app is copied into a customer's repo, that customer owns the code, and code needs someone to change it, merge updates into it and keep it running. Before, that meant hiring a developer, so most people rented SaaS instead. With Muse Code, every user gets a CTO.
+
+The hardest job is updates. Merging a new version of an app into a copy the customer has changed used to be too expensive and broke things. Muse Code can resolve those conflicts, explain what it kept and ask for approval, which is what makes "copy the app into your repo" workable as a business.
+
+It matters that it's the user's own Muse Code. People don't want to pay a token reseller a premium for what they already pay for. SuperGrid holds no model account. The user brings their Muse subscription, and builders can sell their app as code instead of renting it with an AI markup.
+
+Muse Code also does the everyday work: building a new app on the core, changing an app to fit the business, and answering questions from the workspace's own data through SuperGrid's tools. That's why I see SuperGrid as an IDE, with Muse Code as the developer working in it.

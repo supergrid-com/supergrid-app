@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mark } from "@/components/brand";
+import { BETA_URL, Mark } from "@/components/brand";
 
 // The top bar. At the very top it sits inside the dark hero with no background of its own; once
 // the page scrolls it turns to the hero's dark at 90%, over a light blur.
@@ -42,7 +42,7 @@ export function Nav() {
             </a>
           ))}
         </nav>
-        <a href="#beta" className="ml-auto inline-flex h-10 shrink-0 items-center rounded-full bg-white px-4 text-[15px] whitespace-nowrap text-ink sm:px-5 transition-colors hover:bg-white/90 md:justify-self-end">
+        <a href={BETA_URL} target="_blank" rel="noopener" className="ml-auto inline-flex h-10 shrink-0 items-center rounded-full bg-white px-4 text-[15px] whitespace-nowrap text-ink sm:px-5 transition-colors hover:bg-white/90 md:justify-self-end">
           Try the Beta
         </a>
       </div>

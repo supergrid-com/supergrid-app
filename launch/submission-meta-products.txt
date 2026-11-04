@@ -1,0 +1,7 @@
+Muse Code is the agent inside SuperGrid. The desktop app runs Muse Code and talks to it over ACP (the Agent Client Protocol), so the chat runs on the user's own Muse login and Muse models. Each thread can pick Muse Spark or Muse Wonder, an effort level and an approval mode. SuperGrid holds no model account and resells no tokens.
+
+Each thread is a Muse Code session in the workspace's git repo, so Muse can read and change the code of every app in it. SuperGrid also gives Muse tools for the workspace through MCP. It can describe an app and call its operations, query and edit the database, read events and analytics, manage images, media, themes and skills, find the files behind a screen, make a new app from the template, and deploy the workspace to Cloudflare. The MCP server is a proxy that never sees a credential, and anything that changes or deletes data asks the user first with a preview of the rows. Tool results draw cards in the chat, like charts, tables and image thumbnails.
+
+Every prompt carries where the user is in the app: the workspace, Live or Dev mode, and the page, table or app on screen. So when someone asks about the numbers in front of them, Muse answers from the workspace's own data. Muse also gets SuperGrid's docs on how to build an app.
+
+Muse Code is also how app updates work. When a new version of an installed app conflicts with the user's own changes, Muse resolves the merge, explains what changed and what it kept, and asks for approval. That path is tested on a test account but not polished yet.

@@ -1,0 +1,15 @@
+I've been building SaaS products for over 20 years. Lately people find my products and get their agents to clone them, then give the copies away or resell them. It's lose-lose. The builder loses revenue, and the customer gets a worse copy, without the years of choices behind it.
+
+I don't think people clone to steal. They want to own their software, self-host it, use their own AI subscription like Muse Code instead of paying a token reseller, and stop paying for 100 features to use 3. So instead of fighting that, SuperGrid makes it easier.
+
+About 80% of a SaaS product is the same for every product: database, auth, events, analytics. SuperGrid is that 80%. A builder ships the 20% that's actually theirs, and the customer gets the code to extend and make their own.
+
+A workspace is one git repo, one Cloudflare Worker and one D1 database in the customer's own Cloudflare account, so the bill is theirs. Apps are folders copied into that repo, the way shadcn/ui copies components in, and they share the database, contacts, sign-in, theme and events. The desktop app is the IDE, with the user's own Muse Code built in.
+
+The hard part is updates. Merging a new version into an app the customer changed used to be too expensive and broke things. In SuperGrid an update is a three-way merge of one app folder on a branch, and Muse Code resolves the conflicts, explains what it kept and asks for approval. Muse Code is what makes this possible, giving every user a CTO.
+
+I spent most of the week prototyping the model, so the demo isn't as polished as I'd like. Working today: the macOS app, creating and deploying workspaces, Live / Dev mode, new apps from a template, Database, Events, Workflows and Library pages on real data, and Muse Code with the workspace tools. Not finished: updates from someone else's repo, the app store and example apps. Choose Explore the Demo in setup to try it without a Cloudflare account.
+
+Next, I'm porting my own apps: ContentBlocks.com, OutcomeApp.ai and Onepager.io. They'll be the first available, once I've beta tested the model with them and built more. Then an app store, where other builders can sell their apps too. I think more of these IDEs will show up for other industries, and mine is for creators and marketers.
+
+Thank you to Meta and everyone running this hackathon for the chance to explore a new kind of SaaS, one where users own the code, an agent acts as their CTO, and builders work with the way people already use software instead of fighting it.

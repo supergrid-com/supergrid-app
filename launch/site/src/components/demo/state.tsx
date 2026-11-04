@@ -2,6 +2,7 @@
 
 import { CreditCardIcon, GraduationCapIcon, LayoutTemplateIcon, MailIcon, MegaphoneIcon, NewspaperIcon, TextCursorInputIcon, UsersIcon, type LucideIcon } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { PhotoId } from "./photos";
 
 // What the demo remembers while someone clicks around: where they are (a route string, with back
 // and forward), Live or Dev, the theme, which apps are installed, the blog's posts and the agent's
@@ -9,25 +10,27 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 export type AppId = "blog" | "forms" | "landing" | "ads" | "newsletter" | "courses" | "checkout" | "community";
 
-export const CATALOG: Record<AppId, { name: string; icon: LucideIcon; by: string; kind: "Site" | "Admin"; price: string; blurb: string }> = {
-  blog: { name: "Blog", icon: NewspaperIcon, by: "SuperGrid", kind: "Site", price: "Free", blurb: "Posts, categories and comments on your own domain" },
-  forms: { name: "Forms", icon: TextCursorInputIcon, by: "SuperGrid", kind: "Site", price: "Free", blurb: "Signups, waitlists and contact forms into your contacts" },
-  landing: { name: "Landing Pages", icon: LayoutTemplateIcon, by: "Theo Marsh", kind: "Site", price: "$19", blurb: "Pages from blocks, tested and published in a click" },
-  ads: { name: "Ad Designer", icon: MegaphoneIcon, by: "Studio", kind: "Admin", price: "Built here", blurb: "Square ads from a sentence, with Muse Image" },
-  newsletter: { name: "Newsletter", icon: MailIcon, by: "Ivy Chen", kind: "Admin", price: "Free", blurb: "Write, schedule and send to your contacts" },
-  courses: { name: "Courses", icon: GraduationCapIcon, by: "Lena Ortiz", kind: "Site", price: "$29", blurb: "Lessons, modules and progress for members" },
-  checkout: { name: "Checkout", icon: CreditCardIcon, by: "Mara Quinn", kind: "Site", price: "$39", blurb: "Offers, order bumps and Stripe payments" },
-  community: { name: "Community", icon: UsersIcon, by: "Ola Berg", kind: "Site", price: "$19", blurb: "Spaces, threads and member profiles" },
+export const CATALOG: Record<AppId, { name: string; icon: LucideIcon; by: string; kind: "Site" | "Admin"; price: string; version: string; blurb: string }> = {
+  blog: { name: "Blog", icon: NewspaperIcon, by: "SuperGrid", kind: "Site", price: "Free", version: "1.4.0", blurb: "Posts, categories and comments on your own domain" },
+  forms: { name: "Forms", icon: TextCursorInputIcon, by: "SuperGrid", kind: "Site", price: "Free", version: "1.1.2", blurb: "Signups, waitlists and contact forms into your contacts" },
+  landing: { name: "Landing Pages", icon: LayoutTemplateIcon, by: "Theo Marsh", kind: "Site", price: "$19", version: "2.1.0", blurb: "Pages from blocks, tested and published in a click" },
+  ads: { name: "Ad Designer", icon: MegaphoneIcon, by: "Studio", kind: "Admin", price: "Built here", version: "0.3.0", blurb: "Ads in every size from a sentence, with Muse Image" },
+  newsletter: { name: "Newsletter", icon: MailIcon, by: "Ivy Chen", kind: "Admin", price: "Free", version: "1.2.0", blurb: "Write, schedule and send to your contacts" },
+  courses: { name: "Courses", icon: GraduationCapIcon, by: "Lena Ortiz", kind: "Site", price: "$29", version: "0.9.1", blurb: "Lessons, modules and progress for members" },
+  checkout: { name: "Checkout", icon: CreditCardIcon, by: "Mara Quinn", kind: "Site", price: "$39", version: "1.0.4", blurb: "Offers, order bumps and Stripe payments" },
+  community: { name: "Community", icon: UsersIcon, by: "Ola Berg", kind: "Site", price: "$19", version: "0.6.0", blurb: "Spaces, threads and member profiles" },
 };
 
-export type Post = { id: number; title: string; status: "Published" | "Draft" | "Scheduled"; author: string; updated: string; body: string };
+export type Post = { id: number; title: string; status: "Published" | "Draft" | "Scheduled"; author: string; updated: string; body: string; cover?: PhotoId; views?: number };
 
+// Studio is the small ceramics studio from the launch film: Maya and Leo's journal.
 const POSTS: Post[] = [
-  { id: 1, title: "Why we own our marketing stack", status: "Published", author: "Dylan", updated: "2h ago", body: "For twenty years the answer to every marketing problem was another subscription. A funnel builder here, an email tool there, a course platform on top. Each one kept its own copy of your customers.\n\nWe started over with one workspace that runs in our own Cloudflare account. The blog you're reading is an app in it." },
-  { id: 2, title: "Spring launch: what's new", status: "Scheduled", author: "Ivy", updated: "Yesterday", body: "Three new apps, a faster editor and themes for every workspace. Here's what landed this spring and what's coming next." },
-  { id: 3, title: "Five landing pages that convert", status: "Published", author: "Theo", updated: "3d ago", body: "We looked at the pages that brought in the most signups last quarter and pulled out what they had in common." },
-  { id: 4, title: "How we write with Muse Code", status: "Draft", author: "Dylan", updated: "4d ago", body: "Muse Code drafts, we edit. It knows the blog's tools, so a draft lands as a real post with a slug, a category and an image." },
-  { id: 5, title: "Notes from the creator summit", status: "Published", author: "Lena", updated: "1w ago", body: "A few things we heard over and over from creators at the summit, and what they mean for how you build." },
+  { id: 1, title: "Forty Test Tiles for One Blue", status: "Published", author: "Maya Chen", updated: "2h ago", cover: "glazes", views: 1562, body: "It took forty test tiles and three firings to land the blue on our spring mugs. Here's every one of them, laid out on the bench, and what we changed between each.\n\nThe short version: less cobalt than you'd think, a slower cool, and a lot of patience." },
+  { id: 2, title: "The Seconds Shelf Opens Friday", status: "Scheduled", author: "Leo Dubois", updated: "Yesterday", cover: "shelf-colour", body: "Every firing leaves us a few pieces with a wobble, a pinhole or a glaze that ran. They go on the seconds shelf at 40% off, from Friday at 10." },
+  { id: 3, title: "How We Fire", status: "Published", author: "Leo Dubois", updated: "3d ago", cover: "cups-kiln", views: 980, body: "A bisque at 1000°, a glaze firing at 1240° and twelve hours of cooling with the door shut. A walk through a week at the kiln." },
+  { id: 4, title: "Saturday Wheel Classes Are Back", status: "Draft", author: "Maya Chen", updated: "4d ago", cover: "class", body: "Six seats, two hours, all the clay you can center. Classes start again in March, and members get first pick of the dates." },
+  { id: 5, title: "A Tour of the Studio", status: "Published", author: "Maya Chen", updated: "1w ago", cover: "shop", views: 1110, body: "The wheels at the back, the glaze kitchen by the window and the shop at the front, where most of what we make ends up." },
+  { id: 6, title: "Caring for Stoneware", status: "Published", author: "Leo Dubois", updated: "2w ago", cover: "cup-speckled", views: 655, body: "Dishwasher, oven, microwave: what our pieces can take, and the one thing they can't." },
 ];
 
 export type ToolStep = { label: string; detail?: string; state: "running" | "done" };
@@ -189,7 +192,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         let id = 0;
         await step("Read the skill: Write a Blog Post", undefined, 600);
         await step("blog.create_post", "Spring Sale: 20% off everything", 900, () => {
-          id = addPost({ title: "Spring Sale: 20% off everything", status: "Draft", author: "Muse Code", updated: "Just now", body: "Our spring sale starts Friday. Everything in the shop is 20% off for a week, courses included.\n\nIf you've been waiting to start, this is the week. Members get early access on Thursday." });
+          id = addPost({ title: "Spring Sale: 20% off everything", status: "Draft", author: "Muse Code", updated: "Just now", cover: "tulip-pink", body: "Our spring sale starts Friday. Everything in the shop is 20% off for a week, wheel classes included.\n\nIf you've had your eye on a set of the blue mugs, this is the week. Members get early access on Thursday." });
         });
         await step("Open the draft", undefined, 400, () => go(`apps/blog/post/${id}`));
         reply("The draft's in the Blog as \"Spring Sale: 20% off everything\". Have a read, then publish it from the panel on the right when you're happy");

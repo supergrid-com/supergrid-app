@@ -16,7 +16,8 @@ import { contentText } from "../../../../shared/acp";
 import { CONTEXT_URI, ourTool, type AgentWidget } from "../../../../shared/agent";
 
 export type ChatPart =
-  | { type: "text"; text: string; messageId: string | null }
+  /** `raw` is a user message as it arrived, when the app's context had to be cut out of it (withoutContext). */
+  | { type: "text"; text: string; messageId: string | null; raw?: string }
   | { type: "reasoning"; text: string }
   /** `widget` is the card one of our tools drew for this call (shared/agent.ts). */
   | { type: "tool"; call: ToolCall; widget?: AgentWidget }
@@ -65,6 +66,9 @@ function mergeCall(existing: ToolCall | undefined, patch: Partial<ToolCall> & { 
   return merged;
 }
 
+/** A user message without the app's context, which a replay can hand back as text at its end (provider.contextBlock). */
+export const withoutContext = (text: string): string => text.replace(/\s*(```resource supergrid:\/\/context|<app_context>)[\s\S]*$/, "");
+
 /**
  * The transcript after one update; the same array when the update doesn't touch it. `now` is the
  * time for a live update, null during a replay.
@@ -81,11 +85,12 @@ export function applyUpdate(messages: ChatMessage[], update: SessionUpdate, now:
       // chunks of one message share its id; without ids, consecutive chunks are one message
       if (last?.role === "user" && (messageId === null || last.id === messageId)) {
         const [first] = last.parts;
-        const text = first?.type === "text" ? first.text + delta : delta;
-        return [...messages.slice(0, -1), { ...last, parts: [{ type: "text", text, messageId }] }];
+        // the cut is made on the whole message so far, so context split over several chunks stays out too
+        const raw = first?.type === "text" ? (first.raw ?? first.text) + delta : delta;
+        return [...messages.slice(0, -1), { ...last, parts: [{ type: "text", text: withoutContext(raw), messageId, raw }] }];
       }
       const command = (update as { _meta?: { "dev.muse"?: { commandId?: string } } })._meta?.["dev.muse"]?.commandId;
-      return [...messages, { id: messageId ?? nextId("user"), role: "user", parts: [{ type: "text", text: delta, messageId }], at: now ?? timeOfId(command) ?? timeOfId(messageId) }];
+      return [...messages, { id: messageId ?? nextId("user"), role: "user", parts: [{ type: "text", text: withoutContext(delta), messageId, raw: delta }], at: now ?? timeOfId(command) ?? timeOfId(messageId) }];
     }
     case "agent_message_chunk": {
       const delta = contentText(update.content);

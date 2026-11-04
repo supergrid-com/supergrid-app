@@ -73,14 +73,16 @@ drive it and take screenshots.
   the workspace's repo. Muse gets the app's tools (apps, database, library, themes, analytics, deploy) through an MCP
   proxy that never sees a credential; writes that change or delete data ask first. Every prompt carries where the user is
   in the app. The full list is in [AGENT.md](AGENT.md).
-- **Demo.** Setup's **Explore a Demo** makes a workspace that lives only on this Mac, pinned to Dev, seeded from
-  `core/demo/seed.ts`. No Cloudflare account needed. See [DEMO.md](DEMO.md).
+- **Demo.** **Explore the Demo** in setup, or in New Workspace, makes a workspace that lives only on this Mac, pinned to
+  Dev, with the Funnels, Pages and Blog apps and data seeded from `core/demo/seed.ts`. No Cloudflare account needed. See
+  [DEMO.md](DEMO.md).
+- **Toolchain.** A packaged build carries what it needs from `core/` (the templates, the workspace and the shared packages) in its resources and runs workspace
+  repos on its own Node and pnpm (`toolchain.ts`), so a Mac without either can make a workspace. Development uses yours;
+  `SG_OWN_NODE=1` tries the bundled pair.
 
 ## Not done
 
 - Installing and updating apps from an upstream repo (`core/WORKSPACE-REPO.md` §6).
-- The packaged build doesn't carry `core/` yet. `apps.ts` looks for it in `Resources/core`, so New Workspace and the demo
-  only work when running from this repo.
 - The build is ad-hoc signed and not notarized; macOS only.
 
 `pnpm -C ../dev smoke create` provisions a test workspace under the `sgdev` prefix on the SuperGrid account;

@@ -69,14 +69,11 @@ thoughtful solutions, built by the people who can solve each problem best.
 
 ### Download
 
-**[SuperGrid for macOS (Apple Silicon)](https://github.com/supergrid-com/supergrid-app/releases/latest)**
+**[Download SuperGrid for macOS (Apple Silicon)](https://pub-42824cebaf8a4aea90bc27945a116c52.r2.dev/SuperGrid-0.1.0-arm64.dmg)**
 
-The build isn't signed yet, so macOS blocks the first open. Right-click SuperGrid in Applications and choose **Open**, or
-clear the quarantine flag:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/SuperGrid.app
-```
+Open the `.dmg`, drag SuperGrid into Applications and open it. The app is signed and notarized by Apple, so macOS only
+asks once to confirm you want to open something downloaded. The build is for Apple Silicon Macs (M1 and later); on an
+Intel Mac, run it from source below.
 
 ### Or run it from source
 
@@ -101,16 +98,23 @@ the `.dmg`.
 | For | You need |
 |---|---|
 | The chat | Muse Code installed and signed in with `muse login`. SuperGrid uses your login and holds no model account. |
-| Any workspace, including the demo | Node, pnpm and git |
+| Any workspace, including the demo | Nothing more: the app brings its own Node and pnpm. Running from source uses yours. |
 | Deploying to Cloudflare | A Cloudflare account and the `cf` CLI (`npm i -g cf`). Wrangler ships inside the app. |
 
 ### Explore the demo without a Cloudflare account
 
-On first launch, choose **Explore a Demo**. SuperGrid makes a workspace that lives only on your Mac, for a made-up
-ceramics store called Fernwood Ceramics: about 250 contacts, 8,600 events over 90 days, segments, three workflows, and a
-Journal app with posts. It's a real workspace running on its local dev server and database, filled with sample data, so
-you can ask Muse Code about it or have it change the code. The first run installs packages, so it needs the network.
-**Reset Demo Data** in the workspace's settings puts it back.
+Setup opens with **Explore the Demo**, and any organization can add it later from **New Workspace**. SuperGrid makes a
+workspace that lives only on your Mac, for a made-up pottery studio called Fernwood Ceramics, three weeks after it
+launched a spring collection with a waitlist:
+
+- 254 contacts, 213 orders and about 8,500 events over 90 days, with the launch spike in them
+- 6 segments and 3 workflows: Welcome the Waitlist, Big Orders Become VIP and Wholesale Intake
+- 3 apps: Funnels, Pages and Blog, with 6 funnels, 7 landing pages and 11 posts
+- 2 reports, Spring Launch and Blog, and 3 skills for the studio's voice and replies
+
+It's a real workspace on its own dev server and local database, filled with sample data, so you can ask Muse Code about
+it or have it change the code. The first run installs packages, so it needs the network. **Reset Demo Data** in the
+workspace's settings refills the database and keeps your code changes; **Remove Demo** deletes it from your Mac.
 
 ## How it fits together
 
