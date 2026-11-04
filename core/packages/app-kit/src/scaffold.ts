@@ -30,6 +30,12 @@ export type WorkspaceScaffoldOptions = {
   name: string;
   /** The Worker's name and the local D1's; `sg-ws-<id>` when absent. */
   worker?: string;
+  /**
+   * Copy the core packages into the repo (vendor/) as pnpm workspace packages instead of linking back to core/. For a
+   * core that cannot be installed into, like the copy inside the packaged desktop: a link would reach packages whose
+   * own dependencies are not there. The repo then stands alone.
+   */
+  vendor?: boolean;
 };
 
 export function scaffoldWorkspace(opts: WorkspaceScaffoldOptions): { dir: string } {
@@ -50,14 +56,51 @@ export function scaffoldWorkspace(opts: WorkspaceScaffoldOptions): { dir: string
   const pkgPath = join(dir, "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { name: string; dependencies: Record<string, string> };
   pkg.name = worker;
+  const linked: string[] = [];
   for (const [dep, spec] of Object.entries(pkg.dependencies)) {
     const m = /^link:\.\.\/(.+)$/.exec(spec);
-    if (m) pkg.dependencies[dep] = `link:${posix(relative(dir, join(CORE, m[1]!)))}`;
+    if (!m) continue;
+    linked.push(m[1]!);
+    pkg.dependencies[dep] = opts.vendor ? "workspace:*" : `link:${posix(relative(dir, join(CORE, m[1]!)))}`;
   }
   writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+  if (opts.vendor) vendorCore(CORE, dir, linked);
   const wranglerPath = join(dir, "wrangler.jsonc");
   writeFileSync(wranglerPath, readFileSync(wranglerPath, "utf8").replaceAll("sg-ws-local", worker).replace('"WORKSPACE_ID": "local"', `"WORKSPACE_ID": ${JSON.stringify(opts.id)}`).replace('"WORKSPACE_NAME": "Local workspace"', `"WORKSPACE_NAME": ${JSON.stringify(opts.name)}`));
   return { dir };
+}
+
+/** The core folders a workspace links (`packages/app-kit`, `workspace`), and the ones they reach through `workspace:*`. */
+function coreClosure(CORE: string, start: string[]): string[] {
+  const where = new Map<string, string>();
+  for (const rel of [...readdirSync(join(CORE, "packages")).map((n) => `packages/${n}`), "workspace"]) {
+    const pj = join(CORE, rel, "package.json");
+    if (existsSync(pj)) where.set((JSON.parse(readFileSync(pj, "utf8")) as { name: string }).name, rel);
+  }
+  const seen = new Set<string>();
+  const visit = (rel: string) => {
+    if (seen.has(rel)) return;
+    seen.add(rel);
+    const pj = JSON.parse(readFileSync(join(CORE, rel, "package.json"), "utf8")) as { dependencies?: Record<string, string> };
+    for (const [dep, spec] of Object.entries(pj.dependencies ?? {})) if (spec.startsWith("workspace:") && where.has(dep)) visit(where.get(dep)!);
+  };
+  start.forEach(visit);
+  return [...seen].sort();
+}
+
+/** Copies the core packages into vendor/ and lists them in pnpm-workspace.yaml, so `pnpm install` installs their dependencies too. */
+function vendorCore(CORE: string, dir: string, linked: string[]): void {
+  const rels = coreClosure(CORE, linked);
+  for (const rel of rels) copyDir(join(CORE, rel), join(dir, "vendor", rel), (r) => !TEMPLATE_SKIP.test(r));
+  // what the packages' own tsconfigs extend, at the same place relative to them (Vite reads them)
+  if (existsSync(join(CORE, "tsconfig.base.json"))) writeFileSync(join(dir, "vendor/tsconfig.base.json"), readFileSync(join(CORE, "tsconfig.base.json")));
+  const yamlPath = join(dir, "pnpm-workspace.yaml");
+  const lines = readFileSync(yamlPath, "utf8").split("\n");
+  const at = lines.findIndex((l) => l.trim() === "packages:");
+  if (at < 0) throw new Error(`${yamlPath} has no packages: list.`);
+  lines.splice(at + 1, 0, ...rels.map((rel) => `  - vendor/${rel}`));
+  writeFileSync(yamlPath, lines.join("\n"));
+  writeFileSync(join(dir, "vendor/README.md"), "# vendor\n\nThe SuperGrid core packages this workspace runs on, copied in when the desktop made it. They are pnpm workspace\npackages (`workspace:*`), so the repo installs and builds on its own.\n");
 }
 
 export type AppFolderOptions = {

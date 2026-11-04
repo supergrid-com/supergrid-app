@@ -2,319 +2,319 @@
  {
   "n": 1,
   "start": 0.03,
-  "end": 3.42,
+  "end": 3.13,
   "text": "A year ago, every SaaS product added an AI assistant."
  },
  {
   "n": 2,
-  "start": 3.42,
-  "end": 7.52,
+  "start": 3.13,
+  "end": 6.88,
   "text": "Now people hand that assistant their login and ask it to rebuild the whole product."
  },
  {
   "n": 3,
-  "start": 7.52,
-  "end": 10.23,
+  "start": 6.88,
+  "end": 9.48,
   "text": "SaaS was four things sold as one subscription."
  },
  {
   "n": 4,
-  "start": 10.23,
-  "end": 11.08,
+  "start": 9.48,
+  "end": 10.26,
   "text": "The code."
  },
  {
   "n": 5,
-  "start": 11.08,
-  "end": 12.68,
+  "start": 10.26,
+  "end": 11.72,
   "text": "It took a team of engineers."
  },
  {
   "n": 6,
-  "start": 12.68,
-  "end": 14.64,
+  "start": 11.72,
+  "end": 13.56,
   "text": "Now an agent writes it overnight."
  },
  {
   "n": 7,
-  "start": 14.64,
-  "end": 15.71,
+  "start": 13.56,
+  "end": 14.57,
   "text": "The servers."
  },
  {
   "n": 8,
-  "start": 15.71,
-  "end": 18.24,
+  "start": 14.57,
+  "end": 16.64,
   "text": "Running software at everybody scale is hard."
  },
  {
   "n": 9,
-  "start": 18.24,
-  "end": 20.32,
+  "start": 16.64,
+  "end": 18.82,
   "text": "Running it at you scale is nearly free."
  },
  {
   "n": 10,
-  "start": 20.32,
-  "end": 21.36,
+  "start": 18.82,
+  "end": 19.74,
   "text": "The support."
  },
  {
   "n": 11,
-  "start": 21.36,
-  "end": 23.08,
+  "start": 19.74,
+  "end": 21.36,
   "text": "It took a team answering tickets."
  },
  {
   "n": 12,
-  "start": 23.08,
-  "end": 25.72,
+  "start": 21.36,
+  "end": 23.8,
   "text": "Now an agent answers, and fixes the bug."
  },
  {
   "n": 13,
-  "start": 25.72,
-  "end": 26.7,
+  "start": 23.8,
+  "end": 24.72,
   "text": "And the vision."
  },
  {
   "n": 14,
-  "start": 26.7,
-  "end": 30.95,
+  "start": 24.72,
+  "end": 28.58,
   "text": "A founder who obsessed over one problem until they understood it better than anyone."
  },
  {
   "n": 15,
-  "start": 30.95,
-  "end": 32.24,
+  "start": 28.58,
+  "end": 29.96,
   "text": "That part hasn't changed."
  },
  {
   "n": 16,
-  "start": 32.24,
-  "end": 34.36,
+  "start": 29.96,
+  "end": 31.72,
   "text": "AI can't recreate taste."
  },
  {
   "n": 17,
-  "start": 34.36,
-  "end": 37.18,
+  "start": 31.72,
+  "end": 34.44,
   "text": "Buy vs. build used to be a question for big companies."
  },
  {
   "n": 18,
-  "start": 37.18,
-  "end": 39.64,
+  "start": 34.44,
+  "end": 36.68,
   "text": "Now one person with an agent asks it."
  },
  {
   "n": 19,
-  "start": 39.64,
-  "end": 42.46,
+  "start": 36.68,
+  "end": 39.24,
   "text": "Nobody wants to pay for a hundred features to use three."
  },
  {
   "n": 20,
-  "start": 42.46,
-  "end": 44.32,
+  "start": 39.24,
+  "end": 41.04,
   "text": "So build has turned into clone."
  },
  {
   "n": 21,
-  "start": 44.32,
-  "end": 48.72,
+  "start": 41.04,
+  "end": 45.11,
   "text": "But a clone copies the screens in an afternoon and misses the years of decisions underneath."
  },
  {
   "n": 22,
-  "start": 48.72,
-  "end": 50.12,
+  "start": 45.11,
+  "end": 46.4,
   "text": "It's the tip of the iceberg."
  },
  {
   "n": 23,
-  "start": 50.12,
-  "end": 55.21,
+  "start": 46.4,
+  "end": 51.04,
   "text": "The builder loses the business, and the user gets a worse copy, where every bug is now theirs."
  },
  {
   "n": 24,
-  "start": 55.21,
-  "end": 56.72,
+  "start": 51.04,
+  "end": 52.43,
   "text": "People clone for three reasons."
  },
  {
   "n": 25,
-  "start": 56.72,
-  "end": 57.83,
+  "start": 52.43,
+  "end": 53.46,
   "text": "They want to own the code."
  },
  {
   "n": 26,
-  "start": 57.83,
-  "end": 60.25,
+  "start": 53.46,
+  "end": 55.55,
   "text": "They want to use the AI they already pay for."
  },
  {
   "n": 27,
-  "start": 60.25,
-  "end": 62.28,
+  "start": 55.55,
+  "end": 57.72,
   "text": "And they want it shaped to how they work."
  },
  {
   "n": 28,
-  "start": 62.28,
-  "end": 71.6,
+  "start": 57.72,
+  "end": 65.89,
   "text": "Introducing SuperGrid, a desktop IDE where your site and the tools behind it live in your own repo, run on your own Cloudflare account, and are built by the AI you already pay for."
  },
  {
   "n": 29,
-  "start": 71.6,
-  "end": 75.22,
+  "start": 65.89,
+  "end": 69.64,
   "text": "Connect Muse Code over ACP, and the agent runs on your subscription."
  },
  {
   "n": 30,
-  "start": 75.22,
-  "end": 78.04,
+  "start": 69.64,
+  "end": 72.24,
   "text": "Connect Cloudflare, and everything deploys to your account."
  },
  {
   "n": 31,
-  "start": 78.04,
-  "end": 84.16,
+  "start": 72.24,
+  "end": 77.92,
   "text": "Every workspace is its own repo, and it ships with a database, events, workflows, analytics, and a media library."
  },
  {
   "n": 32,
-  "start": 84.16,
-  "end": 85.4,
+  "start": 77.92,
+  "end": 79.08,
   "text": "Apps sit on top."
  },
  {
   "n": 33,
-  "start": 85.4,
-  "end": 87.52,
+  "start": 79.08,
+  "end": 80.99,
   "text": "Build your own, or install one from another builder."
  },
  {
   "n": 34,
-  "start": 87.52,
-  "end": 91.72,
+  "start": 80.99,
+  "end": 84.92,
   "text": "The code goes straight into your repo, so you get the whole iceberg, not the tip."
  },
  {
   "n": 35,
-  "start": 91.72,
-  "end": 94.72,
+  "start": 84.92,
+  "end": 87.71,
   "text": "Some apps are internal tools, like this Ad Designer built on Muse Image."
  },
  {
   "n": 36,
-  "start": 94.72,
-  "end": 98.27,
+  "start": 87.71,
+  "end": 91,
   "text": "Others ship with your site, like a blog, forms, or landing pages."
  },
  {
   "n": 37,
-  "start": 98.27,
-  "end": 102.71,
+  "start": 91,
+  "end": 95.07,
   "text": "Every app exposes its features over MCP, so Muse can use it the way your team does."
  },
  {
   "n": 38,
-  "start": 102.71,
-  "end": 105.55,
+  "start": 95.07,
+  "end": 97.74,
   "text": "But owning the code breaks the one thing SaaS got right."
  },
  {
   "n": 39,
-  "start": 105.55,
-  "end": 108.92,
+  "start": 97.74,
+  "end": 100.84,
   "text": "The builder fixes a bug once, and every customer gets the fix."
  },
  {
   "n": 40,
-  "start": 108.92,
-  "end": 111.07,
+  "start": 100.84,
+  "end": 102.84,
   "text": "Once you change your copy, that's over."
  },
  {
   "n": 41,
-  "start": 111.07,
-  "end": 113.66,
+  "start": 102.84,
+  "end": 105.27,
   "text": "Until now, you could own the code or get the updates."
  },
  {
   "n": 42,
-  "start": 113.66,
-  "end": 114.49,
+  "start": 105.27,
+  "end": 106.12,
   "text": "Never both."
  },
  {
   "n": 43,
-  "start": 114.49,
-  "end": 115.92,
+  "start": 106.12,
+  "end": 107.32,
   "text": "Muse Code fixes that."
  },
  {
   "n": 44,
-  "start": 115.92,
-  "end": 119.7,
+  "start": 107.32,
+  "end": 110.95,
   "text": "It merges the builder's update around your changes, because it's the one that made them."
  },
  {
   "n": 45,
-  "start": 119.7,
-  "end": 124.44,
+  "start": 110.95,
+  "end": 115.04,
   "text": "It checks the update for security issues, fixes what breaks, and asks for your approval first."
  },
  {
   "n": 46,
-  "start": 124.44,
-  "end": 127.12,
+  "start": 115.04,
+  "end": 117.08,
   "text": "Muse Code is the CTO for every creator."
  },
  {
   "n": 47,
-  "start": 127.12,
-  "end": 130.45,
+  "start": 117.08,
+  "end": 120.63,
   "text": "Every industry has experts who know one problem better than anyone."
  },
  {
   "n": 48,
-  "start": 130.45,
-  "end": 132.13,
+  "start": 120.63,
+  "end": 122.64,
   "text": "Today their software gets cloned."
  },
  {
   "n": 49,
-  "start": 132.13,
-  "end": 137.36,
+  "start": 122.64,
+  "end": 127.24,
   "text": "With an IDE like this, it gets installed, owned, and updated, and they get paid for it."
  },
  {
   "n": 50,
-  "start": 137.36,
-  "end": 138.76,
+  "start": 127.24,
+  "end": 128.48,
   "text": "SaaS isn't dead."
  },
  {
   "n": 51,
-  "start": 138.76,
-  "end": 140.79,
+  "start": 128.48,
+  "end": 129.72,
   "text": "The code moves to the user."
  },
  {
   "n": 52,
-  "start": 140.79,
-  "end": 147.68,
+  "start": 129.72,
+  "end": 136.76,
   "text": "Products built by the people who understand the problem best, shaped by the people who use them, and powered by the AI they already pay for."
  },
  {
   "n": 53,
-  "start": 147.68,
-  "end": 152.12,
+  "start": 136.76,
+  "end": 140.88,
   "text": "Our goal is to build the platform for this new kind of SaaS, and Muse Code is what makes it possible."
  }
 ]

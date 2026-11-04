@@ -86,12 +86,18 @@ export function AgentSide({
       live = false;
     };
   }, [agent, ws.id, threadId, ready, onOpenThread]);
+  // a remembered thread the agent no longer has (its session was never saved, say the app quit while making it) is
+  // forgotten, and an empty one takes its place
+  const gone = !!thread && !thread.live && /not found/i.test(thread.error ?? "");
+  React.useEffect(() => {
+    if (gone) onOpenThread(null);
+  }, [gone, onOpenThread]);
 
   const header = (
     <>
       <ThreadMenu ws={ws} threadId={threadId} title={titleOf(thread)} onOpenThread={onOpenThread} />
       <BarToolbar aria-label="Agent" className="shrink-0">
-        <BarButton label="New Thread" onClick={() => onOpenThread(null)} disabled={!thread || thread.messages.length === 0}>
+        <BarButton label="New Thread" onClick={() => onOpenThread(null)} disabled={!thread || (thread.messages.length === 0 && !thread.error)}>
           <PlusIcon />
         </BarButton>
         {onPin && (

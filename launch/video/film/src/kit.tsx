@@ -4,7 +4,8 @@ import { FPS } from "./timeline";
 
 // The film's kit, after the sales page (launch/site): white ground, near-black type set in Cal Sans
 // at medium weight with a little air between the letters, two-tone headlines (the statement in ink,
-// the rest in grey), coral as the one accent and the four-colour mark. The dark card, the glow, the
+// the rest in grey that fills in to rose as it's said, like the site's scroll fill) and the
+// four-colour mark. The dark card, the glow, the
 // dots and the blueprint live in look.tsx. The product keeps its own dark Pitch theme (C, after
 // app/src/renderer/app/lib/theme.ts preset "pitch"). Muse, Meta's model, gets its own blue so every
 // moment it's on screen reads as Muse. Every frame is a pure function of the time, read from useT()
@@ -21,6 +22,7 @@ export const L = {
   faint: "#a1a1a6",
   line: "rgb(0 0 0 / 8%)",
   accent: "#E8614A",
+  rose: "#f33869",
   accentSoft: "rgb(232 97 74 / 10%)",
   green: "#1f8f4e",
   greenSoft: "rgb(52 199 89 / 12%)",
@@ -50,6 +52,7 @@ export const C = {
   muted: "#8d8d8d",
   dim: "#6e6e6e",
   accent: "#E8614A",
+  rose: "#f33869",
   accentSoft: "rgb(232 97 74 / 14%)",
   success: "#34d399",
   successSoft: "rgb(52 211 153 / 12%)",
@@ -88,15 +91,14 @@ export function lerp(t: number, input: number[], output: number[], ease: "out" |
   });
 }
 
-/** Fades, lifts and unblurs its children in at `at`, and drifts them up and out at `outAt` when given. */
-export function Appear({ at, outAt, y = 24, x = 0, scale = 1, blur = 6, dur = 0.9, outDur = 0.45, style, children, className }: { at: number; outAt?: number; y?: number; x?: number; scale?: number; blur?: number; dur?: number; outDur?: number; style?: React.CSSProperties; children: React.ReactNode; className?: string }): React.ReactElement | null {
+/** Slides its children up and fades them in quickly at `at`, and up and out at `outAt` when given. No blur. */
+export function Appear({ at, outAt, y = 28, x = 0, scale = 1, dur = 0.55, outDur = 0.35, style, children, className }: { at: number; outAt?: number; y?: number; x?: number; scale?: number; dur?: number; outDur?: number; style?: React.CSSProperties; children: React.ReactNode; className?: string }): React.ReactElement | null {
   const t = useT();
   const p = prog(t, at, dur);
   const q = outAt === undefined ? 0 : prog(t, outAt, outDur, "inOut");
   if (p <= 0 || q >= 1) return null;
-  const b = blur * (1 - prog(t, at, dur * 0.7)) + blur * q;
   return (
-    <div className={className} style={{ opacity: p * (1 - q), transform: `translate(${x * (1 - p)}px, ${y * (1 - p) - 14 * q}px) scale(${scale + (1 - scale) * p})`, filter: b > 0.05 ? `blur(${b}px)` : undefined, ...style }}>
+    <div className={className} style={{ opacity: p * (1 - q), transform: `translate(${x * (1 - p)}px, ${y * (1 - p) - 14 * q}px) scale(${scale + (1 - scale) * p})`, ...style }}>
       {children}
     </div>
   );
@@ -110,7 +112,7 @@ export function Swap({ items, end, style, y = 26 }: { items: { at: number; node:
         const next = items[i + 1]?.at ?? end;
         // the old one is gone just as the new one starts, so two lines never sit on top of each other
         return (
-          <Appear key={i} at={it.at} outAt={next === undefined ? undefined : next - 0.32} outDur={0.32} y={y} dur={0.8} style={{ position: "absolute", inset: 0, ...style }}>
+          <Appear key={i} at={it.at} outAt={next === undefined ? undefined : next - 0.32} outDur={0.32} y={y} dur={0.55} style={{ position: "absolute", inset: 0, ...style }}>
             {it.node}
           </Appear>
         );
@@ -228,6 +230,44 @@ export function Eyebrow({ children, dark = false, color, size = 20, style }: { c
   return <div style={{ fontFamily: MONO, fontSize: size, letterSpacing: "0.22em", textTransform: "uppercase", color: color ?? (dark ? "rgb(255 255 255 / 55%)" : L.accent), textAlign: "center", ...style }}>{children}</div>;
 }
 
+/** The grey half of a two-tone headline filling in to rose a word at a time, from the first word at
+ *  `from` to the last at `to`. On the site it runs on the scroll; here it runs on the voice. */
+export function Fill({ text, from, to, base = L.faint }: { text: string; from: number; to: number; base?: string }): React.ReactElement {
+  const t = useT();
+  const words = text.split(" ");
+  return (
+    <>
+      {words.map((w, i) => {
+        const k = prog(t, from + ((to - from) * i) / Math.max(1, words.length - 1), 0.4, "inOut");
+        return (
+          <React.Fragment key={i}>
+            {i ? " " : null}
+            <span style={{ color: `color-mix(in srgb, ${L.rose} ${(k * 100).toFixed(1)}%, ${base})` }}>{w}</span>
+          </React.Fragment>
+        );
+      })}
+    </>
+  );
+}
+
+/** A line that rises in a piece at a time, `step` apart from `at`, or each at its own time in `ats`. */
+export function Rise({ words, at = 0, step = 0.08, ats }: { words: React.ReactNode[]; at?: number; step?: number; ats?: number[] }): React.ReactElement {
+  const t = useT();
+  return (
+    <>
+      {words.map((w, i) => {
+        const p = prog(t, ats?.[i] ?? at + i * step, 0.5);
+        return (
+          <React.Fragment key={i}>
+            {i ? " " : null}
+            <span style={{ display: "inline-block", opacity: p, transform: `translateY(${(1 - p) * 0.3}em)` }}>{w}</span>
+          </React.Fragment>
+        );
+      })}
+    </>
+  );
+}
+
 /** Words filled with a gradient instead of a colour. */
 export function GradText({ children, gradient, style }: { children: React.ReactNode; gradient: string; style?: React.CSSProperties }): React.ReactElement {
   return <span style={{ backgroundImage: gradient, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent", paddingBottom: "0.06em", ...style }}>{children}</span>;
@@ -277,7 +317,7 @@ export function Scene({ from, to, children, fadeOut = 0.4, shift = 0, dark = fal
   if (t < from || t >= to) return null;
   const q = prog(t, to - fadeOut, fadeOut, "inOut");
   const y = shift - 12 * q;
-  return <div style={{ position: "absolute", inset: 0, opacity: 1 - q, transform: y !== 0 ? `translateY(${y}px)` : undefined, filter: q > 0.01 ? `blur(${5 * q}px)` : undefined, fontFamily: FONT, color: dark ? "#fff" : L.ink }}>{children}</div>;
+  return <div style={{ position: "absolute", inset: 0, opacity: 1 - q, transform: y !== 0 ? `translateY(${y}px)` : undefined, fontFamily: FONT, color: dark ? "#fff" : L.ink }}>{children}</div>;
 }
 
 export const center: React.CSSProperties = { position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" };

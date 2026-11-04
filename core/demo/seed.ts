@@ -126,7 +126,9 @@ export function demoSeed(now: Date = new Date(), seed = 20261103): DemoSeed {
   const at = (days: number, hourBias = 0): number => {
     const day = today - Math.floor(days) * DAY;
     const hour = Math.min(23, Math.max(6, Math.round(8 + r() * 12 + hourBias + (r() < 0.35 ? 3 : 0))));
-    return Math.min(now.getTime() - 60_000, day + hour * 3_600_000 + Math.floor(r() * 3_600_000));
+    const t = day + hour * 3_600_000 + Math.floor(r() * 3_600_000);
+    // today only has the hours that have passed: spread over those rather than piling up at "just now"
+    return t < now.getTime() - 60_000 ? t : day + Math.floor(r() * Math.max(60_000, now.getTime() - 60_000 - day));
   };
   const iso = (ms: number) => new Date(ms).toISOString();
   const LAUNCH = 21;
@@ -269,6 +271,26 @@ export function demoSeed(now: Date = new Date(), seed = 20261103): DemoSeed {
   core.push(...inserts("events", E_COLS, events, 120));
   core.push(...inserts("settings", ["key", "value"], [["site.name", JSON.stringify(DEMO_NAME)], ["site.currency", JSON.stringify("USD")]], 10, "INSERT OR REPLACE"));
   // the same shape the Skills page makes (app/src/renderer/app/lib/skills.ts)
+  // two reports, kept the way the Reports pages keep them (app/src/renderer/app/lib/reports.ts): a settings row each
+  const rule = (field: string, value: string) => ({ field, operator: "=", value });
+  const q = (...rules: ReturnType<typeof rule>[]) => ({ combinator: "and", rules });
+  const block = (id: string, title: string, kind: string, table: string, query: unknown, extra: Record<string, unknown> = {}) => ({ id, title, kind, table, query, metric: "count", limit: 10, span: kind === "number" ? 1 : 2, ...extra });
+  const report = (id: string, name: string, description: string, blocks: unknown[]) => [`report:${id}`, JSON.stringify({ id, name, description, blocks, created_at: iso(today - 18 * DAY), updated_at: iso(today - 2 * DAY) })];
+  core.push(...inserts("settings", ["key", "value"], [
+    report("spring-launch", "Spring Launch", "Visits, sign-ups and orders since the waitlist opened.", [
+      block("contacts", "Contacts", "number", "contacts", q()),
+      block("orders", "Orders", "number", "events", q(rule("name", "order.placed"))),
+      block("visits", "Visits per Day", "line", "events", q(rule("name", "session.start")), { groupBy: "ts" }),
+      block("orders-day", "Orders per Day", "line", "events", q(rule("name", "order.placed")), { groupBy: "ts" }),
+      block("sources", "Where Contacts Came From", "bar", "contacts", q(), { groupBy: "source", span: 1 }),
+      block("devices", "Visits by Device", "bar", "events", q(rule("name", "session.start")), { groupBy: "device", span: 1 }),
+    ]),
+    report("journal", "Journal", "What people read in the studio journal.", [
+      block("published", "Published Posts", "number", "app_blog_item", q(rule("status", "published"))),
+      block("drafts", "Drafts", "number", "app_blog_item", q(rule("status", "draft"))),
+      block("top", "Most Read Pages", "bar", "events", q(rule("name", "page.view"), rule("app_id", "blog")), { groupBy: "path", limit: 8 }),
+    ]),
+  ], 10, "INSERT OR REPLACE"));
   core.push("CREATE TABLE IF NOT EXISTS skills (id TEXT PRIMARY KEY, title TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')))");
   core.push(...inserts("skills", ["id", "title", "content"], SKILLS.map((s) => [s.id, s.title, s.content]), 50, "INSERT OR REPLACE"));
 

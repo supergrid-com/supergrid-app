@@ -4,9 +4,8 @@ import { beats } from "./timeline";
 
 // The look of the sales page (launch/site), brought into the film: the dark card (#1B1D24) inset
 // from the white page, a slow glow of violet, blue, cyan, magenta and orange inside it, a dot grid
-// with a light wandering over it, and blueprint guides, crosshairs and small mono notes drawn around
-// whatever a frame is about. The white scenes get the same in a whisper: dots at the edges and a
-// quiet frame of guides. Every value is a pure function of the time.
+// with a light wandering over it, and blueprint guides, crosshairs and small mono notes for the dark
+// card. The white page stays plain white. Every value is a pure function of the time.
 
 export const INK = "#1B1D24";
 /** The site's own gradient, violet through magenta to orange. */
@@ -225,36 +224,9 @@ export function Callout({ x, y, len = 70, side = "right", k, children, color = L
 
 // ---- the white page and the dark card ----
 
-/** The white page: a pastel glow in the corners, dots at the edges and a quiet frame of guides.
- *  Hidden while the dark card covers it, and left plain white while the app is on it. */
+/** The white page. Plain, like the site's sections below the hero: the type does the work. */
 export function PageBackdrop(): React.ReactElement {
-  const t = useT();
-  const covered = (t > scrolls.reveal + SCROLL && t < scrolls.app) || t > scrolls.end + SCROLL;
-  const m = 64;
-  const draw = t > scrolls.app ? 1 : prog(t, 0.2, 1.4, "inOut");
-  const deco = t < scrolls.app ? 1 : prog(t, scrolls.cto + 0.3, 0.8, "inOut");
-  return (
-    <div style={{ position: "absolute", inset: 0, background: L.bg }}>
-      {covered || deco <= 0 ? null : (
-        <div style={{ position: "absolute", inset: 0, opacity: deco }}>
-          <Aurora moods={{ page: 1 }} />
-          <Dots dark={false} />
-          <Guide x={0} y={m} len={1920} k={draw} strong={0.8} />
-          <Guide x={0} y={1080 - m} len={1920} k={draw} strong={0.8} />
-          <Guide x={m} y={0} len={1080} vertical k={draw} strong={0.8} />
-          <Guide x={1920 - m} y={0} len={1080} vertical k={draw} strong={0.8} />
-          {[
-            [m, m],
-            [1920 - m, m],
-            [m, 1080 - m],
-            [1920 - m, 1080 - m],
-          ].map(([x, y], i) => (
-            <Cross key={i} x={x!} y={y!} size={18} k={t > scrolls.app ? 1 : prog(t, 0.6 + i * 0.08, 0.7)} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return <div style={{ position: "absolute", inset: 0, background: L.bg }} />;
 }
 
 /** The dark card, inset from the white page like the site's hero. It scrolls up into place at `rise`

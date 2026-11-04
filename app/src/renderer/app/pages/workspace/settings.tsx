@@ -121,12 +121,12 @@ export function WorkspaceDanger(): React.ReactElement {
 
 function DangerRow({ title, description, children }: { title: string; description: string; children: React.ReactNode }): React.ReactElement {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border px-4 py-3">
-      <div className="flex flex-col gap-0.5">
+    <div className="flex items-center justify-between gap-4 rounded-xl border px-4 py-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="text-sm font-medium">{title}</span>
         <span className="text-xs text-muted-foreground">{description}</span>
       </div>
-      {children}
+      <div className="shrink-0">{children}</div>
     </div>
   );
 }

@@ -23,7 +23,8 @@ export function Home(): React.ReactElement {
   const { ws } = useShell();
   const onOpenNav = useOpenNav();
   const latest = useLatestRelease();
-  const behind = !!latest && !!ws.version && ws.version !== latest.version;
+  // a workspace that lives only on this Mac runs the repo's code, not a release
+  const behind = !ws.local && !!latest && !!ws.version && ws.version !== latest.version;
   return (
     <WorkspaceFrame icon={<HomeIcon />} title={ws.name} onOpenNav={onOpenNav}>
       <div className="grid gap-4 md:grid-cols-2">
@@ -40,7 +41,7 @@ export function Home(): React.ReactElement {
           <Row label="Release">
             <span className="flex flex-wrap items-center gap-2">
               {ws.version ?? "unknown"}
-              {latest && (
+              {latest && !ws.local && (
                 <Badge variant={behind ? "warning" : "success"} size="sm">
                   {behind ? `${latest.version} is out` : "Up to date"}
                 </Badge>

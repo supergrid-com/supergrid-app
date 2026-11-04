@@ -5,7 +5,7 @@ import { scaffoldAppFolder, scaffoldWorkspace } from "@supergrid/app-kit/scaffol
 import { withInlineIcon } from "@supergrid/app-kit/vite";
 import { activeVersion, deployWorkspace, readWorkspace, type Compiled } from "@supergrid/cloud";
 import { app, BrowserWindow, ipcMain, shell, type WebContents } from "electron";
-import { execFile, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { execFile, execFileSync, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { accessSync, constants, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { connect, createServer } from "node:net";
 import { homedir } from "node:os";
@@ -15,6 +15,7 @@ import { channels, type DeployProgress, type DeployVersion, type DevLogLine, typ
 import { cfClient } from "./cf-api";
 import { readState } from "./config";
 import { localWorker, localWorkspace } from "./local";
+import { ownPnpm, ownToolchain, shimDir } from "./toolchain";
 import * as workspaceApi from "./workspace-api";
 
 // The workspace's repo on this Mac (WORKSPACE-REPO.md): `workspaces/<id>` under the app's data folder is one git repo and
@@ -58,6 +59,24 @@ function findBin(name: string): string | null {
 }
 const needBin = (name: string, hint: string): string => { const bin = findBin(name); if (!bin) throw new Error(`${name} was not found on this Mac. ${hint}`); return bin; };
 const PNPM_HINT = "Install it with `npm i -g pnpm` (or `brew install pnpm`), then try again.";
+/** pnpm: the app's own in a packaged build (toolchain.ts), the user's in development. */
+const pnpmBin = (): string => (ownToolchain() ? ownPnpm() : needBin("pnpm", PNPM_HINT));
+
+let gitChecked: string | null | undefined;
+/**
+ * git, when the Mac really has it. /usr/bin/git is on every Mac, but without the Command Line Tools it is a placeholder
+ * that opens the "install developer tools" dialog, so it only counts when xcode-select names a developer folder.
+ * Without git the desktop still works; it just makes no commits.
+ */
+function gitBin(): string | null {
+  if (gitChecked !== undefined) return gitChecked;
+  let bin = findBin("git");
+  if (bin === "/usr/bin/git") {
+    try { execFileSync("/usr/bin/xcode-select", ["-p"], { stdio: "ignore" }); } catch { bin = null; }
+  }
+  gitChecked = bin;
+  return bin;
+}
 
 /** Version-sorted, newest first: `v24.20.0` before `v22.23.2`. */
 const byVersionDesc = (a: string, b: string) => { const p = (v: string) => v.replace(/^v/, "").split(".").map(Number); const [x, y] = [p(a), p(b)]; for (let i = 0; i < 3; i++) { const d = (y[i] ?? 0) - (x[i] ?? 0); if (d) return d; } return 0; };
@@ -84,7 +103,8 @@ function childEnv(): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false", FORCE_COLOR: "0", NO_COLOR: "1" };
   for (const key of Object.keys(env)) if (/^(ELECTRON_|CLAUDE|ANTHROPIC_)/.test(key)) delete env[key];
   // the user's usual tool folders first, so pnpm runs the Node their shell runs and wrangler finds pnpm
-  const node = preferredNodeDir();
+  // A packaged build runs its own Node and pnpm ahead of anything else on the Mac (toolchain.ts).
+  const node = ownToolchain() ? shimDir() : preferredNodeDir();
   env.PATH = [...(node ? [node] : []), join(homedir(), ".local/bin"), join(homedir(), "Library/pnpm"), "/opt/homebrew/bin", "/usr/local/bin", env.PATH ?? ""].join(delimiter);
   return env;
 }
@@ -104,7 +124,7 @@ async function must(bin: string, args: string[], cwd: string, what: string): Pro
 }
 /** A commit of everything in the repo, as the desktop; nothing happens without git on the Mac. */
 async function commit(dir: string, message: string): Promise<void> {
-  const git = findBin("git");
+  const git = gitBin();
   if (!git) return;
   if (!existsSync(join(dir, ".git"))) await run(git, ["init", "-q", "-b", "main"], dir);
   await run(git, ["add", "-A"], dir);
@@ -132,7 +152,7 @@ function installed(dir: string): Promise<void> {
   if (existsSync(join(dir, "node_modules/.pnpm")) || existsSync(join(dir, "node_modules/@supergrid"))) return Promise.resolve();
   let p = installs.get(dir);
   if (!p) {
-    p = must(needBin("pnpm", PNPM_HINT), ["install"], dir, "Installing the repo's dependencies").then(() => undefined);
+    p = must(pnpmBin(), ["install"], dir, "Installing the repo's dependencies").then(() => undefined);
     installs.set(dir, p);
     p.finally(() => installs.delete(dir));
   }
@@ -157,7 +177,7 @@ export function ensureRepo(wsId: string, facts?: RepoFacts): Promise<RepoInfo> {
           renameSync(dir, aside);
         }
         const known = facts ?? (await repoFactsFor(wsId));
-        scaffoldWorkspace({ core: coreDir(), dest: dir, id: wsId, name: known.name, worker: known.worker });
+        scaffoldWorkspace({ core: coreDir(), dest: dir, id: wsId, name: known.name, worker: known.worker, vendor: app.isPackaged });
         generateWorkspace(dir);
         writeRepoFacts(wsId, known);
         // the lockfile is part of the repo, so the first commit comes after the install
@@ -175,7 +195,7 @@ export function ensureRepo(wsId: string, facts?: RepoFacts): Promise<RepoInfo> {
 
 /** `pnpm install` in the repo again, after folders were added to it outside the New App flow (the demo's apps). */
 export async function installRepo(wsId: string): Promise<void> {
-  await must(needBin("pnpm", PNPM_HINT), ["install"], repo(wsId), "Installing the repo's dependencies");
+  await must(pnpmBin(), ["install"], repo(wsId), "Installing the repo's dependencies");
 }
 
 /**
@@ -304,7 +324,7 @@ export async function devStart(wsId: string, owner: Owner): Promise<DevServerSta
   const have = devs.get(wsId);
   if (have) { if (owner) have.owner = owner; return have.starting ? have.starting : devStatusOf(have); }
   const { dir } = await ensureRepo(wsId);
-  const pnpm = needBin("pnpm", PNPM_HINT);
+  const pnpm = pnpmBin();
   const port = await freePort();
   const child = spawn(pnpm, ["exec", "react-router", "dev", "--port", String(port)], { cwd: dir, env: childEnv(), stdio: ["pipe", "pipe", "pipe"] });
   const d: Dev = { child, port, startedAt: new Date().toISOString(), ready: false, log: [], owner, starting: null };
@@ -361,7 +381,7 @@ export async function localSummary(rec: LocalWorkspace, start: boolean, owner: O
 
 export async function git(wsId: string): Promise<GitStatus> {
   const dir = repo(wsId);
-  const bin = findBin("git");
+  const bin = gitBin();
   if (!bin || !existsSync(join(dir, ".git"))) return { branch: null, changed: 0, ahead: 0, behind: 0, remote: null, commits: [] };
   const branch = (await run(bin, ["rev-parse", "--abbrev-ref", "HEAD"], dir)).out.trim() || null;
   const changed = (await run(bin, ["status", "--porcelain"], dir)).out.split("\n").filter(Boolean).length;
@@ -398,7 +418,7 @@ export function compiledBuild(dir: string): Compiled {
 export async function build(wsId: string): Promise<{ compiled: Compiled; apps: RouteSummary[] }> {
   const { dir } = await ensureRepo(wsId);
   const g = generateWorkspace(dir);
-  await must(needBin("pnpm", PNPM_HINT), ["build"], dir, "Building the workspace");
+  await must(pnpmBin(), ["build"], dir, "Building the workspace");
   return { compiled: compiledBuild(dir), apps: g.apps.filter((a) => !a.disabled).map(summaryOf) };
 }
 
@@ -406,7 +426,7 @@ export async function build(wsId: string): Promise<{ compiled: Compiled; apps: R
 export async function buildVersion(wsId: string): Promise<string> {
   const dir = repo(wsId);
   const day = new Date().toISOString().slice(0, 10);
-  const bin = findBin("git");
+  const bin = gitBin();
   if (!bin || !existsSync(join(dir, ".git"))) return `${day}.local`;
   const short = (await run(bin, ["rev-parse", "--short", "HEAD"], dir)).out.trim() || "local";
   const dirty = (await run(bin, ["status", "--porcelain"], dir)).out.trim() ? "-dirty" : "";

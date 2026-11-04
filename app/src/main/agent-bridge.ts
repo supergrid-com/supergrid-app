@@ -2,6 +2,7 @@ import { app, type WebContents } from "electron";
 import { randomUUID } from "node:crypto";
 import { existsSync, readdirSync, unlinkSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { channels, type AgentAnswer, type AgentAsk, type AgentWidget, type AppContext, type AskInput } from "../shared/bridge";
@@ -38,10 +39,14 @@ let server: Server | null = null;
 
 const ASK_TIMEOUT = 15 * 60_000;
 
-/** Where the socket lives: a path in the app's data folder, or a named pipe on Windows. */
+/**
+ * Where the socket lives: a path in the app's data folder, or a named pipe on Windows. A unix socket path may be at
+ * most 104 bytes on macOS (108 on Linux), so a data folder deep enough to pass that uses the system's temp folder.
+ */
 export function socketPath(): string {
   if (process.platform === "win32") return `\\\\.\\pipe\\supergrid-agent-${process.pid}`;
-  return join(app.getPath("userData"), `agent-${process.pid}.sock`);
+  const inData = join(app.getPath("userData"), `agent-${process.pid}.sock`);
+  return Buffer.byteLength(inData) < 100 ? inData : join(tmpdir(), `supergrid-agent-${process.pid}.sock`);
 }
 
 export function registerClient(client: string, wsId: string, sender: WebContents): void {

@@ -36,7 +36,7 @@ function VideoModal({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label="SuperGrid demo" onClick={onClose} className="demo-fade fixed inset-0 z-[100] grid place-items-center bg-black/90 p-4 sm:p-8">
-      <div onClick={(e) => e.stopPropagation()} className="demo-in relative w-full max-w-[min(1600px,calc((100dvh-8rem)*16/9))]">
+      <div onClick={(e) => e.stopPropagation()} className="demo-in relative w-full max-w-[min(1120px,calc((100dvh-12rem)*16/9))]">
         <button type="button" onClick={onClose} aria-label="Close the video" className="absolute -top-12 right-0 grid size-10 cursor-pointer place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20">
           <XIcon className="size-5" />
         </button>

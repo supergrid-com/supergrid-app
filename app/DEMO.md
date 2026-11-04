@@ -25,7 +25,18 @@
 - **Verified headless** under Electron with a scratch userData. Make takes about 16 s with a warm pnpm store.
   After it: 254 contacts, 8.6k events, 6 segments with counts, 3 workflows, 11 posts. The public `/journal`
   page hides drafts, the admin lists Posts, the agent's tool query works, re-opening doesn't re-seed, and reset
-  restores the data. **Not yet clicked through in the window**, and no live Muse turn has run on it yet.
+  restores the data.
+- **Clicked through in the window** (2026-11-03, a scratch instance with its own data folder, driven over DevTools):
+  setup → Explore a Demo with progress → the workspace opens. Database with the record sheet, Workflows,
+  Events, the seeded Spring Launch and Journal reports, Library (Images shows "Needs a Cloudflare Account"),
+  the Journal admin listing Posts, Reset Demo Data from the Danger Zone, and relaunch reopening the demo. A
+  live Muse turn ran on it: it answered from the local data and drew a revenue chart card.
+- **Fixed during the click-through**: today's events piled up at "just now"; the release badge showed on a
+  local workspace; the first open of an app's admin stalled behind its spinner (Vite optimized deps and reloaded
+  the frame, so `workspaceViteConfig` now pre-bundles the repo's UI imports); the agent socket path overflowed
+  macOS's 104-byte limit under a long data folder (falls back to the temp folder); and a remembered thread Muse no
+  longer has left the agent panel stuck (it's now dropped for a fresh one, and New Thread works on a failed one).
+- **Left as is**: the Database labels the Journal's table "Item" (from the table name, not the app's "Posts").
 
 The rest of this file is the original exploration.
 

@@ -66,7 +66,7 @@ const DEMO_STEPS: { step: DemoProgress["step"]; label: string }[] = [
   { step: "data", label: "Fill the database with sample data" },
 ];
 
-/** The demo, started from setup: everything on this Mac, so it needs Node, pnpm and git but no Cloudflare account. */
+/** The demo, started from setup: everything on this Mac, on the app's own Node and pnpm, with no Cloudflare account. */
 function ExploreDemo(): React.ReactElement {
   const navigate = useNavigate();
   const { setOrg } = useSession();

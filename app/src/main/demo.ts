@@ -11,7 +11,7 @@ import * as workspaceApi from "./workspace-api";
 // The demo workspace: a workspace that lives only on this Mac (local.ts), made from the same template as any other, with
 // the demo's apps added as folders and its local D1 filled from core/demo/seed.ts. Nothing about it is simulated: the
 // repo, the dev server, the Database pages and the agent's tools all work on it the way they work on a real workspace in
-// Dev. It needs no Cloudflare account; it needs Node, pnpm and git like any repo the desktop runs.
+// Dev. It needs no Cloudflare account, and a packaged build brings its own Node and pnpm (toolchain.ts); git is optional.
 
 const DEMO_ID = "demo";
 const SEEDED = "demo.seeded";

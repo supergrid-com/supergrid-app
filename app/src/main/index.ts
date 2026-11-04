@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, screen, shell } from "electron";
 import { join } from "node:path";
 import { channels, type AppInfo, type D1Target, type LocalState } from "../shared/bridge";
 import { registerAgent } from "./agent";
@@ -21,9 +21,12 @@ import * as workspaceApi from "./workspace-api";
 if (process.env.ELECTRON_RENDERER_URL) app.commandLine.appendSwitch("remote-debugging-port", process.env.SG_DEVTOOLS_PORT ?? "9339");
 
 function createWindow(): BrowserWindow {
+  // Opens at most of the screen it starts on, short of filling it: 90% of the work area, up to 1800 × 1120.
+  const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workAreaSize;
   const win = new BrowserWindow({
-    width: 1280,
-    height: 820,
+    width: Math.max(900, Math.min(1800, Math.round(area.width * 0.9))),
+    height: Math.max(600, Math.min(1120, Math.round(area.height * 0.9))),
+    center: true,
     minWidth: 900,
     minHeight: 600,
     show: false,
@@ -125,7 +128,13 @@ registerLibrary();
 registerApps();
 registerDemo();
 
+// The name and icon a packaged build gets from its bundle (package.json "build"). In development the
+// Dock shows build/icon.png; scripts/brand-electron.mjs renames the dev Electron.app for the menu bar.
+app.setName("SuperGrid");
+app.setAboutPanelOptions({ applicationName: "SuperGrid", applicationVersion: app.getVersion(), version: "", copyright: `© ${new Date().getFullYear()} SuperGrid`, website: "https://supergrid.com" });
+
 void app.whenReady().then(() => {
+  if (process.env.ELECTRON_RENDERER_URL && process.platform === "darwin") app.dock?.setIcon(join(app.getAppPath(), "build/icon.png"));
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -154,7 +154,7 @@ function Onboarding({ t }: { t: number }): React.ReactElement {
             <OptionRow icon={<CloudIcon style={{ width: 19, height: 19, color: "#f6821f" }} />} name="Nodo" note={<span style={{ fontFamily: MONO, fontSize: 12.5 }}>fc84d234400f2316c52025fe91ed528</span>} state={cfDone ? "done" : "selected"} />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16, minHeight: 30 }}>
               {["Workers", "D1", "R2", "Queues", "Workflows", "Images", "Stream"].map((r, i) => (
-                <Appear key={r} at={say(30, "everything", -0.1) + i * 0.08} y={6} blur={3}>
+                <Appear key={r} at={say(30, "everything", -0.1) + i * 0.08} y={6}>
                   <span style={{ fontSize: 13, padding: "5px 10px", borderRadius: 99, border: `1px solid ${C.line}`, color: C.fg }}>{r}</span>
                 </Appear>
               ))}
@@ -342,7 +342,7 @@ function StorePage({ t }: { t: number }): React.ReactElement {
           const blog = a.name === "Blog";
           const hot = blog ? prog(t, say(33, "install", -0.3), 0.5) : 0;
           return (
-            <Appear key={a.name} at={cue(32, 0.25) + i * 0.06} y={14} blur={4}>
+            <Appear key={a.name} at={cue(32, 0.25) + i * 0.06} y={14}>
               <div style={{ borderRadius: 12, border: `1px solid ${hot > 0 ? `rgb(232 97 74 / ${Math.round(10 + hot * 45)}%)` : C.line}`, background: C.card, padding: 18, height: 150, display: "flex", flexDirection: "column" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ width: 42, height: 42, borderRadius: 10, background: C.raised, display: "grid", placeItems: "center" }}>
@@ -658,14 +658,14 @@ function InstalledPage({ t }: { t: number }): React.ReactElement {
           <div style={{ flex: 1, borderRadius: 12, border: `1px solid ${C.line}`, background: C.card, padding: 20, display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 16, color: C.strong, marginBottom: 14 }}>What's new in Blog 1.1.0</div>
             {["Share buttons on every post", "A faster RSS feed", "Fix for dates in Safari"].map((x, i) => (
-              <Appear key={x} at={cue(38, 1.0) + i * 0.15} y={8} blur={3}>
+              <Appear key={x} at={cue(38, 1.0) + i * 0.15} y={8}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, height: 38, padding: "0 8px", margin: "0 -8px", borderRadius: 8, fontSize: 14.5, color: C.fg, borderTop: i ? `1px solid ${C.lineSoft}` : undefined, background: i === 2 ? `rgb(52 211 153 / ${(10 * fix).toFixed(1)}%)` : undefined }}>
                   {i === 2 ? <WrenchIcon style={{ width: 15, height: 15, color: C.success }} /> : <PlusIcon style={{ width: 15, height: 15, color: C.success }} />} {x}
                 </div>
               </Appear>
             ))}
             <div style={{ flex: 1 }} />
-            <Appear at={say(39, "every customer", -0.1)} y={8} blur={3}>
+            <Appear at={say(39, "every customer", -0.1)} y={8}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: C.muted }}>
                 <UsersIcon style={{ width: 14, height: 14 }} /> Shipped once by Lena Ortiz, to every install
               </div>
@@ -778,22 +778,22 @@ export function Tour(): React.ReactElement {
   const postChat = (
     <ChatPanel live={t >= sent && t < sent + 1.8 ? 1 : 0} draft={t < sent ? <Typed text={PROMPT} at={cue(37, 0.75)} cps={50} /> : undefined}>
       {t >= sent ? (
-        <Appear at={sent} y={10} blur={2} style={{ alignSelf: "flex-end", display: "flex", justifyContent: "flex-end" }}>
+        <Appear at={sent} y={10} style={{ alignSelf: "flex-end", display: "flex", justifyContent: "flex-end" }}>
           <UserMsg>{PROMPT}</UserMsg>
         </Appear>
       ) : null}
       {t >= sent + 0.35 ? (
-        <Appear at={sent + 0.35} y={8} blur={2}>
+        <Appear at={sent + 0.35} y={8}>
           <ToolRow icon={NewspaperIcon} label={<span>blog · <span style={{ fontFamily: MONO, fontSize: 13 }}>create_post</span></span>} state={t >= sent + 1.1 ? "done" : "running"} />
         </Appear>
       ) : null}
       {t >= sent + 0.8 ? (
-        <Appear at={sent + 0.8} y={8} blur={2}>
+        <Appear at={sent + 0.8} y={8}>
           <ToolRow icon={TextCursorInputIcon} label={<span>forms · <span style={{ fontFamily: MONO, fontSize: 13 }}>embed_form</span></span>} state={t >= sent + 1.4 ? "done" : "running"} />
         </Appear>
       ) : null}
       {t >= sent + 1.6 ? (
-        <Appear at={sent + 1.6} y={8} blur={2}>
+        <Appear at={sent + 1.6} y={8}>
           <div className="pretty" style={{ fontSize: 14, lineHeight: 1.5, color: C.fg }}>The draft is in Posts, with the signup form in the footer</div>
         </Appear>
       ) : null}
@@ -815,7 +815,7 @@ export function Tour(): React.ReactElement {
   );
   const step = (at: number, doneAt: number, node: (state: "running" | "done" | "warn") => React.ReactNode, warn = false) =>
     t >= at ? (
-      <Appear at={at} y={8} blur={2}>
+      <Appear at={at} y={8}>
         {node(t >= doneAt ? (warn ? "warn" : "done") : "running")}
       </Appear>
     ) : null;
